@@ -2615,11 +2615,15 @@ static int fsg_main_thread(void *common_)
 
 /*************************** DEVICE ATTRIBUTES ***************************/
 
-/* Write permission is checked per LUN in store_*() functions. */
 static DEVICE_ATTR(ro, 0644, fsg_show_ro, fsg_store_ro);
 static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, fsg_store_nofua);
 static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
 static DEVICE_ATTR(cdrom, 0644, fsg_show_cdrom, fsg_store_cdrom);
+
+static struct device_attribute dev_attr_ro_cdrom =
+	__ATTR(ro, 0444, fsg_show_ro, NULL);
+static struct device_attribute dev_attr_file_nonremovable =
+	__ATTR(file, 0444, fsg_show_file, NULL);
 
 
 /****************************** FSG COMMON ******************************/
@@ -2731,10 +2735,16 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
 			goto error_release;
 		}
 
-		rc = device_create_file(&curlun->dev, &dev_attr_ro);
+		rc = device_create_file(&curlun->dev,
+					curlun->cdrom
+				      ? &dev_attr_ro_cdrom
+				      : &dev_attr_ro);
 		if (rc)
 			goto error_luns;
-		rc = device_create_file(&curlun->dev, &dev_attr_file);
+		rc = device_create_file(&curlun->dev,
+					curlun->removable
+				      ? &dev_attr_file
+				      : &dev_attr_file_nonremovable);
 		if (rc)
 			goto error_luns;
 		rc = device_create_file(&curlun->dev, &dev_attr_nofua);
@@ -2873,8 +2883,14 @@ static void fsg_common_release(struct kref *ref)
 		for (; i; --i, ++lun) {
 			device_remove_file(&lun->dev, &dev_attr_cdrom);
 			device_remove_file(&lun->dev, &dev_attr_nofua);
-			device_remove_file(&lun->dev, &dev_attr_ro);
-			device_remove_file(&lun->dev, &dev_attr_file);
+			device_remove_file(&lun->dev,
+					   lun->cdrom
+					 ? &dev_attr_ro_cdrom
+					 : &dev_attr_ro);
+			device_remove_file(&lun->dev,
+					   lun->removable
+					 ? &dev_attr_file
+					 : &dev_attr_file_nonremovable);
 			fsg_lun_close(lun);
 			device_unregister(&lun->dev);
 		}
