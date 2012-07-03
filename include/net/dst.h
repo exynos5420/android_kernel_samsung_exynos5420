@@ -408,7 +408,13 @@ static inline void dst_confirm(struct dst_entry *dst)
 
 static inline struct neighbour *dst_neigh_lookup(const struct dst_entry *dst, const void *daddr)
 {
-	return dst->ops->neigh_lookup(dst, daddr);
+	return dst->ops->neigh_lookup(dst, NULL, daddr);
+}
+
+static inline struct neighbour *dst_neigh_lookup_skb(const struct dst_entry *dst,
+						     struct sk_buff *skb)
+{
+	return dst->ops->neigh_lookup(dst, skb, NULL);
 }
 
 static inline void dst_link_failure(struct sk_buff *skb)

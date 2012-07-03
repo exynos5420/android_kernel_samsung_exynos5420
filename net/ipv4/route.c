@@ -195,7 +195,9 @@ static u32 *ipv4_cow_metrics(struct dst_entry *dst, unsigned long old)
 	return p;
 }
 
-static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst, const void *daddr);
+static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst,
+					   struct sk_buff *skb,
+					   const void *daddr);
 
 static struct dst_ops ipv4_dst_ops = {
 	.family =		AF_INET,
@@ -1141,7 +1143,9 @@ static int slow_chain_length(const struct rtable *head)
 	return length >> FRACT_BITS;
 }
 
-static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst, const void *daddr)
+static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst,
+					   struct sk_buff *skb,
+					   const void *daddr)
 {
 	static const __be32 inaddr_any = 0;
 	struct net_device *dev = dst->dev;
@@ -1155,6 +1159,8 @@ static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst, const vo
 		pkey = &inaddr_any;
 	else if (rt->rt_gateway)
 		pkey = (const __be32 *) &rt->rt_gateway;
+	else if (skb)
+		pkey = &ip_hdr(skb)->daddr;
 
 	n = __ipv4_neigh_lookup(dev, *(__force u32 *)pkey);
 	if (n)
@@ -1164,7 +1170,7 @@ static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst, const vo
 
 static int rt_bind_neighbour(struct rtable *rt)
 {
-	struct neighbour *n = ipv4_neigh_lookup(&rt->dst, &rt->rt_gateway);
+	struct neighbour *n = ipv4_neigh_lookup(&rt->dst, NULL, &rt->rt_gateway);
 	if (IS_ERR(n))
 		return PTR_ERR(n);
 	dst_set_neighbour(&rt->dst, n);
@@ -1449,7 +1455,7 @@ static void check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
 
 	rt->rt_gateway = peer->redirect_learned.a4;
 
-	n = ipv4_neigh_lookup(&rt->dst, &rt->rt_gateway);
+	n = ipv4_neigh_lookup(&rt->dst, NULL, &rt->rt_gateway);
 	if (IS_ERR(n)) {
 		rt->rt_gateway = orig_gw;
 		return;
