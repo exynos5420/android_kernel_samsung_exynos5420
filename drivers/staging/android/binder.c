@@ -2896,6 +2896,9 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	const char *failure_string;
 	struct binder_buffer *buffer;
 
+	if (proc->tsk != current)
+		return -EINVAL;
+
 	if ((vma->vm_end - vma->vm_start) > SZ_4M)
 		vma->vm_end = vma->vm_start + SZ_4M;
 
@@ -2975,7 +2978,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	proc->free_async_space = proc->buffer_size / 2;
 	barrier();
 	mutex_lock(&proc->files_lock);
-	proc->files = get_files_struct(proc->tsk);
+	proc->files = get_files_struct(current);
 	mutex_unlock(&proc->files_lock);
 	proc->vma = vma;
 	proc->vma_vm_mm = vma->vm_mm;
