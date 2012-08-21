@@ -819,29 +819,12 @@ bool get_close_on_exec(unsigned int fd)
 	return res;
 }
 
-SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
+static int do_dup2(struct files_struct *files,
+	struct file *file, unsigned fd, unsigned flags)
 {
-	int err = -EBADF;
-	struct file * file, *tofree;
-	struct files_struct * files = current->files;
+	struct file *tofree;
 	struct fdtable *fdt;
 
-	if ((flags & ~O_CLOEXEC) != 0)
-		return -EINVAL;
-
-	if (newfd >= rlimit(RLIMIT_NOFILE))
-		return -EMFILE;
-
-	spin_lock(&files->file_lock);
-	err = expand_files(files, newfd);
-	file = fcheck(oldfd);
-	if (unlikely(!file))
-		goto Ebadf;
-	if (unlikely(err < 0)) {
-		if (err == -EMFILE)
-			goto Ebadf;
-		goto out_unlock;
-	}
 	/*
 	 * We need to detect attempts to do dup2() over allocated but still
 	 * not finished descriptor.  NB: OpenBSD avoids that at the price of
@@ -856,24 +839,65 @@ SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
 	 * scope of POSIX or SUS, since neither considers shared descriptor
 	 * tables and this condition does not arise without those.
 	 */
-	err = -EBUSY;
 	fdt = files_fdtable(files);
-	tofree = fdt->fd[newfd];
-	if (!tofree && fd_is_open(newfd, fdt))
-		goto out_unlock;
+	tofree = fdt->fd[fd];
+	if (!tofree && fd_is_open(fd, fdt))
+		goto Ebusy;
 	get_file(file);
-	rcu_assign_pointer(fdt->fd[newfd], file);
-	__set_open_fd(newfd, fdt);
+	rcu_assign_pointer(fdt->fd[fd], file);
+	__set_open_fd(fd, fdt);
 	if (flags & O_CLOEXEC)
-		__set_close_on_exec(newfd, fdt);
+		__set_close_on_exec(fd, fdt);
 	else
-		__clear_close_on_exec(newfd, fdt);
+		__clear_close_on_exec(fd, fdt);
 	spin_unlock(&files->file_lock);
 
 	if (tofree)
 		filp_close(tofree, files);
 
-	return newfd;
+	return fd;
+
+Ebusy:
+	spin_unlock(&files->file_lock);
+	return -EBUSY;
+}
+int replace_fd(unsigned fd, struct file *file, unsigned flags)
+{
+	int err;
+	struct files_struct *files = current->files;
+	if (!file)
+		return __close_fd(files, fd);
+	if (fd >= rlimit(RLIMIT_NOFILE))
+		return -EMFILE;
+	spin_lock(&files->file_lock);
+	err = expand_files(files, fd);
+	if (unlikely(err < 0))
+		goto out_unlock;
+	return do_dup2(files, file, fd, flags);
+out_unlock:
+	spin_unlock(&files->file_lock);
+	return err;
+}
+SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
+{
+	int err = -EBADF;
+	struct file *file;
+	struct files_struct *files = current->files;
+	if ((flags & ~O_CLOEXEC) != 0)
+		return -EINVAL;
+	if (newfd >= rlimit(RLIMIT_NOFILE))
+		return -EMFILE;
+	spin_lock(&files->file_lock);
+	err = expand_files(files, newfd);
+	file = fcheck(oldfd);
+	if (unlikely(!file))
+		goto Ebadf;
+	if (unlikely(err < 0)) {
+		if (err == -EMFILE)
+			goto Ebadf;
+		goto out_unlock;
+	}
+	return do_dup2(files, file, newfd, flags);
 
 Ebadf:
 	err = -EBADF;

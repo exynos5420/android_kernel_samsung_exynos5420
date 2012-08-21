@@ -2090,31 +2090,15 @@ static void wait_for_dump_helpers(struct file *file)
  */
 static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
 {
-	struct file *rp, *wp;
-	struct fdtable *fdt;
+	struct file *files[2];
 	struct coredump_params *cp = (struct coredump_params *)info->data;
-	struct files_struct *cf = current->files;
+	int err = create_pipe_files(files, 0);
+	if (err)
+		return err;
 
-	wp = create_write_pipe(0);
-	if (IS_ERR(wp))
-		return PTR_ERR(wp);
+	cp->file = files[1];
 
-	rp = create_read_pipe(wp, 0);
-	if (IS_ERR(rp)) {
-		free_write_pipe(wp);
-		return PTR_ERR(rp);
-	}
-
-	cp->file = wp;
-
-	sys_close(0);
-	fd_install(0, rp);
-	spin_lock(&cf->file_lock);
-	fdt = files_fdtable(cf);
-	__set_open_fd(0, fdt);
-	__clear_close_on_exec(0, fdt);
-	spin_unlock(&cf->file_lock);
-
+	replace_fd(0, files[0], 0);
 	/* and disallow core files too */
 	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
 
