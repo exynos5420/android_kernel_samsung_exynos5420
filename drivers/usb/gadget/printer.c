@@ -134,12 +134,6 @@ module_param(qlen, uint, S_IRUGO|S_IWUSR);
 
 #define QLEN	qlen
 
-#ifdef CONFIG_USB_GADGET_DUALSPEED
-#define DEVSPEED	USB_SPEED_HIGH
-#else   /* full speed (low speed doesn't do bulk) */
-#define DEVSPEED        USB_SPEED_FULL
-#endif
-
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -198,8 +192,6 @@ static struct usb_descriptor_header *fs_printer_function[] = {
 	NULL
 };
 
-#ifdef	CONFIG_USB_GADGET_DUALSPEED
-
 /*
  * usb 2.0 devices need to expose both high speed and full speed
  * descriptors, unless they only run at full speed.
@@ -247,13 +239,6 @@ static const struct usb_descriptor_header *otg_desc[] = {
 
 /* maxpacket and other transfer characteristics vary by speed. */
 #define ep_desc(g, hs, fs) (((g)->speed == USB_SPEED_HIGH)?(hs):(fs))
-
-#else
-
-/* if there's no high speed support, maxpacket doesn't change. */
-#define ep_desc(g, hs, fs) (((void)(g)), (fs))
-
-#endif	/* !CONFIG_USB_GADGET_DUALSPEED */
 
 /*-------------------------------------------------------------------------*/
 
