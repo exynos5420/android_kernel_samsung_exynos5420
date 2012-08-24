@@ -22,14 +22,11 @@
 #include <asm/unaligned.h>
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 #include "multi_config.h"
-#endif
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-#ifdef CONFIG_USB_GADGET_SUPERSPEED
 #include <linux/power_supply.h>
 #define PSY_CHG_NAME "battery"
-extern void usb30_redriver_en(int enable);
+//extern void usb30_redriver_en(int enable);
 #endif
-#endif
+
 /*
  * The code in this file is utility code, used to build a gadget driver
  * from one or more "function" drivers, one or more "configuration"
@@ -1261,24 +1258,24 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		value = set_config(cdev, ctrl, w_value);
 		spin_unlock(&cdev->lock);
 		printk(KERN_DEBUG "usb: SET_CON\n");
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		if(value == 0) {
 			if(w_value)
 				set_config_number(w_value - 1);
 		}
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-#ifdef CONFIG_USB_GADGET_SUPERSPEED
+
 		if(gadget->speed >= USB_SPEED_SUPER) {
 			if(get_host_os_type() == 0) {
-#ifdef CONFIG_V1A
+
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 				pr_err("usb: schedule_work thread\n");
 				schedule_work(&cdev->redriver_work);
-#else
+#elif defined(CONFIG_HA_3G)
 				usb30_redriver_en(0);
 				pr_err("usb: %s redriver disabled \n",__func__);
 #endif
 			}
 		}
-#endif
 #endif
 		break;
 	case USB_REQ_GET_CONFIGURATION:
@@ -1729,12 +1726,6 @@ composite_resume(struct usb_gadget *gadget)
 /*-------------------------------------------------------------------------*/
 
 static struct usb_gadget_driver composite_driver = {
-#ifdef CONFIG_USB_GADGET_SUPERSPEED
-	.max_speed	= USB_SPEED_SUPER,
-#else
-	.max_speed	= USB_SPEED_HIGH,
-#endif
-
 	.unbind		= composite_unbind,
 
 	.setup		= composite_setup,
@@ -1781,8 +1772,7 @@ int usb_composite_probe(struct usb_composite_driver *driver,
 		driver->iProduct = driver->name;
 	composite_driver.function =  (char *) driver->name;
 	composite_driver.driver.name = driver->name;
-	composite_driver.max_speed =
-		min_t(u8, composite_driver.max_speed, driver->max_speed);
+	composite_driver.max_speed = driver->max_speed;
 	composite = driver;
 	if (!driver->bind)
 		driver->bind = bind;
