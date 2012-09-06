@@ -48,27 +48,27 @@ static struct usb_composite_driver *composite;
  */
 
 static ushort idVendor;
-module_param(idVendor, ushort, 0644);
+module_param(idVendor, ushort, S_IRUGO);
 MODULE_PARM_DESC(idVendor, "USB Vendor ID");
 
 static ushort idProduct;
-module_param(idProduct, ushort, 0644);
+module_param(idProduct, ushort, S_IRUGO);
 MODULE_PARM_DESC(idProduct, "USB Product ID");
 
 static ushort bcdDevice;
-module_param(bcdDevice, ushort, 0644);
+module_param(bcdDevice, ushort, S_IRUGO);
 MODULE_PARM_DESC(bcdDevice, "USB Device version (BCD)");
 
 static char *iManufacturer;
-module_param(iManufacturer, charp, 0644);
+module_param(iManufacturer, charp, S_IRUGO);
 MODULE_PARM_DESC(iManufacturer, "USB Manufacturer string");
 
 static char *iProduct;
-module_param(iProduct, charp, 0644);
+module_param(iProduct, charp, S_IRUGO);
 MODULE_PARM_DESC(iProduct, "USB Product string");
 
 static char *iSerialNumber;
-module_param(iSerialNumber, charp, 0644);
+module_param(iSerialNumber, charp, S_IRUGO);
 MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
 
 static char composite_manufacturer[50];
@@ -1609,16 +1609,12 @@ static int composite_bind(struct usb_gadget *gadget)
 	/* standardized runtime overrides for device ID data */
 	if (idVendor)
 		cdev->desc.idVendor = cpu_to_le16(idVendor);
-	else
-		idVendor = le16_to_cpu(cdev->desc.idVendor);
+
 	if (idProduct)
 		cdev->desc.idProduct = cpu_to_le16(idProduct);
-	else
-		idProduct = le16_to_cpu(cdev->desc.idProduct);
+
 	if (bcdDevice)
 		cdev->desc.bcdDevice = cpu_to_le16(bcdDevice);
-	else
-		bcdDevice = le16_to_cpu(cdev->desc.bcdDevice);
 
 	printk(KERN_DEBUG "usb: %s idVendor=0x%x, idProduct=0x%x\n",
 			__func__, idVendor, idProduct);
