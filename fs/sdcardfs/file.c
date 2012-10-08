@@ -215,7 +215,6 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 	 */
 	file_accessed(file);
 	vma->vm_ops = &sdcardfs_vm_ops;
-	vma->vm_flags |= VM_CAN_NONLINEAR;
 
 	file->f_mapping->a_ops = &sdcardfs_aops; /* set our aops */
 	if (!SDCARDFS_F(file)->lower_vm_ops) /* save for our ->fault */
