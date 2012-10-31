@@ -875,7 +875,7 @@ int replace_fd(unsigned fd, struct file *file, unsigned flags)
 	if (!file)
 		return __close_fd(files, fd);
 	if (fd >= rlimit(RLIMIT_NOFILE))
-		return -EMFILE;
+		return -EBADF;
 	spin_lock(&files->file_lock);
 	err = expand_files(files, fd);
 	if (unlikely(err < 0))
@@ -898,7 +898,7 @@ SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
 		return -EINVAL;
 
 	if (newfd >= rlimit(RLIMIT_NOFILE))
-		return -EMFILE;
+		return -EBADF;
 
 	spin_lock(&files->file_lock);
 	err = expand_files(files, newfd);
