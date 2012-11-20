@@ -62,7 +62,7 @@ static int deactivate_urbs(struct snd_usb_substream *subs, int force, int can_sl
 	if (!force && subs->stream->chip->shutdown) /* to be sure... */
 		return -EBADFD;
 
-	async = !can_sleep && chip->async_unlink;
+	async = !can_sleep;
 
 	if (!async && in_interrupt())
 		return 0;
