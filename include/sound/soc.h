@@ -967,6 +967,7 @@ struct snd_soc_pcm_runtime {
 	unsigned int dev_registered:1;
 
 	long pmdown_time;
+	unsigned char pop_wait:1;
 
 	/* runtime devices */
 	struct snd_pcm *pcm;
