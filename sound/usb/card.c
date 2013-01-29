@@ -698,7 +698,7 @@ static int usb_audio_suspend(struct usb_interface *intf, pm_message_t message)
 				as = list_entry(p, struct snd_usb_stream, list);
 				snd_pcm_suspend_all(as->pcm);
 			}
- 		}
+		}
 	} else {
 		/*
 		 * otherwise we keep the rest of the system in the dark
