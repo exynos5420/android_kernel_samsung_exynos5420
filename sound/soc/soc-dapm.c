@@ -3036,13 +3036,15 @@ static int snd_soc_dai_link_event(struct snd_soc_dapm_widget *w,
 		break;
 
 	case SND_SOC_DAPM_POST_PMU:
-		ret = snd_soc_dai_digital_mute(sink, 0);
+		ret = snd_soc_dai_digital_mute(sink, 0,
+					       SNDRV_PCM_STREAM_PLAYBACK);
 		if (ret != 0 && ret != -ENOTSUPP)
 			dev_warn(sink->dev, "Failed to unmute: %d\n", ret);
 		break;
 
 	case SND_SOC_DAPM_PRE_PMD:
-		ret = snd_soc_dai_digital_mute(sink, 1);
+		ret = snd_soc_dai_digital_mute(sink, 1,
+					       SNDRV_PCM_STREAM_PLAYBACK);
 		if (ret != 0 && ret != -ENOTSUPP)
 			dev_warn(sink->dev, "Failed to mute: %d\n", ret);
 		break;
