@@ -255,6 +255,13 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 		snd_printdd(KERN_INFO "setting usb interface %d:%d\n", fmt->iface, fmt->altsetting);
 		subs->interface = fmt->iface;
 		subs->altset_idx = fmt->altset_idx;
+
+		/*
+		 * "Playback Design" products need a 50ms delay after setting the
+		 * USB interface.
+		 */
+		if (le16_to_cpu(dev->descriptor.idVendor) == 0x23ba)
+			mdelay(50);
 	}
 
 	/* create a data pipe */
