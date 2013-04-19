@@ -1200,7 +1200,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 					cdev->vbus_draw_units = 8;
 					DBG(cdev, "Config SS device in SS\n");
 				} else {
-					cdev->desc.bcdUSB = cpu_to_le16(0x0210);
+					cdev->desc.bcdUSB = cpu_to_le16(0x0201);
 					DBG(cdev, "Config SS device in HS\n");
 				}
 			}
