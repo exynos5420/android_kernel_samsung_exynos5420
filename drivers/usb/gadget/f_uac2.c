@@ -462,8 +462,6 @@ static int __devexit snd_uac2_remove(struct platform_device *pdev)
 {
 	struct snd_card *card = platform_get_drvdata(pdev);
 
-	platform_set_drvdata(pdev, NULL);
-
 	if (card)
 		return snd_card_free(card);
 
