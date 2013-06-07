@@ -815,6 +815,34 @@ out_err:
 EXPORT_SYMBOL_GPL(lookup_instantiate_filp);
 
 /**
+ * finish_open - finish opening a file
+ * @od: opaque open data
+ * @dentry: pointer to dentry
+ * @open: open callback
+ *
+ * This can be used to finish opening a file passed to i_op->atomic_open().
+ *
+ * If the open callback is set to NULL, then the standard f_op->open()
+ * filesystem callback is substituted.
+ */
+int finish_open(struct file *file, struct dentry *dentry,
+		int (*open)(struct inode *, struct file *))
+{
+	struct file *res;
+
+	mntget(file->f_path.mnt);
+	dget(dentry);
+
+	res = do_dentry_open(dentry, file->f_path.mnt, file, open, current_cred());
+	if (!IS_ERR(res)) {
+		return 0;
+	}
+
+	return PTR_ERR(res);
+}
+EXPORT_SYMBOL(finish_open);
+
+/**
  * nameidata_to_filp - convert a nameidata to an open filp.
  * @nd: pointer to nameidata
  * @flags: open flags
@@ -889,11 +917,15 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
 	if (flags & __O_SYNC)
 		flags |= O_DSYNC;
 
-	/*
-	 * If we have O_PATH in the open flag. Then we
-	 * cannot have anything other than the below set of flags
-	 */
-	if (flags & O_PATH) {
+	if (flags & O_TMPFILE) {
+		if (!(flags & O_CREAT))
+			return -EINVAL;
+		acc_mode = MAY_OPEN | ACC_MODE(flags);
+	} else if (flags & O_PATH) {
+		/*
+		 * If we have O_PATH in the open flag. Then we
+		 * cannot have anything other than the below set of flags
+		 */
 		flags &= O_DIRECTORY | O_NOFOLLOW | O_PATH;
 		acc_mode = 0;
 	} else {
