@@ -27,6 +27,7 @@
 #include <linux/rwsem.h>		/* struct rw_semaphore */
 #include <linux/pm.h>			/* pm_message_t */
 #include <linux/stringify.h>
+#include <linux/printk.h>
 
 /* number of supported soundcards */
 #ifdef CONFIG_SND_DYNAMIC_MINORS
@@ -378,6 +379,11 @@ void __snd_printk(unsigned int level, const char *file, int line,
 #define snd_BUG()		WARN(1, "BUG?\n")
 
 /**
+ * Suppress high rates of output when CONFIG_SND_DEBUG is enabled.
+ */
+#define snd_printd_ratelimit() printk_ratelimit()
+
+/**
  * snd_BUG_ON - debugging check macro
  * @cond: condition to evaluate
  *
@@ -404,6 +410,8 @@ static inline int __snd_bug_on(int cond)
 	return 0;
 }
 #define snd_BUG_ON(cond)	__snd_bug_on(0 && (cond))  /* always false */
+
+static inline bool snd_printd_ratelimit(void) { return false; }
 
 #endif /* CONFIG_SND_DEBUG */
 
