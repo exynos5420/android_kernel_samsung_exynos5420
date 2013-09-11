@@ -61,7 +61,7 @@ void f2fs_trace_pid(struct page *page)
 
 	page->private = pid;
 
-	if (radix_tree_preload(GFP_NOFS))
+	if (radix_tree_maybe_preload(GFP_NOFS))
 		return;
 
 	spin_lock(&pids_lock);

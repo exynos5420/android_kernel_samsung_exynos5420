@@ -110,7 +110,7 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
 	if (!page)
 		return NULL;
 
-	if (radix_tree_preload(GFP_NOIO)) {
+	if (radix_tree_maybe_preload(GFP_NOIO)) {
 		__free_page(page);
 		return NULL;
 	}

@@ -1727,7 +1727,7 @@ static int add_free_nid(struct f2fs_sb_info *sbi, nid_t nid, bool build)
 	i->nid = nid;
 	i->state = NID_NEW;
 
-	if (radix_tree_preload(GFP_NOFS)) {
+	if (radix_tree_maybe_preload(GFP_NOFS)) {
 		kmem_cache_free(free_nid_slab, i);
 		return 0;
 	}

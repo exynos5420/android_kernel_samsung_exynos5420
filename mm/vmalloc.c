@@ -805,7 +805,7 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
 		return ERR_CAST(va);
 	}
 
-	err = radix_tree_preload(gfp_mask);
+	err = radix_tree_maybe_preload(gfp_mask);
 	if (unlikely(err)) {
 		kfree(vb);
 		free_vmap_area(va);

@@ -336,7 +336,7 @@ xfs_iget_cache_miss(
 	 * write spinlock. Note that we cannot sleep inside the preload
 	 * region.
 	 */
-	if (radix_tree_preload(GFP_KERNEL)) {
+	if (radix_tree_maybe_preload(GFP_KERNEL)) {
 		error = EAGAIN;
 		goto out_destroy;
 	}
