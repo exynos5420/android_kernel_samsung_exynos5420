@@ -510,9 +510,9 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
 		}
 
 		/*
-		 * call radix_tree_preload() while we can wait.
+		 * call radix_tree_maybe_preload() while we can wait.
 		 */
-		err = radix_tree_preload(GFP_KERNEL);
+		err = radix_tree_maybe_preload(GFP_KERNEL);
 		if (err)
 			break;
 

@@ -473,7 +473,7 @@ xfs_initialize_perag(
 		spin_lock_init(&pag->pag_buf_lock);
 		pag->pag_buf_tree = RB_ROOT;
 
-		if (radix_tree_preload(GFP_NOFS))
+		if (radix_tree_maybe_preload(GFP_NOFS))
 			goto out_unwind;
 
 		spin_lock(&mp->m_perag_lock);

@@ -452,7 +452,7 @@ xfs_mru_cache_insert(
 	if (!elem)
 		return ENOMEM;
 
-	if (radix_tree_preload(GFP_KERNEL)) {
+	if (radix_tree_maybe_preload(GFP_KERNEL)) {
 		kmem_zone_free(xfs_mru_elem_zone, elem);
 		return ENOMEM;
 	}
