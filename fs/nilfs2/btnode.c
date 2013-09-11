@@ -188,7 +188,7 @@ int nilfs_btnode_prepare_change_key(struct address_space *btnc,
 		 * than 2.6.23, because it is not exported for modules.
 		 */
 retry:
-		err = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+		err = radix_tree_maybe_preload(GFP_NOFS & ~__GFP_HIGHMEM);
 		if (err)
 			goto failed_unlock;
 		/* BUG_ON(oldkey != obh->b_page->index); */

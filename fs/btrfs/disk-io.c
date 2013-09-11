@@ -1435,7 +1435,7 @@ again:
 	if (ret == 0)
 		root->orphan_item_inserted = 1;
 
-	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+	ret = radix_tree_maybe_preload(GFP_NOFS & ~__GFP_HIGHMEM);
 	if (ret)
 		goto fail;
 
