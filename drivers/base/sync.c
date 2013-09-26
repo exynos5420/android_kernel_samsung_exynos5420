@@ -92,8 +92,13 @@ static void sync_timeline_free(struct kref *kref)
 void sync_timeline_destroy(struct sync_timeline *obj)
 {
 	obj->destroyed = true;
+	smp_wmb();
 
+	/*
+	 * signal any children that their parent is going away.
+	 */
 	sync_timeline_signal(obj);
+
 	kref_put(&obj->kref, sync_timeline_free);
 }
 EXPORT_SYMBOL(sync_timeline_destroy);
