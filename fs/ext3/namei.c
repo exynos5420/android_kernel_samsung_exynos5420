@@ -1779,7 +1779,7 @@ retry:
 		ext3_set_aops(inode);
 		err = ext3_orphan_add(handle, inode);
 		if (err)
-			goto err_drop_inode;
+			goto err_unlock_inode;
 		mark_inode_dirty(inode);
 		d_tmpfile(dentry, inode);
 		unlock_new_inode(inode);
@@ -1788,10 +1788,9 @@ retry:
 	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
 		goto retry;
 	return err;
-err_drop_inode:
+err_unlock_inode:
 	ext3_journal_stop(handle);
 	unlock_new_inode(inode);
-	iput(inode);
 	return err;
 }
 
