@@ -24,6 +24,8 @@
 #define __HIDP_H
 
 #include <linux/types.h>
+#include <linux/hid.h>
+#include <linux/kref.h>
 #include <net/bluetooth/bluetooth.h>
 
 /* HIDP header masks */
@@ -173,6 +175,9 @@ struct hidp_session {
 
 	wait_queue_head_t startup_queue;
 	int waiting_for_startup;
+
+	/* temporary input buffer */
+	u8 input_buf[HID_MAX_BUFFER_SIZE];
 };
 
 static inline void hidp_schedule(struct hidp_session *session)
