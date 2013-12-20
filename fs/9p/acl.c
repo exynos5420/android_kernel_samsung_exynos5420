@@ -160,7 +160,7 @@ int v9fs_acl_chmod(struct dentry *dentry)
 		return -EOPNOTSUPP;
 	acl = v9fs_get_cached_acl(inode, ACL_TYPE_ACCESS);
 	if (acl) {
-		retval = posix_acl_chmod(&acl, GFP_KERNEL, inode->i_mode);
+		retval = __posix_acl_chmod(&acl, GFP_KERNEL, inode->i_mode);
 		if (retval)
 			return retval;
 		retval = v9fs_set_acl(dentry, ACL_TYPE_ACCESS, acl);
