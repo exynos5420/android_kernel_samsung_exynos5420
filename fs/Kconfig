@@ -88,10 +88,6 @@ config CUSE
 	  If you want to develop or use userspace character device
 	  based on CUSE, answer Y or M.
 
-config GENERIC_ACL
-	bool
-	select FS_POSIX_ACL
-
 menu "Caches"
 
 source "fs/fscache/Kconfig"
@@ -141,7 +137,7 @@ config TMPFS_POSIX_ACL
 	bool "Tmpfs POSIX Access Control Lists"
 	depends on TMPFS
 	select TMPFS_XATTR
-	select GENERIC_ACL
+	select FS_POSIX_ACL
 	help
 	  POSIX Access Control Lists (ACLs) support additional access rights
 	  for users and groups beyond the standard owner/group/world scheme,
