@@ -753,7 +753,9 @@ else ifeq ($(CONFIG_RD_LZO), y)
 else ifeq ($(CONFIG_RD_LZ4), y)
         INITRD_COMPRESS=lz4
 endif
-export INITRD_COMPRESS
+# do not export INITRD_COMPRESS, since we didn't actually
+# choose a sane default compression above.
+# export INITRD_COMPRESS := $(INITRD_COMPRESS-y)
 
 ifeq ($(KBUILD_EXTMOD),)
 core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/
