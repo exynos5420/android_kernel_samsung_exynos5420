@@ -68,6 +68,9 @@ static void sysv_write_super(struct super_block *sb)
 static int sysv_remount(struct super_block *sb, int *flags, char *data)
 {
 	struct sysv_sb_info *sbi = SYSV_SB(sb);
+
+	sync_filesystem(sb);
+
 	lock_super(sb);
 	if (sbi->s_forced_ro)
 		*flags |= MS_RDONLY;
