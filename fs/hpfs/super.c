@@ -389,6 +389,7 @@ static int hpfs_remount_fs(struct super_block *s, int *flags, char *data)
 	struct hpfs_sb_info *sbi = hpfs_sb(s);
 	char *new_opts = kstrdup(data, GFP_KERNEL);
 
+	sync_filesystem(s);
 
 	if (!new_opts)
 		return -ENOMEM;
