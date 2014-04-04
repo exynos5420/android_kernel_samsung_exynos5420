@@ -1161,7 +1161,7 @@ int audit_receive_filter(int type, int pid, int uid, int seq, void *data,
 			return PTR_ERR(entry);
 
 		err = audit_del_rule(entry);
-		audit_log_rule_change(loginuid, sessionid, sid, "remove rule",
+		audit_log_rule_change(loginuid, sessionid, sid, "remove_rule",
 				      &entry->rule, !err);
 
 		audit_free_rule(entry);
