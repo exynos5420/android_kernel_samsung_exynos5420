@@ -90,7 +90,7 @@ static inline void flowi4_init_output(struct flowi4 *fl4, int oif,
 				      __be16 dport, __be16 sport, uid_t uid)
 {
 	fl4->flowi4_oif = oif;
-	fl4->flowi4_iif = 0;
+	fl4->flowi4_iif = LOOPBACK_IFINDEX;
 	fl4->flowi4_mark = mark;
 	fl4->flowi4_tos = tos;
 	fl4->flowi4_scope = scope;
