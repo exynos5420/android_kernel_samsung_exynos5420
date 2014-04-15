@@ -9,6 +9,7 @@
 #include <linux/list.h>
 #include <linux/sysctl.h>
 
+#include <net/flow.h>
 #include <net/netns/core.h>
 #include <net/netns/mib.h>
 #include <net/netns/unix.h>
@@ -104,14 +105,6 @@ struct net {
 #endif
 	struct netns_ipvs	*ipvs;
 };
-
-/*
- * ifindex generation is per-net namespace, and loopback is
- * always the 1st device in ns (see net_dev_init), thus any
- * loopback device should get ifindex 1
- */
-
-#define LOOPBACK_IFINDEX	1
 
 #include <linux/seq_file_net.h>
 
