@@ -261,7 +261,7 @@ static int l2tp_nl_tunnel_send(struct sk_buff *skb, u32 pid, u32 seq, int flags,
 	case L2TP_ENCAPTYPE_UDP:
 		NLA_PUT_U16(skb, L2TP_ATTR_UDP_SPORT, ntohs(inet->inet_sport));
 		NLA_PUT_U16(skb, L2TP_ATTR_UDP_DPORT, ntohs(inet->inet_dport));
-		NLA_PUT_U8(skb, L2TP_ATTR_UDP_CSUM, (sk->sk_no_check != UDP_CSUM_NOXMIT));
+		NLA_PUT_U8(skb, L2TP_ATTR_UDP_CSUM, !sk->sk_no_check_tx);
 		/* NOBREAK */
 	case L2TP_ENCAPTYPE_IP:
 		NLA_PUT_BE32(skb, L2TP_ATTR_IP_SADDR, inet->inet_saddr);

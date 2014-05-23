@@ -828,7 +828,7 @@ static void xs_reset_transport(struct sock_xprt *transport)
 	xprt_clear_connected(xprt);
 	write_unlock_bh(&sk->sk_callback_lock);
 
-	sk->sk_no_check = 0;
+	sk->sk_no_check_tx = 0;
 
 	sock_release(sock);
 }
@@ -1962,7 +1962,7 @@ static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
 		sk->sk_user_data = xprt;
 		sk->sk_data_ready = xs_udp_data_ready;
 		sk->sk_write_space = xs_udp_write_space;
-		sk->sk_no_check = UDP_CSUM_NORCV;
+		sk->sk_no_check_tx = 1;
 		sk->sk_allocation = GFP_ATOMIC;
 
 		xprt_set_connected(xprt);
