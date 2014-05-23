@@ -449,7 +449,7 @@ static inline int l2tp_verify_udp_checksum(struct sock *sk,
 	struct inet_sock *inet;
 	__wsum psum;
 
-	if (sk->sk_no_check || skb_csum_unnecessary(skb) || !uh->check)
+	if (sk->sk_no_check_tx || skb_csum_unnecessary(skb) || !uh->check)
 		return 0;
 
 	inet = inet_sk(sk);
@@ -1089,7 +1089,7 @@ int l2tp_xmit_skb(struct l2tp_session *session, struct sk_buff *skb, int hdr_len
 		uh->check = 0;
 
 		/* Calculate UDP checksum if configured to do so */
-		if (sk->sk_no_check == UDP_CSUM_NOXMIT)
+		if (sk->sk_no_check_tx)
 			skb->ip_summed = CHECKSUM_NONE;
 		else if ((skb_dst(skb) && skb_dst(skb)->dev) &&
 			 (!(skb_dst(skb)->dev->features & NETIF_F_V4_CSUM))) {
@@ -1294,7 +1294,7 @@ static int l2tp_tunnel_sock_create(u32 tunnel_id, u32 peer_tunnel_id, struct l2t
 			goto out;
 
 		if (!cfg->use_udp_checksums)
-			sock->sk->sk_no_check = UDP_CSUM_NOXMIT;
+			sock->sk->sk_no_check_tx = 1;
 
 		break;
 
