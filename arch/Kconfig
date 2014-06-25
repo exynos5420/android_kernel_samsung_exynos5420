@@ -363,6 +363,7 @@ config HAVE_ARCH_SECCOMP_FILTER
 	  SIGSYS siginfo_t support must be implemented.
 	  __secure_computing()/secure_computing()'s return value must be
 	  checked, with -1 resulting in the syscall being skipped.
+	  - seccomp syscall wired up
 
 config SECCOMP_FILTER
 	def_bool y
