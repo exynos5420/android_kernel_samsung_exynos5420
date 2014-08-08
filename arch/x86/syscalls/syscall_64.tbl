@@ -320,6 +320,7 @@
 311	64	process_vm_writev	sys_process_vm_writev
 317	common	seccomp			sys_seccomp
 318	common	getrandom		sys_getrandom
+319	common	memfd_create		sys_memfd_create
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact
