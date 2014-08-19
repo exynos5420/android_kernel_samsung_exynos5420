@@ -137,6 +137,11 @@ static mali_dvfs_info mali_dvfs_infotbl[] = {
 
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
 
+unsigned int dvfs_step_min = 0;
+unsigned int dvfs_step_max = 9;
+unsigned int dvfs_step_max_minus1 = 480;
+unsigned int cur_gpu_freq = 0;
+
 #ifdef CONFIG_MALI_T6XX_DVFS
 typedef struct _mali_dvfs_status_type{
 	kbase_device *kbdev;
@@ -166,6 +171,85 @@ static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
 static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500};
 
+ssize_t hlpr_get_gpu_gov_table(char *buf)
+{
+	int i, len = 0;
+	int k = dvfs_step_max-1;
+	for (i = dvfs_step_min; i < dvfs_step_max; i++)
+	{
+		len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
+		pr_alert("GET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
+		k--;
+	}
+	
+	return len;
+}
+
+void hlpr_set_gpu_gov_table(int gpu_table[])
+{
+	int i;
+	int u = 0;
+	int k = dvfs_step_max-1;
+	for (i = dvfs_step_min; i < dvfs_step_max; i++)
+	{
+		mali_dvfs_infotbl[k].max_threshold = gpu_table[u];
+		if (i == dvfs_step_min)
+			mali_dvfs_infotbl[k].min_threshold = 0;
+		else
+			mali_dvfs_infotbl[k].min_threshold = gpu_table[u+1];
+		pr_alert("SET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);			
+		k--;
+		u++;
+	}
+}
+
+
+void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
+{
+	int i;
+	int tbl0[1] = { 100 };
+	int tbl1[2] = { 100, 50 };
+	int tbl2[3] = { 100, 67, 30 };
+	int tbl3[4] = { 100, 90, 70, 40 };
+	int tbl4[5] = { 100, 90, 70, 60, 40 };
+	int tbl5[6] = { 100, 90, 80, 70, 55, 40 };
+	int tbl6[7] = { 100, 90, 80, 70, 60, 50, 40 };
+	int tbl7[8] = { 100, 90, 85, 75, 65, 55, 50, 40 };
+	int tbl8[9] = { 100, 90, 80, 70, 65, 60, 55, 50, 40 };
+	int tbl9[10] = { 100, 90, 80, 70, 65, 60, 55, 50, 45, 40 };
+	
+	for (i = 0; i < MALI_DVFS_STEP; i++)
+	{
+		if (mali_dvfs_infotbl[i].clock == min)
+			dvfs_step_min = i;
+		if (mali_dvfs_infotbl[i].clock == max)
+		{
+			dvfs_step_max = i+1;
+			dvfs_step_max_minus1 = mali_dvfs_infotbl[i-1].clock;
+		}
+	}
+	
+	if (dvfs_step_max - dvfs_step_min == 1)
+		hlpr_set_gpu_gov_table(tbl0);
+	else if (dvfs_step_max - dvfs_step_min == 2)
+		hlpr_set_gpu_gov_table(tbl1);
+	else if (dvfs_step_max - dvfs_step_min == 3)
+		hlpr_set_gpu_gov_table(tbl2);
+	else if (dvfs_step_max - dvfs_step_min == 4)
+		hlpr_set_gpu_gov_table(tbl3);
+	else if (dvfs_step_max - dvfs_step_min == 5)
+		hlpr_set_gpu_gov_table(tbl4);
+	else if (dvfs_step_max - dvfs_step_min == 6)
+		hlpr_set_gpu_gov_table(tbl5);
+	else if (dvfs_step_max - dvfs_step_min == 7)
+		hlpr_set_gpu_gov_table(tbl6);
+	else if (dvfs_step_max - dvfs_step_min == 8)
+		hlpr_set_gpu_gov_table(tbl7);
+	else if (dvfs_step_max - dvfs_step_min == 9)
+		hlpr_set_gpu_gov_table(tbl8);
+	else if (dvfs_step_max - dvfs_step_min == 10)
+		hlpr_set_gpu_gov_table(tbl9);
+}
 
 static int mali_dvfs_update_asv(int cmd)
 {
@@ -223,7 +307,7 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 
 	if (dvfs_status->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 #ifdef PLATFORM_UTILIZATION
-		if (dvfs_status->step == kbase_platform_dvfs_get_level(533)) {
+		if (dvfs_status->step == kbase_platform_dvfs_get_level(dvfs_step_max_minus1)) {
 			if (platform->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 				dvfs_status->step++;
 				DVFS_ASSERT(dvfs_status->step < MALI_DVFS_STEP);
@@ -277,6 +361,11 @@ static void mali_dvfs_event_proc(struct work_struct *w)
 	dvfs_status = &mali_dvfs_status_current;
 
 	mali_dvfs_decide_next_level(dvfs_status);
+
+	if (dvfs_status->step >= dvfs_step_max)
+		dvfs_status->step = dvfs_step_max-1;
+	if (dvfs_status->step < dvfs_step_min)
+		dvfs_status->step = dvfs_step_min;
 
 	if (!pm_runtime_status_suspended(dvfs_status->kbdev->osdev.dev))
 		kbase_platform_dvfs_set_level(dvfs_status->kbdev, dvfs_status->step);
@@ -443,7 +532,7 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
 	mali_dvfs_status_current.kbdev = kbdev;
 	mali_dvfs_status_current.utilisation = 100;
-	mali_dvfs_status_current.step = MALI_DVFS_STEP-1;
+	mali_dvfs_status_current.step = dvfs_step_max-1;
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	mali_dvfs_status_current.max_lock = -1;
 	mali_dvfs_status_current.min_lock = -1;
@@ -1025,10 +1114,22 @@ int kbase_platform_dvfs_get_level(int freq)
 	int i;
 	for (i = 0; i < MALI_DVFS_STEP; i++) {
 		if (mali_dvfs_infotbl[i].clock == freq)
-		return i;
+		{
+			if (i >= dvfs_step_max)
+				return dvfs_step_max-1;
+			if (i < dvfs_step_min)
+				return dvfs_step_min;
+			else
+				return i;
+		}
 	}
 
 	return -1;
+}
+
+unsigned int get_cur_gpu_freq(void)
+{
+	return cur_gpu_freq;
 }
 
 void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
@@ -1042,7 +1143,14 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 	if (level == prev_level)
 		return;
 
-	if (WARN_ON((level >= MALI_DVFS_STEP) || (level < 0)))
+	if (level >= dvfs_step_max)
+		level = dvfs_step_max-1;
+	if (level < dvfs_step_min)
+		level = dvfs_step_min;
+
+	cur_gpu_freq = mali_dvfs_infotbl[level].clock;
+
+	if (WARN_ON((level >= MALI_DVFS_STEP)||(level < 0)))
 		panic("invalid level");
 
 #ifdef CONFIG_MALI_T6XX_DVFS
