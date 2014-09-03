@@ -1,10 +1,13 @@
 #
 # Makefile for the kernel mobicore drivers
 #
-GUD_ROOT_FOLDER := drivers/gud/
+
+GUD_ROOT_FOLDER := $(src)
+
 # add our modules to kernel.
 obj-$(CONFIG_MOBICORE_API) += mcKernelApi.o
 obj-$(CONFIG_MOBICORE_DRIVER) += mcDrvModule.o
+
 mcDrvModule-objs := MobiCoreDriver/logging.o \
 		MobiCoreDriver/ops.o \
 		MobiCoreDriver/mem.o \
@@ -18,19 +21,23 @@ mcKernelApi-objs := MobiCoreKernelApi/main.o \
 		MobiCoreKernelApi/session.o \
 		MobiCoreKernelApi/connection.o
 
-# Release mode by default
-ccflags-y := -DNDEBUG -include $(GUD_ROOT_FOLDER)/build_tag.h
-ccflags-y += -Wno-declaration-after-statement
+CFLAGS_MobiCoreDriver/main.o := -include $(GUD_ROOT_FOLDER)/build_tag.h
 
-ccflags-$(CONFIG_MOBICORE_DEBUG) += -DDEBUG
-ccflags-$(CONFIG_MOBICORE_VERBOSE) += -DDEBUG_VERBOSE
+subdir-ccflags-y += -Wno-declaration-after-statement -DNDEBUG
+subdir-ccflags-$(CONFIG_MOBICORE_DEBUG) += -DDEBUG
+subdir-ccflags-$(CONFIG_MOBICORE_VERBOSE) += -DDEBUG_VERBOSE
 
-# Choose one platform from the folder
-MOBICORE_PLATFORM := $(shell (ls -1 $(GUD_ROOT_FOLDER)/MobiCoreDriver/platforms | tail -1) )
+# The original makefile used ls | tail -1 to pick a random folder for the
+# platform configuration!!!
+#
+# For kicks, let's make a stand and pick one.  It doesn't matter right now
+# anyway because they are the same.
+MOBICORE_PLATFORM := EXYNOS_5_STD
+
 # Use the available platform folder
-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreDriver/platforms/$(MOBICORE_PLATFORM)
+subdir-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreDriver/platforms/$(MOBICORE_PLATFORM)
 # MobiCore Driver includes
-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreDriver/public
+subdir-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreDriver/public
 # MobiCore KernelApi required incldes
-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreKernelApi/include \
+subdir-ccflags-y += -I$(GUD_ROOT_FOLDER)/MobiCoreKernelApi/include \
 		-I$(GUD_ROOT_FOLDER)/MobiCoreKernelApi/public
