@@ -168,7 +168,6 @@ static int media_open(struct inode *inode, struct file *filp)
 static int media_release(struct inode *inode, struct file *filp)
 {
 	struct media_devnode *mdev = media_devnode_data(filp);
-	int ret = 0;
 
 	if (mdev->fops->release)
 		mdev->fops->release(filp);
@@ -177,7 +176,7 @@ static int media_release(struct inode *inode, struct file *filp)
 	   return value is ignored. */
 	put_device(&mdev->dev);
 	filp->private_data = NULL;
-	return ret;
+	return 0;
 }
 
 static const struct file_operations media_devnode_fops = {
