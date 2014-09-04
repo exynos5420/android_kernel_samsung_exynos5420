@@ -163,7 +163,7 @@ module_param_named(tmu_gpu_temp5, GPU_TH_TEMP5, uint, S_IWUSR | S_IRUGO);
 
 #define GAP_WITH_RISE		2
 #define MAX_FREQ		2300
-#define MIN_FREQ		400
+#define MIN_FREQ		250
 
 #ifdef CONFIG_THERMAL_DEBUG
 #define DTM_DBG(x...) printk(x)
