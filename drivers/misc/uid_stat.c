@@ -80,6 +80,7 @@ static int tcp_rcv_read_proc(char *page, char **start, off_t off,
 	if (!data)
 		return 0;
 
+<<<<<<< HEAD   (7b3647 usb: gadget: f_fs: Allow only one adb daemon perform device )
 	bytes = (unsigned int) (atomic_read(&uid_entry->tcp_rcv) + INT_MIN);
 	p += sprintf(p, "%u\n", bytes);
 	len = (p - page) - off;
@@ -87,6 +88,14 @@ static int tcp_rcv_read_proc(char *page, char **start, off_t off,
 	*start = page + off;
 	return len;
 }
+=======
+static const struct file_operations uid_stat_read_atomic_int_fops = {
+	.open		= uid_stat_read_atomic_int_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release        = single_release,
+};
+>>>>>>> CHANGE (9bf5ca misc: uidstat: change release handler for stat read operatio)
 
 /* Create a new entry for tracking the specified uid. */
 static struct uid_stat *create_stat(uid_t uid) {
