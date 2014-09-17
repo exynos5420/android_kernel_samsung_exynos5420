@@ -832,6 +832,10 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
 			goto err_out_kobj_put;
 	}
 
+	ret = sysfs_create_file(&policy->kobj, &cpufreq_freq_attr_scaling_available_freqs.attr);
+	if (ret)
+		goto err_out_kobj_put;
+
 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
 	for_each_cpu(j, policy->cpus) {
 		if (!cpu_online(j))
