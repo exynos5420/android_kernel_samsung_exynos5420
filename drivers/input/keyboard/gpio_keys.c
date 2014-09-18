@@ -891,7 +891,7 @@ static void flip_cover_work(struct work_struct *work)
 	if(first == second && ddata->flip_cover != first) {
 		ddata->flip_cover = first;
 		input_report_switch(ddata->input,
-			SW_FLIP, ddata->flip_cover);
+			SW_LID, ddata->flip_cover);
 		input_sync(ddata->input);
 	}
 }
@@ -911,7 +911,7 @@ static void flip_cover_work(struct work_struct *work)
 	if(ddata->flip_cover != first) {
 		ddata->flip_cover = first;
 		input_report_switch(ddata->input,
-			SW_FLIP, ddata->flip_cover);
+			SW_LID, ddata->flip_cover);
 		input_sync(ddata->input);
 	}
 }
@@ -1171,7 +1171,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	input->dev.parent = &pdev->dev;
 #ifdef CONFIG_SENSORS_HALL
 	input->evbit[0] |= BIT_MASK(EV_SW);
-	input_set_capability(input, EV_SW, SW_FLIP);
+	input_set_capability(input, EV_SW, SW_LID);
 #endif
 	input->open = gpio_keys_open;
 	input->close = gpio_keys_close;
