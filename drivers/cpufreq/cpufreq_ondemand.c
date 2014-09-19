@@ -61,7 +61,7 @@
 #define DEF_FREQUENCY_HIGH_ZONE			(1200000)
 #define DEF_FREQUENCY_CONSERVATIVE_STEP		(100000)
 #define MICRO_FREQUENCY_UP_THRESHOLD_H		(90)
-#define MICRO_FREQUENCY_UP_THRESHOLD_L		(60)
+#define MICRO_FREQUENCY_UP_THRESHOLD_L		(85)
 #define MICRO_FREQUENCY_UP_STEP_LEVEL_B		(1200000)
 #define MICRO_FREQUENCY_UP_STEP_LEVEL_L		L_MAX_FREQ
 #define MICRO_FREQUENCY_DOWN_STEP_LEVEL		(250000)
@@ -86,8 +86,6 @@ static unsigned int min_sampling_rate;
 #define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
-
-static struct workqueue_struct *ondemand_wq;
 
 static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
@@ -403,7 +401,7 @@ static void update_sampling_rate(unsigned int new_rate)
 			cancel_delayed_work_sync(&dbs_info->work);
 			mutex_lock(&dbs_info->timer_mutex);
 
-			queue_delayed_work_on(dbs_info->cpu, ondemand_wq, &dbs_info->work,
+			queue_delayed_work_on(dbs_info->cpu, system_power_efficient_wq, &dbs_info->work,
 						 usecs_to_jiffies(new_rate));
 
 		}
@@ -986,7 +984,7 @@ static void do_dbs_timer(struct work_struct *work)
 			dbs_info->freq_lo, CPUFREQ_RELATION_H);
 		delay = dbs_info->freq_lo_jiffies;
 	}
-	queue_delayed_work_on(cpu, ondemand_wq, &dbs_info->work, delay);
+	queue_delayed_work_on(cpu, system_power_efficient_wq, &dbs_info->work, delay);
 	mutex_unlock(&dbs_info->timer_mutex);
 }
 
@@ -999,7 +997,6 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 		delay -= jiffies % delay;
 
 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
-	ondemand_wq = create_freezable_workqueue("ondemand_wq");
 	INIT_DELAYED_WORK(&dbs_info->work, do_dbs_timer);
 	/* Set 60secs delay for the booting current peak adjustment. */
 	if (boot_delay[dbs_info->cpu]) {
@@ -1007,7 +1004,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 		delay = msecs_to_jiffies(40 * 1000);
 	}
 
-	queue_delayed_work_on(dbs_info->cpu, ondemand_wq, &dbs_info->work, delay);
+	queue_delayed_work_on(dbs_info->cpu, system_power_efficient_wq, &dbs_info->work, delay);
 }
 
 static inline void dbs_timer_exit(struct cpu_dbs_info_s *dbs_info)
