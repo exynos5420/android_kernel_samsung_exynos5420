@@ -38,7 +38,7 @@
 #include "exynos5420_ppmu.h"
 #include <mach/sec_debug.h>
 
-#define INT_VOLT_STEP		12500
+#define INT_VOLT_STEP		6250
 #define COLD_VOLT_OFFSET	37500
 #define LIMIT_COLD_VOLTAGE	1250000
 #define MIN_COLD_VOLTAGE	950000
