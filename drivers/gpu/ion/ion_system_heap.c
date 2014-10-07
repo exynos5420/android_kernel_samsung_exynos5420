@@ -30,7 +30,7 @@
 static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_NOWARN |
 					   __GFP_NORETRY | __GFP_NO_KSWAPD) & ~__GFP_WAIT;
 static unsigned int low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_NOWARN);
-static const unsigned int orders[] = {8, 4, 0};
+static const unsigned int orders[] = {9, 8, 4, 0};
 static const int num_orders = ARRAY_SIZE(orders);
 
 #define PG_ion_frompool		(__NR_PAGEFLAGS + 1)
