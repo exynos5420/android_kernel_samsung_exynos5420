@@ -180,7 +180,7 @@ $(warning '$(TSPFIRMWARE_DIRECTORY)' directory dose not exist)
 endif
 
 TSPFIRMWARE_DIRECTORY = firmware/tsp_synaptics
-ifeq ($(shell test -d $(TSPFIRMWARE_DIRECTORY) && echo yes),yes)
+#ifeq ($(shell test -d $(TSPFIRMWARE_DIRECTORY) && echo yes),yes)
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI) += tsp_synaptics/synaptics_a0_h.fw
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI) += tsp_synaptics/synaptics_a0_h_no_tr.fw
 ifeq ("$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX)", "y")
@@ -190,9 +190,9 @@ fw-shipped-$(CONFIG_KLIMT) += tsp_synaptics/synaptics_klimt_5707.fw
 endif
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C) += tsp_synaptics/synaptics_v2.fw
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C) += tsp_synaptics/synaptics_v2_g2.fw
-else
-$(warning '$(TSPFIRMWARE_DIRECTORY)' directory dose not exist)
-endif
+#else
+#$(warning '$(TSPFIRMWARE_DIRECTORY)' directory dose not exist)
+#endif
 
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
