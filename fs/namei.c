@@ -2511,7 +2511,8 @@ static int do_tmpfile(int dfd, const char* pathname,
 	if (error)
 		goto out2;
 	audit_inode(pathname, nd->path.dentry);
-	error = may_open(&nd->path, op->acc_mode, op->open_flag);
+	/* Don't check for other permissions, the inode was just created */
+	error = may_open(&nd->path, MAY_OPEN, op->open_flag);
 	if (error)
 		goto out2;
 	file->f_path.mnt = nd->path.mnt;
