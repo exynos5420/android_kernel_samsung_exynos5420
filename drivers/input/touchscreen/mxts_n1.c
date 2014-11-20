@@ -30,6 +30,8 @@
 #include <linux/earlysuspend.h>
 #endif
 
+static bool tsp_keys_enabled = true;
+
 static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
 {
 	int ret = 0, i = 0;
@@ -842,7 +844,7 @@ static void mxt_release_all_keys(struct mxt_data *data)
 	if (data->tsp_keystatus != TOUCH_KEY_NULL) {
 		int i = 0, code = 0;
 		if (data->report_dummy_key) {
-			for (i = 0 ; i < data->pdata->num_touchkey ; i++) {
+			for (i = 0 ; tsp_keys_enabled && i < data->pdata->num_touchkey ; i++) {
 				if (data->tsp_keystatus & data->pdata->touchkey[i].value) {
 
 				/* report all touch-key event */
@@ -851,7 +853,7 @@ static void mxt_release_all_keys(struct mxt_data *data)
 				}
 			}
 
-		} else {
+		} else if (tsp_keys_enabled) {
 			/* menu key check*/
 			if (data->tsp_keystatus & TOUCH_KEY_MENU) {
 				if(data->ignore_menu_key)
@@ -904,7 +906,7 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 	if (input_status) { /* press */
 		int i = 0, code = 0;
 		if (data->report_dummy_key) {
-			for (i = 0 ; i < data->pdata->num_touchkey ; i++) {
+			for (i = 0 ; i < tsp_keys_enabled && data->pdata->num_touchkey ; i++) {
 				if (change_state & data->pdata->touchkey[i].value) {
 					key_state = input_message & data->pdata->touchkey[i].value;
 					input_report_key(data->input_dev, data->pdata->touchkey[i].keycode, key_state != 0 ? KEY_PRESS : KEY_RELEASE);
@@ -918,9 +920,9 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 			if (change_state & TOUCH_KEY_MENU) {
 				key_state = input_message & TOUCH_KEY_MENU;
 
-				if(data->ignore_menu_key)
+				if (data->ignore_menu_key)
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu %s by dummy key\n", key_state != 0 ? "P" : "R");
-				else {
+				else if (tsp_keys_enabled) {
 					code = KEY_MENU;
 					input_report_key(data->input_dev, code, !!key_state);
 					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d %s\n", code, !!key_state ? "P" : "R");
@@ -936,7 +938,7 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 				key_state = input_message & TOUCH_KEY_BACK;
 				if (data->ignore_back_key)
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore back %s by dummy key\n", key_state != 0 ? "P" : "R");
-				else {
+				else if (tsp_keys_enabled) {
 					code = KEY_BACK;
 					input_report_key(data->input_dev, code, !!key_state);
 					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d %s\n", code, !!key_state ? "P" : "R");
@@ -2427,7 +2429,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	set_bit(BTN_TOUCH, input_dev->keybit);
 #endif
 #if ENABLE_TOUCH_KEY
-	for (i = 0 ; i < data->pdata->num_touchkey ; i++)
+	for (i = 0 ; tsp_keys_enabled && i < data->pdata->num_touchkey ; i++)
 		set_bit(data->pdata->touchkey[i].keycode, input_dev->keybit);
 
 	set_bit(EV_LED, input_dev->evbit);
