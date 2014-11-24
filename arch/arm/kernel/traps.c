@@ -39,7 +39,14 @@
 #ifdef CONFIG_SEC_DEBUG_SUBSYS
 #include <mach/sec_debug.h>
 #endif
-static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
+
+static const char *handler[]= {
+	"prefetch abort",
+	"data abort",
+	"address exception",
+	"interrupt",
+	"undefined instruction",
+};
 
 void *vectors_page;
 
