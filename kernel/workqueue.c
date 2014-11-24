@@ -1911,7 +1911,6 @@ __acquires(&gcwq->lock)
 	 * While we must be careful to not use "work" after this, the trace
 	 * point will only record its address.
 	 */
-	sec_debug_work_log(worker, work, f, 2);
 	trace_workqueue_execute_end(work);
 	lock_map_release(&lockdep_map);
 	lock_map_release(&cwq->wq->lockdep_map);
