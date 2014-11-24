@@ -1,0 +1,102 @@
+#
+# Sensor  drivers configuration
+#
+menuconfig SENSORS
+	bool "Sensor devices"
+	help
+	  Say Y here, and a list of sensors drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+config SENSORS_BMI055
+	tristate "BMI055 Combo Sensor Driver"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you get support for Bosch-Sensortec's
+	  BMI055 Acceleration & Gyroscope Sensor.
+
+config SENSORS_BMI058
+	tristate "BMI058 Combo Sensor Driver"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you get support for Bosch-Sensortec's
+	  BMI058 Acceleration & Gyroscope Sensor.
+
+config SENSORS_AK8963C
+	tristate "AK8963C compass support"
+	default n
+	depends on I2C
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK8963.
+
+config SENSORS_AK09911C
+	tristate "AK09911C compass support"
+	default n
+	depends on I2C
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK09911C.
+
+config SENSORS_CM3323
+	depends on I2C
+	tristate "CM3323 driver"
+	default n
+	help
+	  Say Y here if you use cm3323.
+	  This option enables RGB sensors using
+	  Capella cm3323 device driver.
+
+	  Say N here if you do not use cm3323.
+
+config SENSORS_TMD3782
+	depends on I2C
+	tristate "TMD3782 driver"
+	default n
+	help
+	  Say Y here if you use tmd3782.
+	  This option enables light & proximity sensors using
+	  AMS tmd3782 device driver.
+
+	  Say N here if you do not use tmd3782.
+
+config SENSORS_ESD_DEFENCE
+	depends on I2C
+	tristate "ESD Defence"
+	default n
+	help
+	  Say Y here if you use ESD defence.
+	  This option enables ESD defence code.
+
+	  Say N here if you do not use ESD defence.
+
+config SENSORS_SX9500
+	depends on I2C
+	tristate "SX9500 driver"
+	default n
+	help
+	  Say Y here if you use sx9500.
+	  This option enables grip sensors using
+	  SemTech sx9500 device driver.
+
+	  Say N here if you do not use sx9500.
+
+config SENSORS_SX9500_INIT_TOUCH_THRESHOLD
+	int "SX9500 Grip sensor threshold for init touch"
+	depends on SENSORS_SX9500
+	default "3000"
+	help
+	  This value is the standard of init touch using
+	  SemTech sx9500 device driver.
+
+config SENSORS_SX9500_NORMAL_TOUCH_THRESHOLD
+	int "SX9500 Grip sensor threshold for normal touch"
+	depends on SENSORS_SX9500
+	default "17"
+	help
+	  This value is the standard of normal touch using
+	  SemTech sx9500 device driver.

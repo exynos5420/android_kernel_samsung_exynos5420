@@ -21,7 +21,7 @@
 #include <linux/mmc/dw_mmc.h>
 #include "dw_mmc.h"
 
-static int dw_mci_pltfm_probe(struct platform_device *pdev)
+static int __init dw_mci_pltfm_probe(struct platform_device *pdev)
 {
 	struct dw_mci *host;
 	struct resource	*regs;
@@ -100,18 +100,55 @@ static int dw_mci_pltfm_resume(struct device *dev)
 
 	return 0;
 }
+
+#if defined(CONFIG_MACH_UNIVERSAL5420)
+static void dw_mci_pltfm_shutdown(struct device *dev)
+{
+	struct dw_mci *host = dev_get_drvdata(dev);
+
+	if (host->pdata->cd_type == DW_MCI_CD_PERMANENT ||
+			host->pdata->cd_type == DW_MCI_CD_GPIO)
+		dw_mci_shutdown(host);
+}
+
+static int dw_mci_pltfm_early_resume(struct device *dev)
+{
+	int ret = 0;
+	struct dw_mci *host = dev_get_drvdata(dev);
+
+	if (host->pdata->cd_type == DW_MCI_CD_GPIO)
+		ret = dw_mci_early_resume(host);
+
+	return ret;
+}
+#endif
+
 #else
 #define dw_mci_pltfm_suspend	NULL
 #define dw_mci_pltfm_resume	NULL
+#if defined(CONFIG_MACH_UNIVERSAL5420)
+#define dw_mci_pltfm_shutdown	NULL
+#define dw_mci_pltfm_early_resume NULL
+#endif
 #endif /* CONFIG_PM_SLEEP */
 
+#if defined(CONFIG_MACH_UNIVERSAL5420)
+static const struct dev_pm_ops dw_mci_pltfm_pmops = {
+	SET_SYSTEM_SLEEP_PM_OPS(dw_mci_pltfm_suspend, dw_mci_pltfm_resume)
+	.resume_early   = dw_mci_pltfm_early_resume,
+};
+#else
 static SIMPLE_DEV_PM_OPS(dw_mci_pltfm_pmops, dw_mci_pltfm_suspend, dw_mci_pltfm_resume);
+#endif
 
 static struct platform_driver dw_mci_pltfm_driver = {
 	.remove		= __exit_p(dw_mci_pltfm_remove),
 	.driver		= {
 		.name		= "dw_mmc",
 		.pm		= &dw_mci_pltfm_pmops,
+#if defined(CONFIG_MACH_UNIVERSAL5420)
+		.shutdown	= dw_mci_pltfm_shutdown,
+#endif
 	},
 };
 

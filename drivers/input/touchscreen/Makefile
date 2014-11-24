@@ -27,6 +27,7 @@ obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
 obj-$(CONFIG_TOUCHSCREEN_GUNZE)		+= gunze.o
 obj-$(CONFIG_TOUCHSCREEN_EETI)		+= eeti_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ELO)		+= elo.o
+obj-$(CONFIG_TOUCHSCREEN_EGALAX_I2C)	+= egalax_i2c.o
 obj-$(CONFIG_TOUCHSCREEN_EGALAX)	+= egalax_ts.o
 obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ILI210X)	+= ili210x.o
@@ -39,6 +40,7 @@ obj-$(CONFIG_TOUCHSCREEN_MCS5000)	+= mcs5000_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MIGOR)		+= migor_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MTOUCH)	+= mtouch.o
 obj-$(CONFIG_TOUCHSCREEN_MK712)		+= mk712.o
+obj-$(CONFIG_TOUCHSCREEN_MXT540E)	+= mxt540e.o
 obj-$(CONFIG_TOUCHSCREEN_HP600)		+= hp680_ts_input.o
 obj-$(CONFIG_TOUCHSCREEN_HP7XX)		+= jornada720_ts.o
 obj-$(CONFIG_TOUCHSCREEN_HTCPEN)	+= htcpen.o
@@ -69,3 +71,16 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
 obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+obj-$(CONFIG_TOUCHSCREEN_MELFAS)	+= mms_ts.o
+ifeq ($(CONFIG_N2A_3G),y)
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXTS)    += mxts.o
+else ifeq ($(CONFIG_N2A_WIFI),y)
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXTS)    += mxts.o
+else ifeq ($(CONFIG_N1A),y)
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXTS)    += mxts_n1.o
+else
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXTS)    += mxts.o
+endif
+obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT1664T)    += mxt_t/
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi.o rmi_dev.o rmi_fw_update.o rmi_f54.o
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX)	+= synaptics_dsx/

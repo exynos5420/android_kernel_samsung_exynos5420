@@ -296,8 +296,12 @@ out:
 		if (!fatal)
 			fatal = err;
 		ext4_mark_super_dirty(sb);
-	} else
+	} else {
+		/* for debugging, sangwoo2.lee */
+		print_bh(sb, bitmap_bh, 0, EXT4_BLOCK_SIZE(sb));
+		/* for debugging */
 		ext4_error(sb, "bit already cleared for inode %lu", ino);
+	}
 
 error_return:
 	brelse(bitmap_bh);
@@ -615,8 +619,9 @@ static int find_group_other(struct super_block *sb, struct inode *parent,
  * For other inodes, search forward from the parent directory's block
  * group to find a free inode.
  */
-struct inode *ext4_new_inode(handle_t *handle, struct inode *dir, umode_t mode,
-			     const struct qstr *qstr, __u32 goal, uid_t *owner)
+struct inode *__ext4_new_inode(handle_t *handle, struct inode *dir,
+			       umode_t mode, const struct qstr *qstr,
+			       __u32 goal, uid_t *owner, int nblocks)
 {
 	struct super_block *sb;
 	struct buffer_head *inode_bitmap_bh = NULL;
@@ -675,13 +680,21 @@ got_group:
 		err = -EIO;
 
 		gdp = ext4_get_group_desc(sb, group, &group_desc_bh);
-		if (!gdp)
+		if (!gdp) {
+			ext4_debug("ext4_get_group_desc error: %d\n", group);
+			print_bh(sb, group_desc_bh, 0, EXT4_BLOCK_SIZE(sb));
 			goto fail;
+		}
 
-		brelse(inode_bitmap_bh);
+		if (inode_bitmap_bh) {
+			ext4_handle_release_buffer(handle, inode_bitmap_bh);
+			brelse(inode_bitmap_bh);
+		}
 		inode_bitmap_bh = ext4_read_inode_bitmap(sb, group);
-		if (!inode_bitmap_bh)
+		if (!inode_bitmap_bh) {
+			ext4_debug("ext4_read_inode_bitmap error: %d\n", group);
 			goto fail;
+		}
 
 repeat_in_this_group:
 		ino = ext4_find_next_zero_bit((unsigned long *)
@@ -697,10 +710,19 @@ repeat_in_this_group:
 				   "inode=%lu", ino + 1);
 			continue;
 		}
+		if (!handle) {
+			BUG_ON(nblocks <= 0);
+			handle = ext4_journal_start_sb(dir->i_sb, nblocks);
+			if (IS_ERR(handle)) {
+				err = PTR_ERR(handle);
+				goto fail;
+			}
+		}
 		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
 		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
 		if (err)
 			goto fail;
+
 		ext4_lock_group(sb, group);
 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
 		ext4_unlock_group(sb, group);
@@ -710,14 +732,17 @@ repeat_in_this_group:
 		if (ino < EXT4_INODES_PER_GROUP(sb))
 			goto repeat_in_this_group;
 	}
+	ext4_handle_release_buffer(handle, inode_bitmap_bh);
 	err = -ENOSPC;
 	goto out;
 
 got:
 	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
 	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-	if (err)
+	if (err) {
+		ext4_debug("ext4_handle_dirty_metadata error\n");
 		goto fail;
+	}
 
 	/* We may have to initialize the block bitmap if it isn't already */
 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
@@ -729,6 +754,7 @@ got:
 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
 		if (err) {
 			brelse(block_bitmap_bh);
+			ext4_debug("ext4_journal_get_write_access error\n");
 			goto fail;
 		}
 
@@ -747,14 +773,18 @@ got:
 		ext4_unlock_group(sb, group);
 		brelse(block_bitmap_bh);
 
-		if (err)
+		if (err) {
+			ext4_debug("ext4_handle_dirty_metadata error\n");
 			goto fail;
+		}
 	}
 
 	BUFFER_TRACE(group_desc_bh, "get_write_access");
 	err = ext4_journal_get_write_access(handle, group_desc_bh);
-	if (err)
+	if (err) {
+		ext4_debug("ext4_journal_get_write_access error\n");
 		goto fail;
+	}
 
 	/* Update the relevant bg descriptor fields */
 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
@@ -778,7 +808,10 @@ got:
 			ext4_itable_unused_set(sb, gdp,
 					(EXT4_INODES_PER_GROUP(sb) - ino));
 		up_read(&grp->alloc_sem);
+	} else {
+		ext4_lock_group(sb, group);
 	}
+
 	ext4_free_inodes_set(sb, gdp, ext4_free_inodes_count(sb, gdp) - 1);
 	if (S_ISDIR(mode)) {
 		ext4_used_dirs_set(sb, gdp, ext4_used_dirs_count(sb, gdp) + 1);
@@ -790,13 +823,15 @@ got:
 	}
 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
 		gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
-		ext4_unlock_group(sb, group);
 	}
+	ext4_unlock_group(sb, group);
 
 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
-	if (err)
+	if (err) {
+		ext4_debug("ext4_handle_dirty_metadata error\n");
 		goto fail;
+	}
 
 	percpu_counter_dec(&sbi->s_freeinodes_counter);
 	if (S_ISDIR(mode))
@@ -844,6 +879,9 @@ got:
 		 * Likely a bitmap corruption causing inode to be allocated
 		 * twice.
 		 */
+		ext4_debug("insert_inode_locked error\n");
+		if(inode_bitmap_bh)
+			print_bh(sb, inode_bitmap_bh, 0, EXT4_BLOCK_SIZE(sb));
 		err = -EIO;
 		goto fail;
 	}

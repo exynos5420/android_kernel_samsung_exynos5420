@@ -1,0 +1,111 @@
+menuconfig SEC_MODEM_IF
+	bool "Samsung Mobile Modem Interface"
+	default n
+	---help---
+	  Samsung Modem Interface Driver.
+
+if SEC_MODEM_IF
+
+config SEC_MODEM_XMM6360
+	bool "XMM6360 feature"
+	default n
+	select UMTS_MODEM_XMM6360
+	select LINK_DEVICE_HSIC
+	select EHCI_IRQ_DISTRIBUTION
+
+config SEC_MODEM_XMM6262
+	bool "M0 with xmm6262"
+	default y
+	select UMTS_MODEM_XMM6262
+	select LINK_DEVICE_HSIC
+
+menu "Configuration Description"
+config UMTS_MODEM_XMM6360
+	bool "modem chip : IMC XMM6360"
+	default n
+
+config UMTS_MODEM_XMM6262
+	bool "modem chip : IMC XMM6262"
+	default n
+
+config CDMA_MODEM_CBP71
+	bool "modem chip : VIA CBP7.1"
+	default n
+
+config CDMA_MODEM_CBP72
+	bool "modem chip : VIA CBP7.2"
+	default n
+
+config CDMA_MODEM_CBP82
+	bool "modem chip : VIA CBP8.2"
+	default n
+
+config LTE_MODEM_CMC221
+	bool "modem chip : SEC CMC221"
+	default n
+
+config UMTS_MODEM_SS222
+	bool "modem chip : SEC SS222"
+	default n
+
+config CDMA_MODEM_MDM6600
+	bool "modem chip : QC MDM6600"
+	default n
+
+config TDSCDMA_MODEM_SPRD8803
+	bool "modem chip : SPRD SC8803"
+	default n
+
+config GSM_MODEM_ESC6270
+	bool "modem chip : QC ESC6270"
+	default n
+
+config CDMA_MODEM_QSC6085
+	bool "modem chip : Qualcomm QSC6085"
+	default n
+
+config LINK_DEVICE_MIPI
+	bool "modem driver link device MIPI-HSI"
+	default n
+
+config LINK_DEVICE_DPRAM
+	bool "modem driver link device DPRAM"
+	default n
+
+config LINK_DEVICE_PLD
+	bool "modem driver link device PLD"
+	default n
+
+config LINK_DEVICE_USB
+	bool "modem driver link device USB"
+	default n
+
+config LINK_DEVICE_HSIC
+	bool "modem driver link device HSIC"
+	default n
+
+config LINK_DEVICE_C2C
+	bool "modem driver link device C2C"
+	default n
+
+config LINK_DEVICE_SPI
+	bool "modem driver link device SPI"
+	default n
+
+config BOOT_DEVICE_SPI
+	bool "modem driver boot device SPI"
+	default n
+
+config WORKQUEUE_FRONT
+	bool "IPC: SPI workqueue front"
+	default n
+
+config SIM_DETECT
+	bool "SIM_DETECT pin"
+	default n
+
+config SIM_SLOT_SWITCH
+	bool "SIM_SLOT_SWITCH"
+	default n
+endmenu
+endif

@@ -580,4 +580,17 @@ config KEYBOARD_W90P910
 	  To compile this driver as a module, choose M here: the
 	  module will be called w90p910_keypad.
 
+config KEYBOARD_TC300K
+	tristate "Coreriver TC300K touchkey"
+	depends on I2C
+	help
+	 Say Y if you want use Coreriver TC300K chip as touchkey.
+
+config SENSORS_HALL
+	tristate "HALL"
+	help
+	  Say Y here to enable the HALL.
+
+source "drivers/input/keyboard/cypress/Kconfig"
+
 endif

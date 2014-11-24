@@ -206,6 +206,7 @@ struct w1_master *w1_search_master_id(u32 id);
  */
 void w1_reconnect_slaves(struct w1_family *f, int attach);
 void w1_slave_detach(struct w1_slave *sl);
+void w1_master_search(void);
 
 u8 w1_triplet(struct w1_master *dev, int bdir);
 void w1_write_8(struct w1_master *, u8);

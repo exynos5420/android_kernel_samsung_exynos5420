@@ -41,6 +41,11 @@ struct clk clk_xusbxti = {
 	.rate		= 24000000,
 };
 
+struct clk clk_xxti= {
+	.name		= "xxti",
+	.id		= -1,
+};
+
 struct clk s5p_clk_27m = {
 	.name		= "clk_27m",
 	.id		= -1,
@@ -184,6 +189,14 @@ int s5p_gatectrl(void __iomem *reg, struct clk *clk, int enable)
 	con = __raw_readl(reg);
 	con = enable ? (con | ctrlbit) : (con & ~ctrlbit);
 	__raw_writel(con, reg);
+
+	if (enable) {
+		if (!(__raw_readl(reg) & con)) {
+			printk(" %s clock is not enabled\n",clk->name);
+			BUG();
+		}
+	}
+
 	return 0;
 }
 
@@ -210,7 +223,7 @@ int s5p_spdif_set_rate(struct clk *clk, unsigned long rate)
 	struct clk *pclk;
 	int ret;
 
-	pclk = clk_get_parent(clk);
+	pclk = __clk_get_parent(clk);
 	if (IS_ERR(pclk))
 		return -EINVAL;
 
@@ -225,7 +238,7 @@ unsigned long s5p_spdif_get_rate(struct clk *clk)
 	struct clk *pclk;
 	int rate;
 
-	pclk = clk_get_parent(clk);
+	pclk = __clk_get_parent(clk);
 	if (IS_ERR(pclk))
 		return -EINVAL;
 
@@ -246,11 +259,11 @@ static struct clk *s5p_clks[] __initdata = {
 	&s5p_clk_27m,
 	&clk_fout_apll,
 	&clk_fout_mpll,
-	&clk_fout_epll,
 	&clk_fout_dpll,
 	&clk_fout_vpll,
 	&clk_vpll,
 	&clk_xusbxti,
+	&clk_xxti,
 };
 
 void __init s5p_register_clocks(unsigned long xtal_freq)

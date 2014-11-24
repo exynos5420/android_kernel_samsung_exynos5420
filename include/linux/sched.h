@@ -1804,6 +1804,9 @@ static inline void put_task_struct(struct task_struct *t)
 extern void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 
+extern int task_free_register(struct notifier_block *n);
+extern int task_free_unregister(struct notifier_block *n);
+
 /*
  * Per process flags
  */
@@ -2300,7 +2303,7 @@ static inline void mmdrop(struct mm_struct * mm)
 }
 
 /* mmput gets rid of the mappings and all user-space */
-extern void mmput(struct mm_struct *);
+extern int mmput(struct mm_struct *);
 /* Grab a reference to a task's mm, if it is not already going away */
 extern struct mm_struct *get_task_mm(struct task_struct *task);
 /*

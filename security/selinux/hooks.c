@@ -107,7 +107,11 @@ static int __init enforcing_setup(char *str)
 {
 	unsigned long enforcing;
 	if (!strict_strtoul(str, 0, &enforcing))
+#ifdef CONFIG_ALWAYS_ENFORCE
+		selinux_enforcing = 1;
+#else
 		selinux_enforcing = enforcing ? 1 : 0;
+#endif
 	return 1;
 }
 __setup("enforcing=", enforcing_setup);
@@ -120,7 +124,11 @@ static int __init selinux_enabled_setup(char *str)
 {
 	unsigned long enabled;
 	if (!strict_strtoul(str, 0, &enabled))
+#ifdef CONFIG_ALWAYS_ENFORCE
+		selinux_enabled = 1;
+#else
 		selinux_enabled = enabled ? 1 : 0;
+#endif
 	return 1;
 }
 __setup("selinux=", selinux_enabled_setup);
@@ -217,6 +225,14 @@ static int inode_alloc_security(struct inode *inode)
 	return 0;
 }
 
+static void inode_free_rcu(struct rcu_head *head)
+{
+	struct inode_security_struct *isec;
+
+	isec = container_of(head, struct inode_security_struct, rcu);
+	kmem_cache_free(sel_inode_cache, isec);
+}
+
 static void inode_free_security(struct inode *inode)
 {
 	struct inode_security_struct *isec = inode->i_security;
@@ -227,8 +243,16 @@ static void inode_free_security(struct inode *inode)
 		list_del_init(&isec->list);
 	spin_unlock(&sbsec->isec_lock);
 
-	inode->i_security = NULL;
-	kmem_cache_free(sel_inode_cache, isec);
+	/*
+	 * The inode may still be referenced in a path walk and
+	 * a call to selinux_inode_permission() can be made
+	 * after inode_free_security() is called. Ideally, the VFS
+	 * wouldn't do this, but fixing that is a much harder
+	 * job. For now, simply free the i_security via RCU, and
+	 * leave the current inode->i_security pointer intact.
+	 * The inode will be freed after the RCU grace period too.
+	 */
+	call_rcu(&isec->rcu, inode_free_rcu);
 }
 
 static int file_alloc_security(struct file *file)
@@ -407,6 +431,7 @@ static int sb_finish_set_opts(struct super_block *sb)
 
 	/* Initialize the root inode. */
 	rc = inode_doinit_with_dentry(root_inode, root);
+	printk(KERN_DEBUG "SELinux: end of inode_doinit_with_dentry \n");
 
 	/* Initialize any other inodes associated with the superblock, e.g.
 	   inodes created prior to initial policy load or inodes created
@@ -430,6 +455,7 @@ next_inode:
 		list_del_init(&isec->list);
 		goto next_inode;
 	}
+	printk(KERN_DEBUG "SELinux: end of list_entry \n");
 	spin_unlock(&sbsec->isec_lock);
 out:
 	return rc;
@@ -1485,6 +1511,11 @@ static int inode_has_perm(const struct cred *cred,
 	sid = cred_sid(cred);
 	isec = inode->i_security;
 
+	if (unlikely(!isec)){
+		printk(KERN_CRIT "[SELinux] isec is NULL, inode->i_security is already freed. \n");
+		return -EACCES;
+	}
+
 	return avc_has_perm_flags(sid, isec->sid, isec->sclass, perms, adp, flags);
 }
 
@@ -1818,6 +1849,68 @@ static inline u32 open_file_to_av(struct file *file)
 
 /* Hook functions begin here. */
 
+static int selinux_binder_set_context_mgr(struct task_struct *mgr)
+{
+	u32 mysid = current_sid();
+	u32 mgrsid = task_sid(mgr);
+
+	return avc_has_perm(mysid, mgrsid, SECCLASS_BINDER, BINDER__SET_CONTEXT_MGR, NULL);
+}
+
+static int selinux_binder_transaction(struct task_struct *from, struct task_struct *to)
+{
+	u32 mysid = current_sid();
+	u32 fromsid = task_sid(from);
+	u32 tosid = task_sid(to);
+	int rc;
+
+	if (mysid != fromsid) {
+		rc = avc_has_perm(mysid, fromsid, SECCLASS_BINDER, BINDER__IMPERSONATE, NULL);
+		if (rc)
+			return rc;
+	}
+
+	return avc_has_perm(fromsid, tosid, SECCLASS_BINDER, BINDER__CALL, NULL);
+}
+
+static int selinux_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
+{
+	u32 fromsid = task_sid(from);
+	u32 tosid = task_sid(to);
+
+	return avc_has_perm(fromsid, tosid, SECCLASS_BINDER, BINDER__TRANSFER, NULL);
+}
+
+static int selinux_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
+{
+	u32 sid = task_sid(to);
+	struct file_security_struct *fsec = file->f_security;
+	struct inode *inode = file->f_path.dentry->d_inode;
+	struct inode_security_struct *isec = inode->i_security;
+	struct common_audit_data ad;
+	struct selinux_audit_data sad = {0,};
+	int rc;
+
+	COMMON_AUDIT_DATA_INIT(&ad, PATH);
+	ad.selinux_audit_data = &sad;
+	ad.u.path = file->f_path;
+
+	if (sid != fsec->sid) {
+		rc = avc_has_perm(sid, fsec->sid,
+				  SECCLASS_FD,
+				  FD__USE,
+				  &ad);
+		if (rc)
+			return rc;
+	}
+	// Do not apply permission checks to private files.
+	if (unlikely(IS_PRIVATE(inode)))
+		return 0;
+
+	return avc_has_perm(sid, isec->sid, isec->sclass, file_to_av(file),
+			    &ad);
+}
+
 static int selinux_ptrace_access_check(struct task_struct *child,
 				     unsigned int mode)
 {
@@ -1826,7 +1919,7 @@ static int selinux_ptrace_access_check(struct task_struct *child,
 	rc = cap_ptrace_access_check(child, mode);
 	if (rc)
 		return rc;
-
+    
 	if (mode & PTRACE_MODE_READ) {
 		u32 sid = current_sid();
 		u32 csid = task_sid(child);
@@ -3755,6 +3848,11 @@ static int sock_has_perm(struct task_struct *task, struct sock *sk, u32 perms)
 	struct lsm_network_audit net = {0,};
 	u32 tsid = task_sid(task);
 
+	if (unlikely(!sksec)){
+		printk(KERN_CRIT "[SELinux] sksec is NULL, socket is already freed. \n");
+		return -EINVAL;
+	}
+
 	if (sksec->sid == SECINITSID_KERNEL)
 		return 0;
 
@@ -4507,7 +4605,11 @@ static int selinux_nlmsg_perm(struct sock *sk, struct sk_buff *skb)
 				  "SELinux:  unrecognized netlink message"
 				  " type=%hu for sclass=%hu\n",
 				  nlh->nlmsg_type, sksec->sclass);
+#ifdef CONFIG_ALWAYS_ENFORCE
+			if (security_get_allow_unknown())
+#else
 			if (!selinux_enforcing || security_get_allow_unknown())
+#endif
 				err = 0;
 		}
 
@@ -5523,6 +5625,11 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
 static struct security_operations selinux_ops = {
 	.name =				"selinux",
 
+	.binder_set_context_mgr =	selinux_binder_set_context_mgr,
+	.binder_transaction =		selinux_binder_transaction,
+	.binder_transfer_binder =	selinux_binder_transfer_binder,
+	.binder_transfer_file =		selinux_binder_transfer_file,
+
 	.ptrace_access_check =		selinux_ptrace_access_check,
 	.ptrace_traceme =		selinux_ptrace_traceme,
 	.capget =			selinux_capget,
@@ -5720,7 +5827,11 @@ static struct security_operations selinux_ops = {
 static __init int selinux_init(void)
 {
 	if (!security_module_enable(&selinux_ops)) {
+#ifdef CONFIG_ALWAYS_ENFORCE
+		selinux_enabled = 1;
+#else
 		selinux_enabled = 0;
+#endif
 		return 0;
 	}
 
@@ -5743,7 +5854,9 @@ static __init int selinux_init(void)
 
 	if (register_security(&selinux_ops))
 		panic("SELinux: Unable to register with kernel.\n");
-
+#ifdef CONFIG_ALWAYS_ENFORCE
+	selinux_enforcing = 1;
+#endif
 	if (selinux_enforcing)
 		printk(KERN_DEBUG "SELinux:  Starting in enforcing mode\n");
 	else
@@ -5820,7 +5933,9 @@ static struct nf_hook_ops selinux_ipv6_ops[] = {
 static int __init selinux_nf_ip_init(void)
 {
 	int err = 0;
-
+#ifdef CONFIG_ALWAYS_ENFORCE
+	selinux_enabled = 1;
+#endif
 	if (!selinux_enabled)
 		goto out;
 

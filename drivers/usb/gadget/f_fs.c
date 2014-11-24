@@ -33,11 +33,15 @@
 /* Debugging ****************************************************************/
 
 #ifdef VERBOSE_DEBUG
+#ifndef pr_vdebug
 #  define pr_vdebug pr_debug
+#endif /* pr_vdebug */
 #  define ffs_dump_mem(prefix, ptr, len) \
 	print_hex_dump_bytes(pr_fmt(prefix ": "), DUMP_PREFIX_NONE, ptr, len)
 #else
+#ifndef pr_vdebug
 #  define pr_vdebug(...)                 do { } while (0)
+#endif /* pr_vdebug */
 #  define ffs_dump_mem(prefix, ptr, len) do { } while (0)
 #endif /* VERBOSE_DEBUG */
 
@@ -1473,7 +1477,21 @@ static int functionfs_bind_config(struct usb_composite_dev *cdev,
 
 static void ffs_func_free(struct ffs_function *func)
 {
+	struct ffs_ep *ep         = func->eps;
+	unsigned count            = func->ffs->eps_count;
+	unsigned long flags;
+
 	ENTER();
+
+	/* cleanup after autoconfig */
+	spin_lock_irqsave(&func->ffs->eps_lock, flags);
+	do {
+		if (ep->ep && ep->req)
+			usb_ep_free_request(ep->ep, ep->req);
+		ep->req = NULL;
+		++ep;
+	} while (--count);
+	spin_unlock_irqrestore(&func->ffs->eps_lock, flags);
 
 	ffs_data_put(func->ffs);
 
@@ -1519,7 +1537,12 @@ static int ffs_func_eps_enable(struct ffs_function *func)
 	spin_lock_irqsave(&func->ffs->eps_lock, flags);
 	do {
 		struct usb_endpoint_descriptor *ds;
-		ds = ep->descs[ep->descs[1] ? 1 : 0];
+		int desc_idx = ffs->gadget->speed == USB_SPEED_HIGH ? 1 : 0;
+		ds = ep->descs[desc_idx];
+		if (!ds) {
+			ret = -EINVAL;
+			break;
+		}
 
 		ep->ep->driver_data = ep;
 		ep->ep->desc = ds;

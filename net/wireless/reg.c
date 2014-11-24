@@ -1400,6 +1400,18 @@ static void reg_set_request_processed(void)
 {
 	bool need_more_processing = false;
 
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2014.1.8 Convergence Wi-Fi Core
+	*/
+	printk("regulatory is not upadted via %s.\n", __func__);
+	return;
+#endif
+
 	last_request->processed = true;
 
 	spin_lock(&reg_requests_lock);
@@ -1621,6 +1633,21 @@ static void reg_todo(struct work_struct *work)
 
 static void queue_regulatory_request(struct regulatory_request *request)
 {
+
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2014.1.8 Convergence Wi-Fi Core
+	*/
+	printk("regulatory is not upadted via %s.\n", __func__);
+	if (request)
+		kfree(request);
+	return;
+#endif
+
 	if (isalpha(request->alpha2[0]))
 		request->alpha2[0] = toupper(request->alpha2[0]);
 	if (isalpha(request->alpha2[1]))
@@ -1857,6 +1884,18 @@ static void restore_regulatory_settings(bool reset_user)
 	LIST_HEAD(tmp_reg_req_list);
 	struct cfg80211_registered_device *rdev;
 
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2014.1.8 Convergence Wi-Fi Core
+	*/
+	printk("regulatory is not upadted via %s.\n", __func__);
+	return;
+#endif
+
 	mutex_lock(&cfg80211_mutex);
 	mutex_lock(&reg_mutex);
 
@@ -1970,6 +2009,18 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 				 gfp_t gfp)
 {
 	struct reg_beacon *reg_beacon;
+
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2014.1.8 Convergence Wi-Fi Core
+	*/
+//	printk("regulatory is not upadted via %s.\n", __func__);
+	return 0;
+#endif
 
 	if (likely((beacon_chan->beacon_found ||
 	    (beacon_chan->flags & IEEE80211_CHAN_RADAR) ||

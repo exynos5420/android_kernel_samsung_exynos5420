@@ -32,6 +32,9 @@
 #include <plat/pm.h>
 #include <mach/pm-core.h>
 
+#ifdef CONFIG_FAST_BOOT
+#include <linux/fake_shut_down.h>
+#endif
 /* for external use */
 
 unsigned long s3c_pm_flags;
@@ -282,13 +285,20 @@ static int s3c_pm_enter(suspend_state_t state)
 
 	s3c_pm_arch_prepare_irqs();
 
+#ifdef CONFIG_FAST_BOOT
+	if (fake_shut_down) {
+		/* Masking external wake up source
+		 * only enable  power key, FUEL ALERT, IF PMIC IRQ */
+		__raw_writel(0xfffbcfff, EXYNOS_EINT_WAKEUP_MASK);
+		printk(KERN_ALERT"EINT_MASK[ 0x%08x ]\n",
+				__raw_readl(EXYNOS_EINT_WAKEUP_MASK));
+		/* disable all system int */
+		__raw_writel(0xffffffff, EXYNOS_WAKEUP_MASK);
+	}
+#endif
 	/* call cpu specific preparation */
 
 	pm_cpu_prep();
-
-	/* flush cache back to ram */
-
-	flush_cache_all();
 
 	s3c_pm_check_store();
 
@@ -296,12 +306,19 @@ static int s3c_pm_enter(suspend_state_t state)
 
 	s3c_pm_arch_stop_clocks();
 
+#ifdef CONFIG_SEC_PM
+	pr_info("PM: SLEEP\n");
+#endif
 	/* this will also act as our return point from when
 	 * we resume as it saves its own register state and restores it
 	 * during the resume.  */
 
 	cpu_suspend(0, pm_cpu_sleep);
 
+#ifdef CONFIG_FAST_BOOT
+	if (fake_shut_down)
+		s3c_pm_arch_prepare_irqs();
+#endif
 	/* restore the system state */
 
 	s3c_pm_restore_core();

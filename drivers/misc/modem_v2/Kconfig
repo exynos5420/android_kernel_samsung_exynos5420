@@ -1,0 +1,78 @@
+menuconfig SEC_MODEM_V2
+	bool "Samsung Mobile Modem Interface V2"
+	default n
+	---help---
+	  Samsung Modem Interface Drivers for
+	  SAMSUNG IPC models
+	  And you can select the modem chipset
+	  and interface link type.
+
+if SEC_MODEM_V2
+
+config SEC_MODEM_XMM6360
+	bool "XMM6360 feature"
+	default y
+	select UMTS_MODEM_XMM6360
+	select LINK_DEVICE_HSIC
+	select EHCI_IRQ_DISTRIBUTION
+
+config SEC_MODEM_XMM6262
+	bool "XMM6262 feature"
+	default n
+	select UMTS_MODEM_XMM6262
+	select LINK_DEVICE_HSIC
+
+menu "Configuration Description"
+config UMTS_MODEM_XMM6260
+	bool "modem chip : IMC XMM6260"
+	default n
+
+config UMTS_MODEM_XMM6262
+	bool "modem chip : IMC XMM6262"
+	default n
+
+config UMTS_MODEM_XMM6360
+	bool "modem chip : IMC XMM6360"
+	default n
+
+config CDMA_MODEM_MDM6600
+	bool "modem chip : QC MDM6600"
+	default n
+
+config GSM_MODEM_ESC6270
+	bool "modem chip : QC ESC6270"
+	default n
+
+config LINK_DEVICE_HSIC
+	bool "modem driver link device HSIC"
+	default n
+
+config LINK_DEVICE_PLD
+	bool "modem driver link device PLD"
+	default n
+
+config LINK_ETHERNET
+	bool "SIPC USB raw ehternet patcket"
+	select MII
+	default n
+
+config SIM_DETECT
+	bool "SIM_DETECT pin"
+	default n
+
+config SIM_SLOT_SWITCH
+	bool "SIM_SLOT_SWITCH"
+	default n
+
+config EHCI_IRQ_DISTRIBUTION
+	bool "Distribute ehci irq"
+	default n
+
+if LINK_DEVICE_HSIC
+config EHCI_MODEM_PORTNUM
+	int "EHCI port number of modem connection"
+	default 2
+endif
+
+endmenu
+endif

@@ -3,6 +3,24 @@
 
 struct device;
 
+#ifdef CONFIG_MACH_UNIVERSAL5420
+#if !defined(CONFIG_INPUT_BOOSTER)
+#define KEY_BOOSTER
+#endif
+#endif
+
+#ifdef KEY_BOOSTER
+#include <linux/pm_qos.h>
+#define KEY_BOOSTER_ON_TIME	500
+#define KEY_BOOSTER_OFF_TIME	500
+#define KEY_BOOSTER_CHG_TIME	130
+
+#define KEY_BOOSTER_CPU_FREQ1 650000
+#define KEY_BOOSTER_MIF_FREQ1 400000
+#define KEY_BOOSTER_INT_FREQ1 111000
+
+#endif
+
 struct gpio_keys_button {
 	/* Configuration parameters */
 	unsigned int code;	/* input event code (KEY_*, SW_*) */
@@ -15,6 +33,7 @@ struct gpio_keys_button {
 	bool can_disable;
 	int value;		/* axis value for EV_ABS */
 	unsigned int irq;	/* Irq number in case of interrupt keys */
+	void (*isr_hook)(unsigned int code, int value);	/*key callback function */
 };
 
 struct gpio_keys_platform_data {
@@ -26,6 +45,11 @@ struct gpio_keys_platform_data {
 	int (*enable)(struct device *dev);
 	void (*disable)(struct device *dev);
 	const char *name;		/* input device name */
+
+#ifdef CONFIG_SENSORS_HALL
+	int gpio_flip_cover;
+#endif
 };
 
+extern struct class *sec_class;
 #endif

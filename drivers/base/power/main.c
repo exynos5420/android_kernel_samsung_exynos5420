@@ -28,7 +28,7 @@
 #include <linux/sched.h>
 #include <linux/async.h>
 #include <linux/suspend.h>
-
+#include <linux/timer.h>
 #include "../base.h"
 #include "power.h"
 
@@ -53,6 +53,15 @@ LIST_HEAD(dpm_noirq_list);
 struct suspend_stats suspend_stats;
 static DEFINE_MUTEX(dpm_list_mtx);
 static pm_message_t pm_transition;
+#if defined(CONFIG_MDM_HSIC_PM)
+static atomic_t ehci_area;
+#endif
+
+struct dpm_watchdog {
+	struct device		*dev;
+	struct task_struct	*tsk;
+	struct timer_list	timer;
+};
 
 static int async_error;
 
@@ -381,12 +390,64 @@ static int dpm_run_callback(pm_callback_t cb, struct device *dev,
 	calltime = initcall_debug_start(dev);
 
 	pm_dev_dbg(dev, state, info);
+
 	error = cb(dev);
+
 	suspend_report_result(cb, error);
 
 	initcall_debug_report(dev, calltime, error);
 
 	return error;
+}
+
+/**
+ * dpm_wd_handler - Driver suspend / resume watchdog handler.
+ *
+ * Called when a driver has timed out suspending or resuming.
+ * There's not much we can do here to recover so BUG() out for
+ * a crash-dump
+ */
+static void dpm_wd_handler(unsigned long data)
+{
+	struct dpm_watchdog *wd = (void *)data;
+	struct device *dev      = wd->dev;
+	struct task_struct *tsk = wd->tsk;
+
+	dev_emerg(dev, "**** DPM device timeout ****\n");
+	show_stack(tsk, NULL);
+
+	BUG();
+}
+
+/**
+ * dpm_wd_set - Enable pm watchdog for given device.
+ * @wd: Watchdog. Must be allocated on the stack.
+ * @dev: Device to handle.
+ */
+static void dpm_wd_set(struct dpm_watchdog *wd, struct device *dev)
+{
+	struct timer_list *timer = &wd->timer;
+
+	wd->dev = dev;
+	wd->tsk = get_current();
+
+	init_timer_on_stack(timer);
+	timer->expires = jiffies + HZ * 12;
+	timer->function = dpm_wd_handler;
+	timer->data = (unsigned long)wd;
+	add_timer(timer);
+}
+
+/**
+ * dpm_wd_clear - Disable pm watchdog.
+ * @wd: Watchdog to disable.
+ */
+static void dpm_wd_clear(struct dpm_watchdog *wd)
+{
+	struct timer_list *timer = &wd->timer;
+
+	del_timer_sync(timer);
+	destroy_timer_on_stack(timer);
 }
 
 /*------------------------- Resume routines -------------------------*/
@@ -565,6 +626,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 	char *info = NULL;
 	int error = 0;
 	bool put = false;
+	struct dpm_watchdog wd;
 
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
@@ -577,6 +639,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 	 * a resumed device, even if the device hasn't been completed yet.
 	 */
 	dev->power.is_prepared = false;
+	dpm_wd_set(&wd, dev);
 
 	if (!dev->power.is_suspended)
 		goto Unlock;
@@ -631,6 +694,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 
  Unlock:
 	device_unlock(dev);
+	dpm_wd_clear(&wd);
 	complete_all(&dev->power.completion);
 
 	TRACE_RESUME(error);
@@ -889,6 +953,11 @@ static int dpm_suspend_noirq(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_noirq_list);
 		put_device(dev);
+
+		if (pm_wakeup_pending()) {
+			error = -EBUSY;
+			break;
+		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -962,6 +1031,11 @@ static int dpm_suspend_late(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_late_early_list);
 		put_device(dev);
+
+		if (pm_wakeup_pending()) {
+			error = -EBUSY;
+			break;
+		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -1025,6 +1099,12 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	pm_callback_t callback = NULL;
 	char *info = NULL;
 	int error = 0;
+	struct dpm_watchdog wd;
+
+#if defined(CONFIG_MDM_HSIC_PM)
+	if (!strcmp(dev_name(dev), "1-2"))
+		atomic_inc(&ehci_area);
+#endif
 
 	dpm_wait_for_children(dev, async);
 
@@ -1035,11 +1115,32 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
 		pm_wakeup_event(dev, 0);
 
+#if defined(CONFIG_MDM_HSIC_PM)
+	/* if usb1 device fail to suspend, ap wakeup without ehci resume.
+	 * so -113 error happend. in case of usb1 device, skip this condition.
+	 * and pm_wakeup_pending will be checked next device_suspend.
+	 * this code is temporary code. and it should be removed next version. */
+	if (!atomic_read(&ehci_area) && pm_wakeup_pending()) {
+		if (dev->parent)
+			dev_info(dev, "pm_wakeup_pending!!, area : %d, parent = %s\n",
+					atomic_read(&ehci_area), dev_name(dev->parent));
+		else
+			dev_info(dev, "pm_wakeup_pending!!, area : %d\n",
+					atomic_read(&ehci_area));
+#else
 	if (pm_wakeup_pending()) {
+#endif
 		pm_runtime_put_sync(dev);
 		async_error = -EBUSY;
 		goto Complete;
 	}
+
+#if defined(CONFIG_MDM_HSIC_PM)
+	if (!strcmp(dev_name(dev), "s5p-ehci"))
+		atomic_dec(&ehci_area);
+#endif
+
+	dpm_wd_set(&wd, dev);
 
 	device_lock(dev);
 
@@ -1095,6 +1196,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	}
 
 	device_unlock(dev);
+
+	dpm_wd_clear(&wd);
 
  Complete:
 	complete_all(&dev->power.completion);

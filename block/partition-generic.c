@@ -17,6 +17,7 @@
 #include <linux/ctype.h>
 #include <linux/genhd.h>
 #include <linux/blktrace_api.h>
+#include <linux/stlog.h>
 
 #include "partitions/check.h"
 
@@ -216,10 +217,21 @@ static void part_release(struct device *dev)
 	kfree(p);
 }
 
+static int part_uevent(struct device *dev, struct kobj_uevent_env *env)
+{
+	struct hd_struct *part = dev_to_part(dev);
+
+	add_uevent_var(env, "PARTN=%u", part->partno);
+	if (part->info && part->info->volname[0])
+		add_uevent_var(env, "PARTNAME=%s", part->info->volname);
+	return 0;
+}
+
 struct device_type part_type = {
 	.name		= "partition",
 	.groups		= part_attr_groups,
 	.release	= part_release,
+	.uevent		= part_uevent,
 };
 
 static void delete_partition_rcu_cb(struct rcu_head *head)
@@ -242,6 +254,10 @@ void delete_partition(struct gendisk *disk, int partno)
 	struct disk_part_tbl *ptbl = disk->part_tbl;
 	struct hd_struct *part;
 
+#ifdef CONFIG_STLOG
+	struct device *dev;
+#endif
+
 	if (partno >= ptbl->len)
 		return;
 
@@ -252,6 +268,11 @@ void delete_partition(struct gendisk *disk, int partno)
 	rcu_assign_pointer(ptbl->part[partno], NULL);
 	rcu_assign_pointer(ptbl->last_lookup, NULL);
 	kobject_put(part->holder_dir);
+#ifdef CONFIG_STLOG
+	dev = part_to_dev(part);
+	ST_LOG("<%s> KOBJ_REMOVE %d:%d %s",
+		__func__, MAJOR(dev->devt), MINOR(dev->devt), dev->kobj.name);
+#endif	
 	device_del(part_to_dev(part));
 	blk_free_devt(part_devt(part));
 

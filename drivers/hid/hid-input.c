@@ -641,10 +641,6 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 			map_key_clear(BTN_STYLUS2);
 			break;
 
-		case 0x51: /* ContactID */
-			device->quirks |= HID_QUIRK_MULTITOUCH;
-			goto unknown;
-
 		default:  goto unknown;
 		}
 		break;
@@ -1204,6 +1200,9 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 				 * UGCI) cram a lot of unrelated inputs into the
 				 * same interface. */
 				hidinput->report = report;
+				if (hid->driver->input_register &&
+						hid->driver->input_register(hid, hidinput))
+					goto out_cleanup;
 				if (input_register_device(hidinput->input))
 					goto out_cleanup;
 				hidinput = NULL;
@@ -1217,6 +1216,10 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 			goto out_cleanup;
 		goto out_unwind;
 	}
+
+	if (hidinput && hid->driver->input_register &&
+			hid->driver->input_register(hid, hidinput))
+		goto out_cleanup;
 
 	if (hidinput && input_register_device(hidinput->input))
 		goto out_cleanup;

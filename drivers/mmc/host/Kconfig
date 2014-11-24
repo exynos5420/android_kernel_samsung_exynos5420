@@ -558,6 +558,13 @@ config MMC_DW_PCI
 
 	  If unsure, say N.
 
+config MMC_DW_CMD_LOGGING
+	bool "Samsung DWMCI host supports cmd logging for debug"
+	depends on MMC_DW
+	help
+	  This selects support for command logs that send to device.
+	  Select this option if cmd logging is needed on working.
+
 config MMC_SH_MMCIF
 	tristate "SuperH Internal MMCIF support"
 	depends on MMC_BLOCK && (SUPERH || ARCH_SHMOBILE)

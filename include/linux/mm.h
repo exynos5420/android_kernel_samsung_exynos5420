@@ -157,6 +157,9 @@ extern pgprot_t protection_map[16];
 #define FAULT_FLAG_ALLOW_RETRY	0x08	/* Retry fault if blocking */
 #define FAULT_FLAG_RETRY_NOWAIT	0x10	/* Don't drop mmap_sem and wait when retrying */
 #define FAULT_FLAG_KILLABLE	0x20	/* The fault task is in SIGKILL killable region */
+#ifdef CONFIG_ZSWAP
+#define FAULT_FLAG_TRIED	0x40	/* second try */
+#endif
 
 /*
  * This interface is used by x86 PAT code to identify a pfn mapping that is
@@ -873,6 +876,7 @@ extern bool skip_free_areas_node(unsigned int flags, int nid);
 
 int shmem_lock(struct file *file, int lock, struct user_struct *user);
 struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags);
+void shmem_set_file(struct vm_area_struct *vma, struct file *file);
 int shmem_zero_setup(struct vm_area_struct *);
 
 extern int can_do_mlock(void);
@@ -1507,6 +1511,8 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
 			unsigned long pfn);
 int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
 			unsigned long pfn);
+int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
+
 
 struct page *follow_page(struct vm_area_struct *, unsigned long address,
 			unsigned int foll_flags);

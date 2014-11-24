@@ -18,7 +18,7 @@
 #include "nl80211.h"
 #include "wext-compat.h"
 
-#define IEEE80211_SCAN_RESULT_EXPIRE	(15 * HZ)
+#define IEEE80211_SCAN_RESULT_EXPIRE	(3 * HZ)
 
 void ___cfg80211_scan_done(struct cfg80211_registered_device *rdev, bool leak)
 {
@@ -360,8 +360,10 @@ static int cmp_bss_core(struct cfg80211_bss *a,
 {
 	int r;
 
+#if !(defined(CONFIG_BCM4339) || defined(CONFIG_BCM4339_MODULE))
 	if (a->channel != b->channel)
 		return b->channel->center_freq - a->channel->center_freq;
+#endif /* CONFIG_BCM4339 */
 
 	if (is_mesh_bss(a) && is_mesh_bss(b)) {
 		r = cmp_ies(WLAN_EID_MESH_ID,
@@ -378,7 +380,14 @@ static int cmp_bss_core(struct cfg80211_bss *a,
 			       b->len_information_elements);
 	}
 
-	return memcmp(a->bssid, b->bssid, ETH_ALEN);
+	r = memcmp(a->bssid, b->bssid, ETH_ALEN);
+#if defined(CONFIG_BCM4339) || defined(CONFIG_BCM4339_MODULE)
+	if (r)
+		return r;
+	if (a->channel != b->channel)
+		return b->channel->center_freq - a->channel->center_freq;
+#endif /* CONFIG_BCM4339 */
+	return r;
 }
 
 static int cmp_bss(struct cfg80211_bss *a,

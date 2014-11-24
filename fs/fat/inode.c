@@ -28,6 +28,7 @@
 #include <linux/hash.h>
 #include <asm/unaligned.h>
 #include "fat.h"
+#include <linux/stlog.h>
 
 #ifndef CONFIG_FAT_DEFAULT_IOCHARSET
 /* if user don't select VFAT, this is undefined. */
@@ -487,6 +488,9 @@ static void fat_put_super(struct super_block *sb)
 {
 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 
+	fat_msg(sb, KERN_INFO, "trying to unmount...");
+	ST_LOG("<%s> trying to umount... %d:%d",__func__,MAJOR(sb->s_dev),MINOR(sb->s_dev));
+
 	if (sb->s_dirt)
 		fat_write_super(sb);
 
@@ -500,6 +504,9 @@ static void fat_put_super(struct super_block *sb)
 
 	sb->s_fs_info = NULL;
 	kfree(sbi);
+
+	fat_msg(sb, KERN_INFO, "unmounted successfully!");
+	ST_LOG("<%s> unmounted successfully! %d:%d",__func__,MAJOR(sb->s_dev),MINOR(sb->s_dev));
 }
 
 static struct kmem_cache *fat_inode_cachep;
@@ -651,7 +658,7 @@ retry:
 				  &raw_entry->adate, NULL);
 	}
 	spin_unlock(&sbi->inode_hash_lock);
-	mark_buffer_dirty(bh);
+	mark_buffer_dirty_sync(bh);
 	err = 0;
 	if (wait)
 		err = sync_dirty_buffer(bh);
@@ -1230,8 +1237,8 @@ static int fat_read_root(struct inode *inode)
 	MSDOS_I(inode)->mmu_private = inode->i_size;
 
 	fat_save_attrs(inode, ATTR_DIR);
-	inode->i_mtime.tv_sec = inode->i_atime.tv_sec = inode->i_ctime.tv_sec = 0;
-	inode->i_mtime.tv_nsec = inode->i_atime.tv_nsec = inode->i_ctime.tv_nsec = 0;
+
+	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;
 	set_nlink(inode, fat_subdirs(inode)+2);
 
 	return 0;
@@ -1246,6 +1253,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 	struct inode *root_inode = NULL, *fat_inode = NULL;
 	struct buffer_head *bh;
 	struct fat_boot_sector *b;
+	struct fat_boot_bsx *bsx;
 	struct msdos_sb_info *sbi;
 	u16 logical_sector_size;
 	u32 total_sectors, total_clusters, fat_clusters, rootdir_sectors;
@@ -1254,6 +1262,8 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 	long error;
 	char buf[50];
 
+	fat_msg(sb, KERN_INFO, "trying to mount...");
+	ST_LOG("<%s> trying to mount... %d:%d",__func__,MAJOR(sb->s_dev),MINOR(sb->s_dev));
 	/*
 	 * GFP_KERNEL is ok here, because while we do hold the
 	 * supeblock lock, memory pressure can't call back into
@@ -1261,8 +1271,11 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 	 * it and have no inodes etc active!
 	 */
 	sbi = kzalloc(sizeof(struct msdos_sb_info), GFP_KERNEL);
-	if (!sbi)
+	if (!sbi) {
+		fat_msg(sb, KERN_ERR, "failed to mount! (ENOMEM)");
+		ST_LOG("<%s> failed to mount! %d:%d (ENOMEM)", __func__, MAJOR(sb->s_dev), MINOR(sb->s_dev));
 		return -ENOMEM;
+	}
 	sb->s_fs_info = sbi;
 
 	sb->s_flags |= MS_NODIRATIME;
@@ -1390,6 +1403,8 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 			goto out_fail;
 		}
 
+		bsx = (struct fat_boot_bsx *)(bh->b_data + FAT32_BSX_OFFSET);
+
 		fsinfo = (struct fat_boot_fsinfo *)fsinfo_bh->b_data;
 		if (!IS_FSINFO(fsinfo)) {
 			fat_msg(sb, KERN_WARNING, "Invalid FSINFO signature: "
@@ -1405,7 +1420,13 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 		}
 
 		brelse(fsinfo_bh);
+	} else {
+		bsx = (struct fat_boot_bsx *)(bh->b_data + FAT16_BSX_OFFSET);
 	}
+
+	/* interpret volume ID as a little endian 32 bit integer */
+	sbi->vol_id = (((u32)bsx->vol_id[0]) | ((u32)bsx->vol_id[1] << 8) |
+		((u32)bsx->vol_id[2] << 16) | ((u32)bsx->vol_id[3] << 24));
 
 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
@@ -1508,6 +1529,8 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
 		goto out_fail;
 	}
 
+	fat_msg(sb, KERN_INFO, "mounted successfully!");
+	ST_LOG("<%s> mounted successfully! %d:%d",__func__,MAJOR(sb->s_dev),MINOR(sb->s_dev));
 	return 0;
 
 out_invalid:
@@ -1516,6 +1539,8 @@ out_invalid:
 		fat_msg(sb, KERN_INFO, "Can't find a valid FAT filesystem");
 
 out_fail:
+	fat_msg(sb, KERN_ERR, "failed to mount!");
+	ST_LOG("<%s> failed to mount %d:%d",__func__,MAJOR(sb->s_dev),MINOR(sb->s_dev));
 	if (fat_inode)
 		iput(fat_inode);
 	unload_nls(sbi->nls_io);

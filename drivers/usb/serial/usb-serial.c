@@ -1335,7 +1335,7 @@ static void fixup_generic(struct usb_serial_driver *device)
 	set_to_generic_if_null(device, prepare_write_buffer);
 }
 
-static int usb_serial_register(struct usb_serial_driver *driver)
+int usb_serial_register(struct usb_serial_driver *driver)
 {
 	int retval;
 
@@ -1369,7 +1369,7 @@ static int usb_serial_register(struct usb_serial_driver *driver)
 	return retval;
 }
 
-static void usb_serial_deregister(struct usb_serial_driver *device)
+void usb_serial_deregister(struct usb_serial_driver *device)
 {
 	printk(KERN_INFO "USB Serial deregistering driver %s\n",
 	       device->description);

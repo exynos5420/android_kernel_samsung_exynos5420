@@ -154,6 +154,9 @@ struct input_keymap_entry {
 
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
 
+#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
+#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
+
 #define EVIOCSCLOCKID		_IOW('E', 0xa0, int)			/* Set clockid to be used for timestamps */
 
 /*
@@ -467,6 +470,15 @@ struct input_keymap_entry {
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
+/* Dummy touchkey code */
+#define KEY_DUMMY_HOME1		249
+#define KEY_DUMMY_HOME2		250
+#define KEY_DUMMY_MENU		251
+#define KEY_DUMMY_HOME		252
+#define KEY_DUMMY_BACK		253
+
+#define KEY_RECENT			254
+
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
 #define BTN_MISC		0x100
@@ -522,6 +534,7 @@ struct input_keymap_entry {
 #define BTN_MODE		0x13c
 #define BTN_THUMBL		0x13d
 #define BTN_THUMBR		0x13e
+#define BTN_GAME		0x13f	/* Add game button for samsung bluetooth keypad */
 
 #define BTN_DIGI		0x140
 #define BTN_TOOL_PEN		0x140
@@ -703,13 +716,21 @@ struct input_keymap_entry {
 #define KEY_CAMERA_LEFT		0x219
 #define KEY_CAMERA_RIGHT	0x21a
 
+#define KEY_PEN_PDCT		0x230 /* E-PEN PDCT flag*/
+#ifdef CONFIG_INPUT_BOOSTER
+#define KEY_BOOSTER_PEN		0x231
+#define KEY_BOOSTER_TOUCH	0x232
+#endif
+#ifdef CONFIG_FAST_BOOT
+#define KEY_FAKE_PWR		0x240 /* Fake Power off flag*/
+#endif
 #define BTN_TRIGGER_HAPPY		0x2c0
 #define BTN_TRIGGER_HAPPY1		0x2c0
 #define BTN_TRIGGER_HAPPY2		0x2c1
 #define BTN_TRIGGER_HAPPY3		0x2c2
 #define BTN_TRIGGER_HAPPY4		0x2c3
 #define BTN_TRIGGER_HAPPY5		0x2c4
-#define BTN_TRIGGER_HAPPY6		0x2c5
+#define BTN_TRIGGER_HAPPY6		0x2c5 /* For Samsung S Action Mouse button */
 #define BTN_TRIGGER_HAPPY7		0x2c6
 #define BTN_TRIGGER_HAPPY8		0x2c7
 #define BTN_TRIGGER_HAPPY9		0x2c8
@@ -813,11 +834,15 @@ struct input_keymap_entry {
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
 #define ABS_MT_PRESSURE		0x3a	/* Pressure on contact area */
 #define ABS_MT_DISTANCE		0x3b	/* Contact hover distance */
+#define ABS_MT_ANGLE		0x3c	/* touch angle */
+#define ABS_MT_PALM		0x3d	/* palm touch */
+#define ABS_MT_COMPONENT	0x3e	/* touch component */
+#define ABS_MT_SUMSIZE		0x3f	/* touch sumsize */
 
 #ifdef __KERNEL__
 /* Implementation details, userspace should not care about these */
 #define ABS_MT_FIRST		ABS_MT_TOUCH_MAJOR
-#define ABS_MT_LAST		ABS_MT_DISTANCE
+#define ABS_MT_LAST		ABS_MT_SUMSIZE
 #endif
 
 #define ABS_MAX			0x3f
@@ -843,7 +868,14 @@ struct input_keymap_entry {
 #define SW_FRONT_PROXIMITY	0x0b  /* set = front proximity sensor active */
 #define SW_ROTATE_LOCK		0x0c  /* set = rotate locked/disabled */
 #define SW_LINEIN_INSERT	0x0d  /* set = inserted */
-#define SW_MAX			0x0f
+#define SW_PEN_INSERT			0x13	/* set = pen out */
+#define SW_FLIP			0x15	/* set = flip cover... */
+#define SW_GLOVE		0x16	/* set = glove mode */
+#define SW_LEFT_HAND	0x17	/* set = left hand*/
+#define SW_RIGHT_HAND	0x18	/* set = right hand*/
+#define SW_BOTH_HAND	0x19	/* set = both hand*/
+
+#define SW_MAX			0x1F
 #define SW_CNT			(SW_MAX+1)
 
 /*
@@ -1307,7 +1339,9 @@ struct input_dev {
 	struct mutex mutex;
 
 	unsigned int users;
+	unsigned int users_private;
 	bool going_away;
+	bool disabled;
 
 	bool sync;
 

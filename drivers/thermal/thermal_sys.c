@@ -109,15 +109,8 @@ temp_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct thermal_zone_device *tz = to_thermal_zone(dev);
 	long temperature;
-	int ret;
 
-	if (!tz->ops->get_temp)
-		return -EPERM;
-
-	ret = tz->ops->get_temp(tz, &temperature);
-
-	if (ret)
-		return ret;
+	temperature = tz->last_temperature;
 
 	return sprintf(buf, "%ld\n", temperature);
 }
@@ -196,6 +189,28 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
 }
 
 static ssize_t
+trip_point_temp_store(struct device *dev, struct device_attribute *attr,
+		     const char *buf, size_t count)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int trip, ret;
+	unsigned long temperature;
+
+	if (!tz->ops->set_trip_temp)
+		return -EPERM;
+
+	if (!sscanf(attr->attr.name, "trip_point_%d_temp", &trip))
+		return -EINVAL;
+
+	if (kstrtoul(buf, 10, &temperature))
+		return -EINVAL;
+
+	ret = tz->ops->set_trip_temp(tz, trip, temperature);
+
+	return ret ? ret : count;
+}
+
+static ssize_t
 trip_point_temp_show(struct device *dev, struct device_attribute *attr,
 		     char *buf)
 {
@@ -215,6 +230,174 @@ trip_point_temp_show(struct device *dev, struct device_attribute *attr,
 		return ret;
 
 	return sprintf(buf, "%ld\n", temperature);
+}
+
+static ssize_t
+trip_point_freq_store(struct device *dev, struct device_attribute *attr,
+		     const char *buf, size_t count)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int trip, ret;
+	unsigned long frequency;
+
+	if (!tz->ops->set_trip_freq)
+		return -EPERM;
+
+	if (!sscanf(attr->attr.name, "trip_point_%d_freq", &trip))
+		return -EINVAL;
+
+	if (kstrtoul(buf, 10, &frequency))
+		return -EINVAL;
+
+	ret = tz->ops->set_trip_freq(tz, trip, frequency);
+
+	return ret ? ret : count;
+}
+
+static ssize_t
+trip_point_freq_show(struct device *dev, struct device_attribute *attr,
+		     char *buf)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int trip, ret;
+	unsigned long frequency;
+
+	if (!tz->ops->get_trip_freq)
+		return -EPERM;
+
+	if (!sscanf(attr->attr.name, "trip_point_%d_freq", &trip))
+		return -EINVAL;
+
+	ret = tz->ops->get_trip_freq(tz, trip, &frequency);
+
+	if (ret)
+		return ret;
+
+	return snprintf(buf, PAGE_SIZE, "%ld\n", frequency);
+}
+
+static ssize_t
+trip_point_freq_oneshot_store(struct device *dev, struct device_attribute *attr,
+		     const char *buf, size_t count)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int ret;
+	unsigned long freq0, freq1, freq2, freq3;
+
+	if (!tz->ops->set_trip_freq)
+		return -EPERM;
+
+	if (!sscanf(buf, "%ld %ld %ld %ld\n",
+		&freq0, &freq1, &freq2, &freq3))
+		return -EINVAL;
+
+	ret = tz->ops->set_trip_freq(tz, 0, freq0);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->set_trip_freq(tz, 1, freq1);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->set_trip_freq(tz, 2, freq2);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->set_trip_freq(tz, 3, freq3);
+	if (ret)
+		return ret;
+
+	return count;
+}
+
+static ssize_t
+trip_point_freq_oneshot_show(struct device *dev, struct device_attribute *attr,
+		     char *buf)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	unsigned long trip_freq0, trip_freq1, trip_freq2, trip_freq3;
+	int ret;
+
+	if (!tz->ops->get_trip_freq)
+		return -EPERM;
+
+	ret = tz->ops->get_trip_freq(tz, 0, &trip_freq0);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->get_trip_freq(tz, 1, &trip_freq1);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->get_trip_freq(tz, 2, &trip_freq2);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->get_trip_freq(tz, 3, &trip_freq3);
+	if (ret)
+		return ret;
+
+	return snprintf(buf, PAGE_SIZE, "%ld %ld %ld %ld\n", trip_freq0, trip_freq1, trip_freq2, trip_freq3);
+}
+
+static ssize_t
+trip_point_temp_oneshot_store(struct device *dev, struct device_attribute *attr,
+		     const char *buf, size_t count)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int ret;
+	unsigned int temp0, temp1, temp2;
+
+	if (!tz->ops->set_trip_temp)
+		return -EPERM;
+
+	if (!sscanf(buf, "%d %d %d\n",
+		&temp0, &temp1, &temp2))
+		return -EINVAL;
+
+	ret = tz->ops->set_trip_temp(tz, 0, temp0);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->set_trip_temp(tz, 1, temp1);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->set_trip_temp(tz, 2, temp2);
+	if (ret)
+		return ret;
+
+	if (!tz->ops->set_trip_temp_level)
+		return -EPERM;
+
+	ret = tz->ops->set_trip_temp_level(tz, temp0, temp1, temp2);
+
+	return ret ? ret : count;
+}
+
+static ssize_t
+trip_point_temp_oneshot_show(struct device *dev, struct device_attribute *attr,
+		     char *buf)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int ret;
+	unsigned long trip_temp0, trip_temp1, trip_temp2;
+
+	if (!tz->ops->get_trip_temp)
+		return -EPERM;
+
+	ret = tz->ops->get_trip_temp(tz, 0, &trip_temp0);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->get_trip_temp(tz, 1, &trip_temp1);
+	if (ret)
+		return ret;
+
+	ret = tz->ops->get_trip_temp(tz, 2, &trip_temp2);
+	if (ret)
+		return ret;
+	return snprintf(buf, PAGE_SIZE, "%ld %ld %ld\n", trip_temp0, trip_temp1, trip_temp2);
 }
 
 static ssize_t
@@ -282,33 +465,14 @@ static DEVICE_ATTR(type, 0444, type_show, NULL);
 static DEVICE_ATTR(temp, 0444, temp_show, NULL);
 static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
 static DEVICE_ATTR(passive, S_IRUGO | S_IWUSR, passive_show, passive_store);
-
-static struct device_attribute trip_point_attrs[] = {
-	__ATTR(trip_point_0_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_0_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_1_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_1_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_2_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_2_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_3_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_3_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_4_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_4_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_5_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_5_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_6_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_6_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_7_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_7_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_8_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_8_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_9_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_9_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_10_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_10_temp, 0444, trip_point_temp_show, NULL),
-	__ATTR(trip_point_11_type, 0444, trip_point_type_show, NULL),
-	__ATTR(trip_point_11_temp, 0444, trip_point_temp_show, NULL),
-};
+static DEVICE_ATTR(trip_freq, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
+		trip_point_freq_show, trip_point_freq_store);
+static DEVICE_ATTR(oneshot_trip_freq, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
+		trip_point_freq_oneshot_show, trip_point_freq_oneshot_store);
+static DEVICE_ATTR(trip_temp, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
+		trip_point_temp_show, trip_point_temp_store);
+static DEVICE_ATTR(oneshot_trip_temp, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
+		trip_point_temp_oneshot_show, trip_point_temp_oneshot_store);
 
 /* sys I/F for cooling device */
 #define to_cooling_device(_dev)	\
@@ -451,7 +615,7 @@ temp_input_show(struct device *dev, struct device_attribute *attr, char *buf)
 	if (ret)
 		return ret;
 
-	return sprintf(buf, "%ld\n", temperature);
+	return snprintf(buf, PAGE_SIZE, "%ld\n", temperature);
 }
 
 static ssize_t
@@ -471,7 +635,7 @@ temp_crit_show(struct device *dev, struct device_attribute *attr,
 	if (ret)
 		return ret;
 
-	return sprintf(buf, "%ld\n", temperature);
+	return snprintf(buf, PAGE_SIZE, "%ld\n", temperature);
 }
 
 
@@ -549,7 +713,7 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
 	temp->tz = tz;
 	hwmon->count++;
 
-	snprintf(temp->temp_input.name, THERMAL_NAME_LENGTH,
+	snprintf(temp->temp_input.name, sizeof(temp->temp_input.name),
 		 "temp%d_input", hwmon->count);
 	temp->temp_input.attr.attr.name = temp->temp_input.name;
 	temp->temp_input.attr.attr.mode = 0444;
@@ -562,8 +726,9 @@ thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
 	if (tz->ops->get_crit_temp) {
 		unsigned long temperature;
 		if (!tz->ops->get_crit_temp(tz, &temperature)) {
-			snprintf(temp->temp_crit.name, THERMAL_NAME_LENGTH,
-				"temp%d_crit", hwmon->count);
+			snprintf(temp->temp_crit.name,
+				 sizeof(temp->temp_crit.name),
+				 "temp%d_crit", hwmon->count);
 			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
 			temp->temp_crit.attr.attr.mode = 0444;
 			temp->temp_crit.attr.show = temp_crit_show;
@@ -669,69 +834,44 @@ static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
 static void thermal_zone_device_passive(struct thermal_zone_device *tz,
 					int temp, int trip_temp, int trip)
 {
-	int trend = 0;
+	int count;
 	struct thermal_cooling_device_instance *instance;
 	struct thermal_cooling_device *cdev;
-	long state, max_state;
+	long state;
+	unsigned long *temp_level = (unsigned long*)kzalloc(sizeof(unsigned long)*trip, GFP_KERNEL);
 
-	/*
-	 * Above Trip?
-	 * -----------
-	 * Calculate the thermal trend (using the passive cooling equation)
-	 * and modify the performance limit for all passive cooling devices
-	 * accordingly.  Note that we assume symmetry.
-	 */
-	if (temp >= trip_temp) {
-		tz->passive = true;
-
-		trend = (tz->tc1 * (temp - tz->last_temperature)) +
-			(tz->tc2 * (temp - trip_temp));
-
-		/* Heating up? */
-		if (trend > 0) {
-			list_for_each_entry(instance, &tz->cooling_devices,
-					    node) {
-				if (instance->trip != trip)
-					continue;
-				cdev = instance->cdev;
-				cdev->ops->get_cur_state(cdev, &state);
-				cdev->ops->get_max_state(cdev, &max_state);
-				if (state++ < max_state)
-					cdev->ops->set_cur_state(cdev, state);
-			}
-		} else if (trend < 0) { /* Cooling off? */
-			list_for_each_entry(instance, &tz->cooling_devices,
-					    node) {
-				if (instance->trip != trip)
-					continue;
-				cdev = instance->cdev;
-				cdev->ops->get_cur_state(cdev, &state);
-				cdev->ops->get_max_state(cdev, &max_state);
-				if (state > 0)
-					cdev->ops->set_cur_state(cdev, --state);
-			}
-		}
+	if (!temp_level) {
+		pr_info("failed to allocate memory\n");
 		return;
 	}
 
-	/*
-	 * Below Trip?
-	 * -----------
-	 * Implement passive cooling hysteresis to slowly increase performance
-	 * and avoid thrashing around the passive trip point.  Note that we
-	 * assume symmetry.
-	 */
-	list_for_each_entry(instance, &tz->cooling_devices, node) {
-		if (instance->trip != trip)
-			continue;
-		cdev = instance->cdev;
-		cdev->ops->get_cur_state(cdev, &state);
-		cdev->ops->get_max_state(cdev, &max_state);
-		if (state > 0)
-			cdev->ops->set_cur_state(cdev, --state);
-		if (state == 0)
-			tz->passive = false;
+	for (count = 0; count < trip; count++)
+		temp_level[count] = tz->ops->get_trip_temp_level(tz, count, tz->passive);
+
+	if (temp >= trip_temp) {
+		for (count = trip; count > 0; count--) {
+			if (temp >= temp_level[count - 1]) {
+				list_for_each_entry(instance, &tz->cooling_devices, node) {
+					cdev = instance->cdev;
+					cdev->ops->set_cur_state(cdev, count);
+				}
+				break;
+			}
+		}
+		tz->passive = true;
+	} else {
+		list_for_each_entry(instance, &tz->cooling_devices, node) {
+			cdev = instance->cdev;
+			cdev->ops->get_cur_state(cdev, &state);
+			if (state > 0) {
+				cdev->ops->set_cur_state(cdev, --state);
+				if (state == 0 && tz->passive)
+					tz->passive = false;
+				break;
+			}
+		}
 	}
+	kfree(temp_level);
 }
 
 static void thermal_zone_device_check(struct work_struct *work)
@@ -896,7 +1036,7 @@ thermal_cooling_device_register(char *type, void *devdata,
 	struct thermal_zone_device *pos;
 	int result;
 
-	if (strlen(type) >= THERMAL_NAME_LENGTH)
+	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
 		return ERR_PTR(-EINVAL);
 
 	if (!ops || !ops->get_max_state || !ops->get_cur_state ||
@@ -913,7 +1053,7 @@ thermal_cooling_device_register(char *type, void *devdata,
 		return ERR_PTR(result);
 	}
 
-	strcpy(cdev->type, type);
+	strcpy(cdev->type, type ? : "");
 	cdev->ops = ops;
 	cdev->device.class = &thermal_class;
 	cdev->devdata = devdata;
@@ -1013,7 +1153,7 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
 
 void thermal_zone_device_update(struct thermal_zone_device *tz)
 {
-	int count, ret = 0;
+	int count, ret = 0, throttling_count;
 	long temp, trip_temp;
 	enum thermal_trip_type trip_type;
 	struct thermal_cooling_device_instance *instance;
@@ -1027,6 +1167,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
 		goto leave;
 	}
 
+	pr_info("[TMU_POLLING] polling_delay=%dms, temperature=%ld\n", tz->polling_delay, temp / 1000);
 	for (count = 0; count < tz->trips; count++) {
 		tz->ops->get_trip_type(tz, count, &trip_type);
 		tz->ops->get_trip_temp(tz, count, &trip_temp);
@@ -1037,7 +1178,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
 				if (tz->ops->notify)
 					ret = tz->ops->notify(tz, count,
 							      trip_type);
-				if (!ret) {
+				if (ret) {
 					pr_emerg("Critical temperature reached (%ld C), shutting down\n",
 						 temp/1000);
 					orderly_poweroff(true);
@@ -1057,16 +1198,23 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
 
 				cdev = instance->cdev;
 
-				if (temp >= trip_temp)
+				if (temp >= trip_temp) {
 					cdev->ops->set_cur_state(cdev, 1);
-				else
-					cdev->ops->set_cur_state(cdev, 0);
+				} else {
+					if (tz->passive)
+						pr_debug("Current Cooling mode is passive!!, do not change cpufreq\n");
+					else
+						cdev->ops->set_cur_state(cdev, 0);
+				}
 			}
 			break;
 		case THERMAL_TRIP_PASSIVE:
-			if (temp >= trip_temp || tz->passive)
+			if (temp >= trip_temp || tz->passive) {
+				tz->passive = true;
+				throttling_count = tz->ops->get_throttling_count(tz, THERMAL_TRIP_PASSIVE);
 				thermal_zone_device_passive(tz, temp,
-							    trip_temp, count);
+							    trip_temp, throttling_count);
+			}
 			break;
 		}
 	}
@@ -1089,9 +1237,109 @@ leave:
 EXPORT_SYMBOL(thermal_zone_device_update);
 
 /**
+ * create_trip_attrs - create attributes for trip points
+ * @tz:		the thermal zone device
+ * @mask:	Writeable trip point bitmap.
+ */
+static int create_trip_attrs(struct thermal_zone_device *tz, int mask)
+{
+	int indx;
+
+	tz->trip_type_attrs =
+		kzalloc(sizeof(struct thermal_attr) * tz->trips, GFP_KERNEL);
+	if (!tz->trip_type_attrs)
+		return -ENOMEM;
+
+	tz->trip_temp_attrs =
+		kzalloc(sizeof(struct thermal_attr) * tz->trips, GFP_KERNEL);
+	if (!tz->trip_temp_attrs) {
+		kfree(tz->trip_type_attrs);
+		return -ENOMEM;
+	}
+
+	tz->trip_freq_attrs =
+		kzalloc(sizeof(struct thermal_attr) * tz->trips, GFP_KERNEL);
+	if (!tz->trip_freq_attrs)
+		return -ENOMEM;
+
+
+	for (indx = 0; indx < tz->trips; indx++) {
+
+		/* create trip type attribute */
+		snprintf(tz->trip_type_attrs[indx].name, THERMAL_NAME_LENGTH,
+			 "trip_point_%d_type", indx);
+
+		sysfs_attr_init(&tz->trip_type_attrs[indx].attr.attr);
+		tz->trip_type_attrs[indx].attr.attr.name =
+						tz->trip_type_attrs[indx].name;
+		tz->trip_type_attrs[indx].attr.attr.mode = S_IRUGO;
+		tz->trip_type_attrs[indx].attr.show = trip_point_type_show;
+
+		device_create_file(&tz->device,
+				   &tz->trip_type_attrs[indx].attr);
+
+		/* create trip temp attribute */
+		snprintf(tz->trip_temp_attrs[indx].name, THERMAL_NAME_LENGTH,
+			 "trip_point_%d_temp", indx);
+
+		sysfs_attr_init(&tz->trip_temp_attrs[indx].attr.attr);
+		tz->trip_temp_attrs[indx].attr.attr.name =
+						tz->trip_temp_attrs[indx].name;
+		tz->trip_temp_attrs[indx].attr.attr.mode = S_IRUGO;
+		tz->trip_temp_attrs[indx].attr.show = trip_point_temp_show;
+		if (mask & (1 << indx)) {
+			tz->trip_temp_attrs[indx].attr.attr.mode |= S_IWUSR;
+			tz->trip_temp_attrs[indx].attr.store =
+							trip_point_temp_store;
+		}
+
+		device_create_file(&tz->device,
+				   &tz->trip_temp_attrs[indx].attr);
+
+		/* create trip freq attribute */
+		snprintf(tz->trip_freq_attrs[indx].name, THERMAL_NAME_LENGTH,
+			 "trip_point_%d_freq", indx);
+
+		sysfs_attr_init(&tz->trip_freq_attrs[indx].attr.attr);
+		tz->trip_freq_attrs[indx].attr.attr.name =
+						tz->trip_freq_attrs[indx].name;
+		tz->trip_freq_attrs[indx].attr.attr.mode = S_IRUGO;
+		tz->trip_freq_attrs[indx].attr.show = trip_point_freq_show;
+		if (mask & (1 << indx)) {
+			tz->trip_freq_attrs[indx].attr.attr.mode |= S_IWUSR;
+			tz->trip_freq_attrs[indx].attr.store =
+							trip_point_freq_store;
+		}
+
+		device_create_file(&tz->device,
+				   &tz->trip_freq_attrs[indx].attr);
+	}
+	return 0;
+}
+
+static void remove_trip_attrs(struct thermal_zone_device *tz)
+{
+	int indx;
+
+	for (indx = 0; indx < tz->trips; indx++) {
+		device_remove_file(&tz->device,
+				   &tz->trip_type_attrs[indx].attr);
+		device_remove_file(&tz->device,
+				   &tz->trip_temp_attrs[indx].attr);
+		device_remove_file(&tz->device,
+				   &tz->trip_freq_attrs[indx].attr);
+
+	}
+	kfree(tz->trip_type_attrs);
+	kfree(tz->trip_temp_attrs);
+	kfree(tz->trip_freq_attrs);
+}
+
+/**
  * thermal_zone_device_register - register a new thermal zone device
  * @type:	the thermal zone device type
  * @trips:	the number of trip points the thermal zone support
+ * @mask:	a bit string indicating the writeablility of trip points
  * @devdata:	private device data
  * @ops:	standard thermal zone device callbacks
  * @tc1:	thermal coefficient 1 for passive calculations
@@ -1107,7 +1355,7 @@ EXPORT_SYMBOL(thermal_zone_device_update);
  * section 11.1.5.1 of the ACPI specification 3.0.
  */
 struct thermal_zone_device *thermal_zone_device_register(char *type,
-	int trips, void *devdata,
+	int trips, int mask, void *devdata,
 	const struct thermal_zone_device_ops *ops,
 	int tc1, int tc2, int passive_delay, int polling_delay)
 {
@@ -1118,10 +1366,10 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
 	int count;
 	int passive = 0;
 
-	if (strlen(type) >= THERMAL_NAME_LENGTH)
+	if (type && strlen(type) >= THERMAL_NAME_LENGTH)
 		return ERR_PTR(-EINVAL);
 
-	if (trips > THERMAL_MAX_TRIPS || trips < 0)
+	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
 		return ERR_PTR(-EINVAL);
 
 	if (!ops || !ops->get_temp)
@@ -1140,7 +1388,7 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
 		return ERR_PTR(result);
 	}
 
-	strcpy(tz->type, type);
+	strcpy(tz->type, type ? : "");
 	tz->ops = ops;
 	tz->device.class = &thermal_class;
 	tz->devdata = devdata;
@@ -1175,15 +1423,27 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
 			goto unregister;
 	}
 
+	result = device_create_file(&tz->device, &dev_attr_trip_freq);
+	if (result)
+		goto unregister;
+
+	result = device_create_file(&tz->device, &dev_attr_oneshot_trip_freq);
+	if (result)
+		goto unregister;
+
+	result = device_create_file(&tz->device, &dev_attr_trip_temp);
+	if (result)
+		goto unregister;
+
+	result = device_create_file(&tz->device, &dev_attr_oneshot_trip_temp);
+	if (result)
+		goto unregister;
+
+	result = create_trip_attrs(tz, mask);
+	if (result)
+		goto unregister;
+
 	for (count = 0; count < trips; count++) {
-		result = device_create_file(&tz->device,
-					    &trip_point_attrs[count * 2]);
-		if (result)
-			break;
-		result = device_create_file(&tz->device,
-					    &trip_point_attrs[count * 2 + 1]);
-		if (result)
-			goto unregister;
 		tz->ops->get_trip_type(tz, count, &trip_type);
 		if (trip_type == THERMAL_TRIP_PASSIVE)
 			passive = 1;
@@ -1232,7 +1492,6 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 {
 	struct thermal_cooling_device *cdev;
 	struct thermal_zone_device *pos = NULL;
-	int count;
 
 	if (!tz)
 		return;
@@ -1257,15 +1516,14 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	if (tz->type[0])
 		device_remove_file(&tz->device, &dev_attr_type);
 	device_remove_file(&tz->device, &dev_attr_temp);
+	device_remove_file(&tz->device, &dev_attr_trip_freq);
+	device_remove_file(&tz->device, &dev_attr_oneshot_trip_freq);
+	device_remove_file(&tz->device, &dev_attr_trip_temp);
+	device_remove_file(&tz->device, &dev_attr_oneshot_trip_temp);
 	if (tz->ops->get_mode)
 		device_remove_file(&tz->device, &dev_attr_mode);
+	remove_trip_attrs(tz);
 
-	for (count = 0; count < tz->trips; count++) {
-		device_remove_file(&tz->device,
-				   &trip_point_attrs[count * 2]);
-		device_remove_file(&tz->device,
-				   &trip_point_attrs[count * 2 + 1]);
-	}
 	thermal_remove_hwmon_sysfs(tz);
 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
 	idr_destroy(&tz->idr);

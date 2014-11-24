@@ -296,6 +296,8 @@ extern int usb_serial_register_drivers(struct usb_driver *udriver,
 		struct usb_serial_driver * const serial_drivers[]);
 extern void usb_serial_deregister_drivers(struct usb_driver *udriver,
 		struct usb_serial_driver * const serial_drivers[]);
+extern int  usb_serial_register(struct usb_serial_driver *driver);
+extern void usb_serial_deregister(struct usb_serial_driver *driver);
 extern void usb_serial_port_softint(struct usb_serial_port *port);
 
 extern int usb_serial_probe(struct usb_interface *iface,

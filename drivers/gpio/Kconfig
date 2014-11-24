@@ -203,6 +203,12 @@ config GPIO_GE_FPGA
 
 comment "I2C GPIO expanders:"
 
+config GPIO_ARIZONA
+	tristate "Wolfson Microelectronics Arizona class devices"
+	depends on MFD_ARIZONA
+	help
+	  Support for GPIOs on Wolfson Arizona class devices.
+
 config GPIO_MAX7300
 	tristate "Maxim MAX7300 GPIO expander"
 	depends on I2C
@@ -514,4 +520,7 @@ config GPIO_TPS65910
 	help
 	  Select this option to enable GPIO driver for the TPS65910
 	  chip family.
+
+config SEC_GPIO_DVS
+	tristate "setting Samsung GPIO debugging and verification system"
 endif

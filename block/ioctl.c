@@ -8,6 +8,7 @@
 #include <linux/fs.h>
 #include <linux/blktrace_api.h>
 #include <asm/uaccess.h>
+#include <linux/stlog.h>
 
 static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user *arg)
 {
@@ -129,6 +130,7 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
 		return -EINVAL;
 	if (secure)
 		flags |= BLKDEV_DISCARD_SECURE;
+	ST_LOG("%s %d:%d %lu %lu", secure?"SECDIS":"DIS", MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev), start, len);
 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
 }
 

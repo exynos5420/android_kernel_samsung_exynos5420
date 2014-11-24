@@ -76,6 +76,7 @@ static const char * const iio_modifier_names[] = {
 	[IIO_MOD_Z] = "z",
 	[IIO_MOD_LIGHT_BOTH] = "both",
 	[IIO_MOD_LIGHT_IR] = "ir",
+	[IIO_MOD_R] = "r",
 };
 
 /* relies on pairs of these shared then separate */

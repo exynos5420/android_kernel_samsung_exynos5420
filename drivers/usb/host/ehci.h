@@ -375,7 +375,12 @@ struct ehci_qh {
 #define	QH_STATE_COMPLETING	5		/* don't touch token.HALT */
 
 	u8			xacterrs;	/* XactErr retry counter */
+
+#if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_QC_MODEM)
+#define	QH_XACTERR_MAX		4		/* XactErr retry limit */
+#else
 #define	QH_XACTERR_MAX		32		/* XactErr retry limit */
+#endif
 
 	/* periodic schedule info */
 	u8			usecs;		/* intr bandwidth */
@@ -602,6 +607,23 @@ ehci_port_speed(struct ehci_hcd *ehci, unsigned int portsc)
 #define	ehci_port_speed(ehci, portsc)	USB_PORT_STAT_HIGH_SPEED
 #endif
 
+#ifdef CONFIG_HOST_COMPLIANT_TEST
+static struct list_head *qh_urb_transaction(
+		struct ehci_hcd *ehci,
+		struct urb *urb,
+		struct list_head *head,
+		gfp_t flags);
+
+static int submit_async(
+		struct ehci_hcd *ehci,
+		struct urb *urb,
+		struct list_head *qtd_list,
+		gfp_t mem_flags);
+
+static inline void ehci_qtd_free(
+		struct ehci_hcd *ehci,
+		struct ehci_qtd *qtd);
+#endif
 /*-------------------------------------------------------------------------*/
 
 #ifdef CONFIG_PPC_83xx

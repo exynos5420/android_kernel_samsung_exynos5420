@@ -2875,6 +2875,13 @@ F:	Documentation/power/freezing-of-tasks.txt
 F:	include/linux/freezer.h
 F:	kernel/freezer.c
 
+FRONTSWAP API
+M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+L:	linux-kernel@vger.kernel.org
+S:	Maintained
+F:	mm/frontswap.c
+F:	include/linux/frontswap.h
+
 FS-CACHE: LOCAL CACHING FOR NETWORK FILESYSTEMS
 M:	David Howells <dhowells@redhat.com>
 L:	linux-cachefs@redhat.com
@@ -6854,6 +6861,13 @@ M:	Evgeniy Dushistov <dushistov@mail.ru>
 S:	Maintained
 F:	Documentation/filesystems/ufs.txt
 F:	fs/ufs/
+
+UHID USERSPACE HID IO DRIVER:
+M:	David Herrmann <dh.herrmann@googlemail.com>
+L:	linux-input@vger.kernel.org
+S:	Maintained
+F:	drivers/hid/uhid.c
+F:	include/linux/uhid.h
 
 ULTRA-WIDEBAND (UWB) SUBSYSTEM:
 L:	linux-usb@vger.kernel.org

@@ -134,7 +134,7 @@ static inline void __iomem *__typesafe_io(unsigned long addr)
  * readb() et.al. on such platforms.
  */
 #ifndef IO_SPACE_LIMIT
-#if defined(CONFIG_PCMCIA_SOC_COMMON) || defined(CONFIG_PCMCIA_SOC_COMMON_MODULE)
+#if defined(CONFIG_PCMCIA_SOC_COMMON) || defined(CONFIG_PCMCIA_SOC_COMMON_MODULE) || defined(CONFIG_ARCH_EXYNOS)
 #define IO_SPACE_LIMIT ((resource_size_t)0xffffffff)
 #elif defined(CONFIG_PCI) || defined(CONFIG_ISA) || defined(CONFIG_PCCARD)
 #define IO_SPACE_LIMIT ((resource_size_t)0xffff)

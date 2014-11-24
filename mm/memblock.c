@@ -19,6 +19,9 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/memblock.h>
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+#include <mach/sec_debug.h>
+#endif
 
 static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
 static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
@@ -555,7 +558,9 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
 		     (unsigned long long)base,
 		     (unsigned long long)base + size,
 		     (void *)_RET_IP_);
-
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+	sec_debug_subsys_set_reserved_out_buf(base, size);
+#endif
 	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
 }
 

@@ -36,7 +36,9 @@
 #include <asm/system_misc.h>
 
 #include "signal.h"
-
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+#include <mach/sec_debug.h>
+#endif
 static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
 
 void *vectors_page;
@@ -292,10 +294,23 @@ void die(const char *str, struct pt_regs *regs, int err)
 	raw_spin_unlock_irq(&die_lock);
 	oops_exit();
 
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+	sec_debug_save_die_info(str, regs);
+#endif
+
+#ifdef CONFIG_SEC_DEBUG
+	if (in_interrupt())
+		panic("%-51s\nPC is at %-42pS\nLR is at %-42pS",
+				"Fatal exception in interrupt", (void *)regs->ARM_pc, (void *)regs->ARM_lr);
+	if (panic_on_oops)
+		panic("%-51s\nPC is at %-42pS\nLR is at %-42pS",
+				"Fatal exception", (void *)regs->ARM_pc, (void *)regs->ARM_lr);
+#else
 	if (in_interrupt())
 		panic("Fatal exception in interrupt");
 	if (panic_on_oops)
 		panic("Fatal exception");
+#endif
 	if (ret != NOTIFY_STOP)
 		do_exit(SIGSEGV);
 }

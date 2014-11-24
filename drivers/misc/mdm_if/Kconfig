@@ -1,0 +1,52 @@
+comment "Qualcomm Modem Feature"
+config QC_MODEM
+	bool "Qualcomm modem support"
+	default n
+
+config MSM_SUBSYSTEM_RESTART
+	bool "QC Modem restart handler"
+	default n
+
+config QC_MODEM_MDM9X15
+	bool "support QC mdm9x15 modem"
+	default n
+
+config MDM_HSIC_PM
+	bool "support QC mdm9x15 PM over HSIC"
+	default n
+
+config EMI_ERROR_RECOVERY
+	bool "unsuspected emi error recovery on HUB"
+	default n
+
+config SIM_DETECT
+	bool "support sim detect"
+	default n
+
+if QC_MODEM
+choice
+	prompt "QC MODEM CONFIG"
+	depends on QC_MODEM
+	default QC_MODEM_M3
+
+config QC_MODEM_M3
+	bool "M3 support QMI inteface over HSIC"
+	select MODEM_SUPPORT_QMI_INTERFACE
+	select MSM_SUBSYSTEM_RESTART
+	select USB_QCOM_DIAG_BRIDGE
+	select USB_QCOM_MDM_BRIDGE
+	select QC_MODEM_MDM9X15
+	select MSM_RMNET_USB
+	select DIAG_CHAR
+	select MDM_HSIC_PM
+	select USB_QCOM_KS_BRIDGE
+	select USB_SERIAL_CSVT
+#	select USB_SERIAL_QUALCOMM
+
+endchoice
+
+config EHCI_MODEM_PORTNUM
+	int "EHCI port number of modem connection"
+	default 2
+
+endif

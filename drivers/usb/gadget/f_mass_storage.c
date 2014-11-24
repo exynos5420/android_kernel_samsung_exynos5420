@@ -402,6 +402,10 @@ struct fsg_common {
 	 * Vendor (8 chars), product (16 chars), release (4
 	 * hexadecimal digits) and NUL byte
 	 */
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	char vendor_string[8 + 1];
+	char product_string[16 + 1];
+#endif
 	char inquiry_string[8 + 16 + 4 + 1];
 
 	struct kref		ref;

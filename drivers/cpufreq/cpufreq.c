@@ -31,7 +31,10 @@
 #include <linux/syscore_ops.h>
 
 #include <trace/events/power.h>
-
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+#include <mach/sec_debug.h>
+char *sec_debug_sys_cpufreq_buf;
+#endif
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -974,6 +977,11 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
 	module_put(cpufreq_driver->owner);
 	pr_debug("initialization complete\n");
 
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+	if(sec_debug_sys_cpufreq_buf)
+		for(j=0;j<nr_cpu_ids;++j)
+			*(((int*)sec_debug_sys_cpufreq_buf) + j) = virt_to_phys(per_cpu(cpufreq_cpu_data, j));
+#endif	
 	return 0;
 
 
@@ -1937,3 +1945,30 @@ static int __init cpufreq_core_init(void)
 	return 0;
 }
 core_initcall(cpufreq_core_init);
+
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+int sec_debug_set_cpu_info(struct sec_debug_subsys *subsys_info, char *subsys_log_buf)
+{
+	struct cpufreq_policy *data;
+	int i,val,size=0;
+
+	subsys_info->kernel.cpu_info.cpu_offset_paddr = virt_to_phys(&__per_cpu_offset[0]);
+	subsys_info->kernel.cpu_info.cpufreq_policy.paddr = virt_to_phys(subsys_log_buf);
+	sec_debug_sys_cpufreq_buf = subsys_log_buf;
+
+	for(i=0;i<nr_cpu_ids;++i) {
+		data = per_cpu(cpufreq_cpu_data, i);
+		if(data)
+			val = virt_to_phys(data);
+		else
+			val = 0;
+		memcpy(subsys_log_buf+size,&val,sizeof(int)); size += sizeof(int);
+	}
+	subsys_info->kernel.cpu_info.cpufreq_policy.name_length = CPUFREQ_NAME_LEN;
+	subsys_info->kernel.cpu_info.cpufreq_policy.min_offset = offsetof(struct cpufreq_policy, min);
+	subsys_info->kernel.cpu_info.cpufreq_policy.max_offset = offsetof(struct cpufreq_policy, max);
+	subsys_info->kernel.cpu_info.cpufreq_policy.cur_offset = offsetof(struct cpufreq_policy, cur);
+
+	return size;
+}
+#endif
