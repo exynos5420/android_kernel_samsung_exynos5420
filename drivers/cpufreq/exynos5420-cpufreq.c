@@ -515,9 +515,9 @@ static int exynos5420_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	160000,	/* 700 MHz */
 	133000,	/* 600 MHz */
 	133000,	/* 500 MHz */
-	0,	/* 400 MHz */
-	0,	/* 300 MHz */
-	0,	/* 200 MHz */
+	133000,	/* 400 MHz */
+	133000,	/* 300 MHz */
+	133000,	/* 200 MHz */
 };
 
 static int exynos5420_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -894,10 +894,9 @@ static void __init set_volt_table_CA7(void)
 	exynos5420_freq_table_CA7[L2].frequency = CPUFREQ_ENTRY_INVALID;
 	max_support_idx_CA7 = L3;
 
-	min_support_idx_CA7 = L11;
-	exynos5420_freq_table_CA7[L12].frequency = CPUFREQ_ENTRY_INVALID;
+	min_support_idx_CA7 = L14;
+	exynos5420_freq_table_CA7[L11].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5420_freq_table_CA7[L13].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA7[L14].frequency = CPUFREQ_ENTRY_INVALID;
 }
 
 static void __init set_volt_table_CA15(void)
