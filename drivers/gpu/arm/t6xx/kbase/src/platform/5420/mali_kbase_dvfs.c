@@ -75,10 +75,10 @@
 
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_MAX_CLK 480
-#define GPU_THROTTLING_90_95 480
-#define GPU_THROTTLING_95_100 420
-#define GPU_THROTTLING_100_105 350
+#define GPU_MAX_CLK 533
+#define GPU_THROTTLING_90_95 533
+#define GPU_THROTTLING_95_100 480
+#define GPU_THROTTLING_100_105 420
 #define GPU_THROTTLING_105_110 177
 #define GPU_TRIPPING_110 100
 #endif
@@ -122,17 +122,17 @@ typedef struct _mali_dvfs_info{
 } mali_dvfs_info;
 
 static mali_dvfs_info mali_dvfs_infotbl[] = {
-#ifndef CONFIG_SUPPORT_WQXGA
-	{812500, 100, 0, 90, 0, 160000, 83000, 250000},
-	{812500, 177, 53, 90, 0, 160000, 83000, 250000},
-#else
-	{812500, 177, 0, 90, 0, 160000, 83000, 250000},
-#endif /* CONFIG_SUPPORT_WQXGA */
-	{862500, 266, 60, 90, 0, 400000, 222000, 250000},
-	{912500, 350, 70, 90, 0, 667000, 333000, 250000},
-	{962500, 420, 78, 99, 0, 800000, 400000, 250000},
-	{1000000, 480, 98, 100, 0, 800000, 400000, 650000},
-	{1037500, 533, 99, 100, 0, 800000, 400000, 1200000},
+//#ifndef CONFIG_SUPPORT_WQXGA
+	{812500, 100, 0, 35, 0, 160000, 83000, 250000},
+	{812500, 177, 36, 55, 0, 160000, 83000, 250000},
+//#else
+//	{812500, 177, 0, 90, 0, 160000, 83000, 250000},
+//#endif /* CONFIG_SUPPORT_WQXGA */
+	{862500, 266, 56, 69, 0, 400000, 222000, 250000},
+	{912500, 350, 70, 79, 0, 667000, 333000, 250000},
+	{962500, 420, 80, 89, 0, 800000, 400000, 250000},
+	{1000000, 480, 90, 95, 0, 800000, 400000, 650000},
+	{1037500, 533, 96, 100, 0, 800000, 400000, 1200000},
 };
 
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
@@ -223,7 +223,7 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 
 	if (dvfs_status->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 #ifdef PLATFORM_UTILIZATION
-		if (dvfs_status->step == kbase_platform_dvfs_get_level(500)) {
+		if (dvfs_status->step == kbase_platform_dvfs_get_level(533)) {
 			if (platform->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 				dvfs_status->step++;
 				DVFS_ASSERT(dvfs_status->step < MALI_DVFS_STEP);
