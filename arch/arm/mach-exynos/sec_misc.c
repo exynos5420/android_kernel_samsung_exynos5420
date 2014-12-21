@@ -91,7 +91,7 @@ static ssize_t drop_caches_show
 	(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int ret = 0;
-	return snprintf(buf, sizeof(buf), "%d\n", ret);
+	return snprintf(buf, sizeof(*buf), "%d\n", ret);
 }
 
 static ssize_t drop_caches_store
