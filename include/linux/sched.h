@@ -120,10 +120,10 @@ struct blk_plug;
 extern unsigned long avenrun[];		/* Load averages */
 extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
 
-#define FSHIFT 11 			/* bits of precision */
+#define FSHIFT		11 		/* bits of precision */
 #define LOAD_FREQ	(4*HZ+122)	/* 4.61 sec intervals */
 #define FIXED_1		(1UL<<FSHIFT)	/* 1.0 as fixed-point */
-#define EXP_1           1896		/* 1/exp(4.61sec/1min) as fixed-point */
+#define EXP_1		1896		/* 1/exp(4.61sec/1min) as fixed-point */
 #define EXP_5		2017		/* 1/exp(4.61sec/5min) */
 #define EXP_15		2038		/* 1/exp(4.61sec/15min) */
 
