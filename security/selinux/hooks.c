@@ -440,6 +440,13 @@ static int sb_finish_set_opts(struct super_block *sb)
 	 */
 	if (strncmp(sb->s_type->name, "rootfs", sizeof("rootfs")) == 0)
 
+	/* Special handling. Is genfs but also has in-core setxattr handler*/
+	if (!strcmp(sb->s_type->name, "sysfs") ||
+	    !strcmp(sb->s_type->name, "pstore") ||
+	    !strcmp(sb->s_type->name, "debugfs") ||
+	    !strcmp(sb->s_type->name, "rootfs"))
+		sbsec->flags |= SE_SBLABELSUPP;
+
 	/* Initialize the root inode. */
 	rc = inode_doinit_with_dentry(root_inode, root);
 	printk(KERN_DEBUG "SELinux: end of inode_doinit_with_dentry \n");
