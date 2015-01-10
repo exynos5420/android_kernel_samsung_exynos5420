@@ -605,6 +605,7 @@ static struct attribute *default_attrs[] = {
 	&scaling_governor.attr,
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
+	&cpufreq_freq_attr_scaling_available_freqs.attr,
 	&scaling_setspeed.attr,
 	NULL
 };
