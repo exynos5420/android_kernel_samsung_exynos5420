@@ -1881,6 +1881,39 @@ static ssize_t set_touchkey_firm_status_show(struct device *dev,
 
 	return count;
 }
+
+static ssize_t show_touchkey_enabled(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	struct touchkey_i2c *tkey_i2c = dev_get_drvdata(dev);
+
+	dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", tkey_i2c->enabled);
+}
+
+static ssize_t touchkey_enabled_store(struct device *dev,
+                                      struct device_attribute *attr,
+                                      const char *buf, size_t size)
+{
+
+        struct touchkey_i2c *tkey_i2c = dev_get_drvdata(dev);
+	unsigned int input;
+
+	dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
+
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	if (input == 0)
+        	touchkey_stop(tkey_i2c);
+	if (input == 1)
+        	touchkey_start(tkey_i2c);
+
+	return size;
+}
+
 #ifdef TOUCHKEY_BOOSTER
 static ssize_t touchkey_boost_level(struct device *dev,
 						struct device_attribute *attr, const char *buf,
@@ -1930,6 +1963,8 @@ static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO | S_IWUSR | S_IWGRP,
 		   set_touchkey_firm_version_show, NULL);
 static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO | S_IWUSR | S_IWGRP,
 		   set_touchkey_firm_version_read_show, NULL);
+static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   show_touchkey_enabled, touchkey_enabled_store);
 #ifdef LED_LDO_WITH_REGULATOR
 static DEVICE_ATTR(touchkey_brightness, S_IRUGO | S_IWUSR | S_IWGRP,
 		   NULL, brightness_control);
@@ -1963,6 +1998,7 @@ static DEVICE_ATTR(boost_level, S_IWUSR | S_IWGRP, NULL, touchkey_boost_level);
 #endif
 
 static struct attribute *touchkey_attributes[] = {
+        &dev_attr_touchkey_enabled.attr,
 	&dev_attr_brightness.attr,
 #ifdef TK_USE_RECENT
 	&dev_attr_touchkey_recent.attr,
