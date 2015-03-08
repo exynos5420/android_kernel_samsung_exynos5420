@@ -28,6 +28,7 @@
 
 #include <linux/mfd/arizona/core.h>
 #include <linux/mfd/arizona/registers.h>
+#include <linux/mfd/arizona/control.h>
 
 #include "arizona.h"
 #include "wm5102.h"
@@ -1676,6 +1677,8 @@ static int wm5102_codec_probe(struct snd_soc_codec *codec)
 	snd_soc_dapm_disable_pin(&codec->dapm, "CLAMP");
 
 	priv->core.arizona->dapm = &codec->dapm;
+
+	arizona_control_init(codec);
 
 	return 0;
 }
