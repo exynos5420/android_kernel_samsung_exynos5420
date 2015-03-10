@@ -851,6 +851,10 @@ static void receive_file_work(struct work_struct *data)
 				r = read_req->status;
 				break;
 			}
+			if (read_req->status) {
+				r = read_req->status;
+				break;
+			}
 			/* if xfer_file_length is 0xFFFFFFFF, then we read until
 			 * we get a zero length packet
 			 */
