@@ -1194,6 +1194,7 @@ void allocate_data_block(struct f2fs_sb_info *sbi, struct page *page,
 	curseg = CURSEG_I(sbi, type);
 
 	mutex_lock(&curseg->curseg_mutex);
+	mutex_lock(&sit_i->sentry_lock);
 
 	/* direct_io'ed data is aligned to the segment for better performance */
 	if (direct_io && curseg->next_blkoff)
@@ -1208,7 +1209,6 @@ void allocate_data_block(struct f2fs_sb_info *sbi, struct page *page,
 	 */
 	__add_sum_entry(sbi, type, sum);
 
-	mutex_lock(&sit_i->sentry_lock);
 	__refresh_next_blkoff(sbi, curseg);
 
 	stat_inc_block_count(sbi, curseg);
