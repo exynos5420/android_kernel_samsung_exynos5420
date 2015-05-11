@@ -183,6 +183,8 @@ ssize_t sec_bat_store_attrs(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count);
 
+void charger_control_init(struct sec_battery_info *sec_info);
+
 #define SEC_BATTERY_ATTR(_name)						\
 {									\
 	.attr = {.name = #_name, .mode = 0664},	\
