@@ -677,14 +677,10 @@ again:			remove_next = 1 + (end > next->vm_end);
 		 * we must remove another next too. It would clutter
 		 * up the code too much to do both in one go.
 		 */
-		next = vma->vm_next;
 		if (remove_next == 2) {
+			next = vma->vm_next;
 			uksm_remove_vma(next);
 			goto again;
-		} else if (next) {
-			vma_gap_update(next);
-		} else {
-			mm->highest_vm_end = end;
 		}
 	} else {
 		if (next && !insert)
