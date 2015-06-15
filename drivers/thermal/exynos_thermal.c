@@ -125,18 +125,18 @@
 
 #define EXYNOS_GPU_NUMBER	4
 
-static unsigned int HOT_NORMAL_TEMP = 95;
+static unsigned int HOT_NORMAL_TEMP = 85;
 static unsigned int HOT_CRITICAL_TEMP = 110;
-static unsigned int HOT_95 = 95;
+static unsigned int HOT_95 = 85;
 static unsigned int HOT_109 = 109;
 static unsigned int HOT_110 = 110;
-static unsigned int MEM_TH_TEMP1 = 75;
-static unsigned int MEM_TH_TEMP2 = 85;
-static unsigned int GPU_TH_TEMP1 = 90;
-static unsigned int GPU_TH_TEMP2 = 95;
-static unsigned int GPU_TH_TEMP3 = 100;
-static unsigned int GPU_TH_TEMP4 = 105;
-static unsigned int GPU_TH_TEMP5 = 110;
+static unsigned int MEM_TH_TEMP1 = 70;
+static unsigned int MEM_TH_TEMP2 = 80;
+static unsigned int GPU_TH_TEMP1 = 85;
+static unsigned int GPU_TH_TEMP2 = 90;
+static unsigned int GPU_TH_TEMP3 = 95;
+static unsigned int GPU_TH_TEMP4 = 100;
+static unsigned int GPU_TH_TEMP5 = 105;
 
 module_param_named(tmu_cpu_normal, HOT_NORMAL_TEMP, uint, S_IWUSR | S_IRUGO);
 module_param_named(tmu_cpu_critical, HOT_CRITICAL_TEMP, uint, S_IWUSR | S_IRUGO);
