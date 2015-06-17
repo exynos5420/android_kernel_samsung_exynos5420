@@ -789,7 +789,6 @@ static int f2fs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		if (IS_ERR(dentry_page))
 			continue;
 
-		start_bit_pos = bit_pos;
 		dentry_blk = kmap(dentry_page);
 
 		make_dentry_ptr(&d, (void *)dentry_blk, 1);
