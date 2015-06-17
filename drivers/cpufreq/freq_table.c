@@ -44,7 +44,7 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 	policy->max = policy->cpuinfo.max_freq = max_freq;
 
 	/* reset policy at stock speeds */
-	policy->max = 2000000;
+	policy->max = 1900000;
 	policy->min = 250000;
 
 	if (policy->min == ~0)
