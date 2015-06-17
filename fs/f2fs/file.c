@@ -40,7 +40,7 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
 
 	f2fs_balance_fs(sbi);
 
-	sb_start_pagefault(inode->i_sb);
+	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
 
 	f2fs_bug_on(sbi, f2fs_has_inline_data(inode));
 

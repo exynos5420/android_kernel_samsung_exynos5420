@@ -84,7 +84,7 @@ static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
 	bio = bio_alloc(GFP_NOIO, npages);
 
 	bio->bi_bdev = sbi->sb->s_bdev;
-	bio->bi_iter.bi_sector = SECTOR_FROM_BLOCK(blk_addr);
+	bio->bi_sector = SECTOR_FROM_BLOCK(blk_addr);
 	bio->bi_end_io = is_read ? f2fs_read_end_io : f2fs_write_end_io;
 	bio->bi_private = sbi;
 
@@ -1737,7 +1737,8 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 	if (rw & WRITE)
 		__allocate_data_blocks(inode, offset, count);
 
-	err = blockdev_direct_IO(rw, iocb, inode, iter, offset, get_data_block);
+	err = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
+							get_data_block);
 	if (err < 0 && (rw & WRITE))
 		f2fs_write_failed(mapping, offset + count);
 
@@ -1746,14 +1747,12 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 	return err;
 }
 
-void f2fs_invalidate_page(struct page *page, unsigned int offset,
-							unsigned int length)
+void f2fs_invalidate_page(struct page *page, unsigned long offset)
 {
 	struct inode *inode = page->mapping->host;
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 
-	if (inode->i_ino >= F2FS_ROOT_INO(sbi) &&
-		(offset % PAGE_CACHE_SIZE || length != PAGE_CACHE_SIZE))
+	if (inode->i_ino >= F2FS_ROOT_INO(sbi) && (offset % PAGE_CACHE_SIZE))
 		return;
 
 	if (PageDirty(page)) {
