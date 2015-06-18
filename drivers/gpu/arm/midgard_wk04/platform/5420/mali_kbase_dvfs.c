@@ -72,13 +72,13 @@
 #endif
 
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-#define GPU_MAX_CLK 480
+#define GPU_MAX_CLK 500
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_90_95 480
-#define GPU_THROTTLING_95_100 420
-#define GPU_THROTTLING_100_105 350
+#define GPU_THROTTLING_90_95 533
+#define GPU_THROTTLING_95_100 500
+#define GPU_THROTTLING_100_105 420
 #define GPU_THROTTLING_105_110 177
 #define GPU_TRIPPING_110 100
 #endif
@@ -152,6 +152,8 @@ static mali_dvfs_info mali_dvfs_infotbl[] = {
 	{962500, 420, 78, 99, 0, 800000, 400000, 0, 500000},
 	{1000000, 480, 98, 100, 0, 800000, 400000, 0, 1300000},
 	{1037500, 533, 99, 100, 0, 800000, 400000, 1200000, 1300000},
+	{1050000, 600, 91, 95, 0, 800000, 400000, 1400000},
+        {1075000, 667, 96, 99, 0, 800000, 400000, 1600000},
 #endif
 };
 
@@ -189,7 +191,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
-static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500};
+static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500, 1050000, 1075000};
 
 ssize_t hlpr_get_gpu_volt_table(char *buf)
 {
@@ -507,6 +509,7 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 		dvfs_status->step = kbase_platform_dvfs_get_level(freq);
 		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 		if (freq == MALI_DVFS_START_FREQ) {
 			if (dvfs_status->min_lock != -1)
 				dvfs_status->step = MAX(dvfs_status->min_lock, dvfs_status->step);
@@ -514,6 +517,7 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 				dvfs_status->step = MIN(dvfs_status->max_lock, dvfs_status->step);
 		}
 
+#endif
 		kbase_platform_dvfs_set_level(dvfs_status->kbdev, dvfs_status->step);
 	}
 
