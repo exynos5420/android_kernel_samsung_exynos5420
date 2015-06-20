@@ -267,7 +267,7 @@ static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
 	if (xhci->quirks & XHCI_PME_STUCK_QUIRK)
 		xhci_pme_quirk(xhci);
 
-	retval = xhci_suspend(xhci, do_wakeup);
+	retval = xhci_suspend(xhci);
 
 	return retval;
 }
