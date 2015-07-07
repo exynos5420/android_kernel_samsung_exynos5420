@@ -902,12 +902,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 			if (!dbs_tuners_ins.powersave_bias) {
 				__cpufreq_driver_target(policy, freq_next,
-						CPUFREQ_RELATION_L);
+						CPUFREQ_RELATION_C);
 			} else {
 				int freq = powersave_bias_target(policy, freq_next,
 						CPUFREQ_RELATION_L);
 				__cpufreq_driver_target(policy, freq,
-					CPUFREQ_RELATION_L);
+					CPUFREQ_RELATION_C);
 			}
 		}
 	} else {
@@ -931,12 +931,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 			if (!dbs_tuners_ins.powersave_bias) {
 				__cpufreq_driver_target(policy, freq_next,
-						CPUFREQ_RELATION_L);
+						CPUFREQ_RELATION_C);
 			} else {
 				int freq = powersave_bias_target(policy, freq_next,
 						CPUFREQ_RELATION_L);
 				__cpufreq_driver_target(policy, freq,
-					CPUFREQ_RELATION_L);
+					CPUFREQ_RELATION_C);
 			}
 		}
 	}
