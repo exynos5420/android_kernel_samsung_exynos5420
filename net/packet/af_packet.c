@@ -2496,36 +2496,71 @@ static int packet_release(struct socket *sock)
  *	Attach a packet hook.
  */
 
-static int packet_do_bind(struct sock *sk, struct net_device *dev, __be16 protocol)
+static int packet_do_bind(struct sock *sk, const char *name, int ifindex,
+                         __be16 protocol)
 {
 	struct packet_sock *po = pkt_sk(sk);
+	struct net_device *dev_curr;
+	struct net_device *dev = NULL;
 	int ret = 0;
+	bool unlisted = false;
 
 	lock_sock(sk);
 
 	spin_lock(&po->bind_lock);
+	rcu_read_lock();
 
 	if (po->fanout) {
-		if (dev)
-			dev_put(dev);
-
 		ret = -EINVAL;
 		goto out_unlock;
 	}
 
-	unregister_prot_hook(sk, true);
+	if (name) {
+		dev = dev_get_by_name_rcu(sock_net(sk), name);
+		if (!dev) {
+			ret = -ENODEV;
+			goto out_unlock;
+		}
+	} else if (ifindex) {
+		dev = dev_get_by_index_rcu(sock_net(sk), ifindex);
+		if (!dev) {
+			ret = -ENODEV;
+			goto out_unlock;
+		}
+	}
+
+	if (dev)
+		dev_hold(dev);
+
+	dev_curr = po->prot_hook.dev;
+
+	if (po->running) {
+		rcu_read_unlock();
+		__unregister_prot_hook(sk, true);
+		rcu_read_lock();
+		dev_curr = po->prot_hook.dev;
+		if (dev)
+			unlisted = !dev_get_by_index_rcu(sock_net(sk),
+							 dev->ifindex);
+	}
 	po->num = protocol;
 	po->prot_hook.type = protocol;
-	if (po->prot_hook.dev)
-		dev_put(po->prot_hook.dev);
-	po->prot_hook.dev = dev;
+	if (unlikely(unlisted)) {
+		dev_put(dev);
+		po->prot_hook.dev = NULL;
+		po->ifindex = -1;
+	} else {
+		po->prot_hook.dev = dev;
+		po->ifindex = dev ? dev->ifindex : 0;
+	}
 
-	po->ifindex = dev ? dev->ifindex : 0;
+	if (dev_curr)
+		dev_put(dev_curr);
 
 	if (protocol == 0)
 		goto out_unlock;
 
-	if (!dev || (dev->flags & IFF_UP)) {
+	if (!unlisted && (!dev || (dev->flags & IFF_UP))) {
 		register_prot_hook(sk);
 	} else {
 		sk->sk_err = ENETDOWN;
@@ -2534,6 +2569,7 @@ static int packet_do_bind(struct sock *sk, struct net_device *dev, __be16 protoc
 	}
 
 out_unlock:
+	rcu_read_unlock();
 	spin_unlock(&po->bind_lock);
 	release_sock(sk);
 	return ret;
@@ -2559,19 +2595,13 @@ static int packet_bind_spkt(struct socket *sock, struct sockaddr *uaddr,
 		return -EINVAL;
 	strlcpy(name, uaddr->sa_data, sizeof(name));
 
-	dev = dev_get_by_name(sock_net(sk), name);
-	if (dev)
-		err = packet_do_bind(sk, dev, pkt_sk(sk)->num);
-	return err;
+	return packet_do_bind(sk, name, 0, pkt_sk(sk)->num);
 }
 
 static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 {
 	struct sockaddr_ll *sll = (struct sockaddr_ll *)uaddr;
 	struct sock *sk = sock->sk;
-	struct net_device *dev = NULL;
-	int err;
-
 
 	/*
 	 *	Check legality
@@ -2581,17 +2611,8 @@ static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len
 		return -EINVAL;
 	if (sll->sll_family != AF_PACKET)
 		return -EINVAL;
-
-	if (sll->sll_ifindex) {
-		err = -ENODEV;
-		dev = dev_get_by_index(sock_net(sk), sll->sll_ifindex);
-		if (dev == NULL)
-			goto out;
-	}
-	err = packet_do_bind(sk, dev, sll->sll_protocol ? : pkt_sk(sk)->num);
-
-out:
-	return err;
+	return packet_do_bind(sk, NULL, sll->sll_ifindex,
+			      sll->sll_protocol ? : pkt_sk(sk)->num);
 }
 
 static struct proto packet_proto = {
