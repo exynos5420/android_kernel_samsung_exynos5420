@@ -13,3 +13,7 @@ config TOUCHSCREEN_SYNAPTICS_I2C_DSX
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called synaptics_rmi4_i2c.
+
+config TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
+        bool "Wake gestures interface for SYNAPTICS_DSX based touchscreens"
+        default y
