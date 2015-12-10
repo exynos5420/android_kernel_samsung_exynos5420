@@ -1341,8 +1341,13 @@ wl_host_event(dhd_pub_t *dhd_pub, int *ifidx, void *pktdata, size_t pktlen,
 	type = ntoh32_ua((void *)&event->event_type);
 	flags = ntoh16_ua((void *)&event->flags);
 	status = ntoh32_ua((void *)&event->status);
+
 	datalen = ntoh32_ua((void *)&event->datalen);
 	evlen = datalen + sizeof(bcm_event_t);
+
+	if (evlen > pktlen) {
+		return (BCME_ERROR);
+	}
 
 	switch (type) {
 #ifdef PROP_TXSTATUS
