@@ -1272,6 +1272,13 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 
 	mutex_lock(&priv->lock);
 
+ 	/*
+ 	 * Copy the config data.
+ 	 * For the firmware name, keep a local copy of the string,
+	 * in order to avoid troubles during device release.
+	 */
+	kfree(priv->ctrl.fname);
+	priv->ctrl.fname = NULL;
 	memcpy(&priv->ctrl, p, sizeof(priv->ctrl));
 	if (priv->ctrl.max_len < 9)
 		priv->ctrl.max_len = 13;
@@ -1284,7 +1291,7 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 
 		priv->ctrl.fname = kstrdup(p->fname, GFP_KERNEL);
 		if (priv->ctrl.fname == NULL)
-			rc = -ENOMEM;
+			return -ENOMEM;
 	}
 
 	mutex_unlock(&priv->lock);
