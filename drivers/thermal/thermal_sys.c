@@ -1167,7 +1167,9 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
 		goto leave;
 	}
 
+#ifdef CONFIG_THERMAL_DEBUG
 	pr_info("[TMU_POLLING] polling_delay=%dms, temperature=%ld\n", tz->polling_delay, temp / 1000);
+#endif
 	for (count = 0; count < tz->trips; count++) {
 		tz->ops->get_trip_type(tz, count, &trip_type);
 		tz->ops->get_trip_temp(tz, count, &trip_temp);
