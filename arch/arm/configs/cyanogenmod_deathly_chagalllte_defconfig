@@ -551,7 +551,7 @@ CONFIG_SEC_DEBUG_TIMA_LOG=y
 # Samsung TN Power Management Options
 #
 CONFIG_SEC_PM=y
-CONFIG_SEC_PM_DEBUG=y
+# CONFIG_SEC_PM_DEBUG is not set
 CONFIG_SEC_THERMISTOR=y
 
 #
