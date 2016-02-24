@@ -263,7 +263,7 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
 	if ((current->flags & PF_RANDOMIZE) &&
 	    !(current->personality & ADDR_NO_RANDOMIZE))
 		random_factor = (get_random_int() % (1 << 8)) << PAGE_SHIFT;
-
+	
 	if (mmap_is_legacy()) {
 		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
 		mm->get_unmapped_area = arch_get_unmapped_area;
