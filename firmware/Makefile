@@ -185,7 +185,15 @@ fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI) += tsp_synaptics/synaptics_a0
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI) += tsp_synaptics/synaptics_a0_h_no_tr.fw
 ifeq ("$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX)", "y")
 fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_5700.fw
+ifndef CONFIG_TOUCHSCREEN_CHAGALLLTE_USA
+ifndef CONFIG_TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN
 fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_5710.fw
+else
+fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_chn_5710.fw
+endif
+else
+fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_usa_5710.fw
+endif
 fw-shipped-$(CONFIG_KLIMT) += tsp_synaptics/synaptics_klimt_5707.fw
 endif
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C) += tsp_synaptics/synaptics_v2.fw

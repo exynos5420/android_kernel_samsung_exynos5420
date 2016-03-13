@@ -87,6 +87,7 @@ struct if_usb_devdata {
 
 	struct urb *intr_urb;
 	unsigned int rx_buf_size;
+	unsigned int rx_buf_setup;
 	enum ch_state state;
 
 	struct usb_id_info *info;
@@ -105,13 +106,11 @@ struct if_usb_devdata {
 	int net_suspend;
 	bool net_connected;
 
-	bool defered_rx;
-	struct delayed_work rx_defered_work;
-
 	struct mif_skb_pool *ntb_pool;
 
 	int (*submit_urbs)(struct if_usb_devdata *);
 	struct delayed_work kill_urbs_work;
+	atomic_t kill_urb;
 };
 
 enum resume_by_status {
@@ -130,7 +129,8 @@ struct usb_link_device {
 	int max_acm_ch;
 	int acm_cnt;
 	int ncm_cnt;
-	struct if_usb_devdata *devdata;
+	struct if_usb_devdata *acm_data;
+	struct if_usb_devdata *ncm_data;
 	unsigned int suspended;
 	int if_usb_connected;
 
@@ -164,6 +164,11 @@ enum bit_link_events {
 /* converts from struct link_device* to struct xxx_link_device* */
 #define to_usb_link_device(linkdev) \
 			container_of(linkdev, struct usb_link_device, ld)
+
+#define get_pipedata_with_idx(usb_ld, idx) \
+	((idx < usb_ld->max_acm_ch) ? \
+	 &usb_ld->acm_data[idx] : \
+	 &usb_ld->ncm_data[idx - usb_ld->max_acm_ch])
 
 #ifdef FOR_TEGRA
 extern void tegra_ehci_txfilltuning(void);

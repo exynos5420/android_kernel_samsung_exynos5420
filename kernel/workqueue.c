@@ -3614,8 +3614,10 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
 		gcwq->trustee_state = TRUSTEE_BUTCHER;
 		/* fall through */
 	case CPU_UP_CANCELED:
-		destroy_worker(gcwq->first_idle);
-		gcwq->first_idle = NULL;
+		if (gcwq->first_idle) {
+			destroy_worker(gcwq->first_idle);
+			gcwq->first_idle = NULL;
+		}
 		break;
 
 	case CPU_DOWN_FAILED:
@@ -3632,12 +3634,14 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
 		 * Put the first_idle in and request a real manager to
 		 * take a look.
 		 */
-		spin_unlock_irq(&gcwq->lock);
-		kthread_bind(gcwq->first_idle->task, cpu);
-		spin_lock_irq(&gcwq->lock);
-		gcwq->flags |= GCWQ_MANAGE_WORKERS;
-		start_worker(gcwq->first_idle);
-		gcwq->first_idle = NULL;
+		if (gcwq->first_idle) {
+			spin_unlock_irq(&gcwq->lock);
+			kthread_bind(gcwq->first_idle->task, cpu);
+			spin_lock_irq(&gcwq->lock);
+			gcwq->flags |= GCWQ_MANAGE_WORKERS;
+			start_worker(gcwq->first_idle);
+			gcwq->first_idle = NULL;
+		}
 		break;
 	}
 

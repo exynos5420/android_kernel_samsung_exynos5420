@@ -87,6 +87,15 @@ enum fimg2d_qos_status {
 	FIMG2D_QOS_OFF
 };
 
+enum fimg2d_qos_level {
+	G2D_LV0 = 0,
+	G2D_LV1,
+	G2D_LV2,
+	G2D_LV3,
+	G2D_LV4,
+	G2D_LV_END
+};
+
 enum driver_act {
 	DRV_ACT = 0,
 	DRV_DEACT
@@ -426,6 +435,7 @@ struct fimg2d_blit {
 	struct fimg2d_image *dst;
 	enum blit_sync sync;
 	unsigned int seq_no;
+	enum fimg2d_qos_level qos_lv;
 };
 
 #ifdef __KERNEL__

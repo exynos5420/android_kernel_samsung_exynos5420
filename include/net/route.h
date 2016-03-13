@@ -49,16 +49,16 @@ struct rtable {
 	__be32			rt_key_dst;
 	__be32			rt_key_src;
 
-	int			rt_genid;
+	int				rt_genid;
 	unsigned		rt_flags;
 	__u16			rt_type;
 	__u8			rt_key_tos;
 
 	__be32			rt_dst;	/* Path destination	*/
 	__be32			rt_src;	/* Path source		*/
-	int			rt_route_iif;
-	int			rt_iif;
-	int			rt_oif;
+	int				rt_route_iif;
+	int				rt_iif;
+	int				rt_oif;
 	__u32			rt_mark;
 	uid_t			rt_uid;
 
@@ -67,7 +67,7 @@ struct rtable {
 
 	/* Miscellaneous cached information */
 	__be32			rt_spec_dst; /* RFC1122 specific destination */
-	u32			rt_peer_genid;
+	u32				rt_peer_genid;
 	struct inet_peer	*peer; /* long-living peer info */
 	struct fib_info		*fi; /* for client ref to shared metrics */
 };
@@ -144,10 +144,9 @@ static inline struct rtable *ip_route_output_ports(struct net *net, struct flowi
 						   __be16 dport, __be16 sport,
 						   __u8 proto, __u8 tos, int oif)
 {
-	flowi4_init_output(fl4, oif, sk ? sk->sk_mark : 0, tos,
-			   RT_SCOPE_UNIVERSE, proto,
-			   sk ? inet_sk_flowi_flags(sk) : 0,
-			   daddr, saddr, dport, sport, sk ? sock_i_uid(sk) : 0);
+	flowi4_init_output(fl4, oif, sk ? sk->sk_mark : 0, tos, RT_SCOPE_UNIVERSE, proto,
+					   sk ? inet_sk_flowi_flags(sk) : 0, daddr, saddr, dport, sport,
+					   sk ? sock_i_uid(sk) : 0);
 	if (sk)
 		security_sk_classify_flow(sk, flowi4_to_flowi(fl4));
 	return ip_route_output_flow(net, fl4, sk);
@@ -251,8 +250,8 @@ static inline void ip_route_connect_init(struct flowi4 *fl4, __be32 dst, __be32 
 		flow_flags |= FLOWI_FLAG_CAN_SLEEP;
 
 	flowi4_init_output(fl4, oif, sk->sk_mark, tos, RT_SCOPE_UNIVERSE,
-			   protocol, flow_flags, dst, src, dport, sport,
-			   sock_i_uid(sk));
+						protocol, flow_flags, dst, src, dport, sport,
+						sock_i_uid(sk));
 }
 
 static inline struct rtable *ip_route_connect(struct flowi4 *fl4,

@@ -98,14 +98,6 @@ extern void s5p_fimd0_set_platdata(struct s3c_fb_platdata *pd);
 extern void s5p_fimd1_set_platdata(struct s3c_fb_platdata *pd);
 
 /**
- * s3cfb_extdsp_set_platdata() - Setup the Extension display device with platform data.
- * @pd: The platform data to set. The data is copied from the passed structure
- *      so the machine data can mark the data __initdata so that any unused
- *      machines will end up dumping their data at runtime.
- */
-extern void s3cfb_extdsp_set_platdata(struct s3c_fb_pd_win *pd);
-
-/**
  * s5p_mic_set_platdata() - Setup the MIC device with platform data.
  * @pd: The platform data to set. The data is copied from the passed structure
  *      so the machine data can mark the data __initdata so that any unused

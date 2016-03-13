@@ -289,6 +289,9 @@ obj-$(CONFIG_SEC_LOG)			+= sec_log.o
 # Samsung Misc Feature
 obj-$(CONFIG_SEC_MISC)		+= sec_misc.o
 
+# Samsung sec bsp Feature
+obj-$(CONFIG_SEC_BSP)		+= sec_bsp.o
+
 obj-$(CONFIG_SEC_THERMISTOR)		+= sec_thermistor.o
 
 ifeq ($(CONFIG_GPS_BCMxxxxx),y)

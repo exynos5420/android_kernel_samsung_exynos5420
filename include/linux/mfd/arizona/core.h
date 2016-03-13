@@ -110,6 +110,9 @@ struct arizona {
 	struct snd_soc_dapm_context *dapm;
 
 	struct mutex reg_setting_lock;
+
+	uint16_t out_comp_coeff;
+	uint8_t out_comp_enabled;
 };
 
 int arizona_clk32k_enable(struct arizona *arizona);

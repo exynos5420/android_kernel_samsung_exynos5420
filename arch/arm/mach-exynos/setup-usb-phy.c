@@ -716,13 +716,8 @@ static int exynos5_usb_phy_host_resume(struct platform_device *pdev)
 		hsic_ctrl |= HSIC_CTRL_FORCESLEEP;
 #endif
 		writel(hsic_ctrl, EXYNOS5_PHY_HSIC_CTRL2);
-#if defined(CONFIG_N1A_3G) || defined(CONFIG_N2A_3G)
-		writel(0xF0, EXYNOS5_PHY_HSIC_TUNE1);
-		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
-			readl(EXYNOS5_PHY_HSIC_TUNE1));
-#endif
-#if defined(CONFIG_KLIMT)
-		writel(0xFC, EXYNOS5_PHY_HSIC_TUNE1);
+#if defined(CONFIG_PHY_HSIC_TUNE1)
+		writel(CONFIG_PHY_HSIC_TUNE1_REG, EXYNOS5_PHY_HSIC_TUNE1);
 		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
 			readl(EXYNOS5_PHY_HSIC_TUNE1));
 #endif
@@ -822,16 +817,10 @@ static int exynos5_usb_phy20_init(struct platform_device *pdev)
 	hsic_ctrl |= HSIC_CTRL_FORCESLEEP;
 #endif
 	writel(hsic_ctrl, EXYNOS5_PHY_HSIC_CTRL2);
-
-#if defined(CONFIG_N1A_3G) || defined(CONFIG_N2A_3G)
-	writel(0xF0, EXYNOS5_PHY_HSIC_TUNE1);
+#if defined(CONFIG_PHY_HSIC_TUNE1)
+	writel(CONFIG_PHY_HSIC_TUNE1_REG, EXYNOS5_PHY_HSIC_TUNE1);
 	pr_info("%s: HSIC phy tune 0x%x\n", __func__,
 		readl(EXYNOS5_PHY_HSIC_TUNE1));
-#endif
-#if defined(CONFIG_KLIMT)
-		writel(0xFC, EXYNOS5_PHY_HSIC_TUNE1);
-		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
-			readl(EXYNOS5_PHY_HSIC_TUNE1));
 #endif
 	udelay(80);
 
@@ -1329,6 +1318,13 @@ static int exynos5_check_usb_op(void)
 	if (hostphy_ctrl0 & HOST_CTRL0_FORCESUSPEND &&
 		hsic_ctrl1 & HSIC_CTRL_FORCESUSPEND &&
 		hsic_ctrl2 & HSIC_CTRL_FORCESUSPEND) {
+#if defined(CONFIG_LINK_DEVICE_HSIC) 		
+		if (is_cp_wait_for_resume()) {
+			pr_info("%s: fail to enter LPA by HWK irq\n", __func__);
+			op = 1;
+			goto done;
+		}
+#endif
 #if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
 		/* HSIC LPA: LPA USB phy retention reume call the usb
 		 * reset resume, so we should let CP to HSIC L3 mode. */

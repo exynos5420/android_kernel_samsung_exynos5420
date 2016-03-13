@@ -834,9 +834,11 @@ static void set_bts_g3d_table(bool mode)
 
 void bts_change_g3d_state(unsigned int freq)
 {
-	bool g3d_on = exynos5_bts[BTS_IDX_G3D0].on;
+	bool g3d_on;
 
 	spin_lock(&bts_lock);
+
+	g3d_on = exynos5_bts[BTS_IDX_G3D0].on;
 
 	BTS_DBG("[BTS] g3d freq changed %d\n", freq);
 

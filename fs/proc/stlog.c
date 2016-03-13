@@ -61,7 +61,7 @@ static const struct file_operations stlog_operations = {
 
 static int __init stlog_init(void)
 {
-	proc_create("stlog", S_IRUSR, NULL, &stlog_operations);
+	proc_create("stlog", S_IRUGO, NULL, &stlog_operations);
 	return 0;
 }
 module_init(stlog_init);
@@ -633,7 +633,6 @@ asmlinkage int vstlog(const char *fmt, va_list args)
 	local_irq_save(flags);
 	this_cpu = smp_processor_id();
 
-	lockdep_off();
 	raw_spin_lock(&ringbuf_lock);
 	ringbuf_cpu = this_cpu;
 

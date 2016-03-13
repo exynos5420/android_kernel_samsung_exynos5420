@@ -43,6 +43,7 @@ int mif_dump_dpram(struct io_device *iod)
 	struct dpram_link_device *dpld = to_dpram_link_device(ld);
 	u32 size = dpld->dp_size;
 	unsigned long read_len = 0;
+	unsigned long alloc_size;
 	struct sk_buff *skb;
 	char *buff;
 
@@ -55,16 +56,19 @@ int mif_dump_dpram(struct io_device *iod)
 	}
 
 	while (read_len < size) {
-		skb = alloc_skb(MAX_IPC_SKB_SIZE, GFP_ATOMIC);
+		alloc_size = min_t(unsigned long,
+			MAX_IPC_SKB_SIZE, (size - read_len));
+		skb = alloc_skb(alloc_size, GFP_ATOMIC);
 		if (!skb) {
 			pr_err("[MIF] <%s> alloc skb failed\n", __func__);
 			kfree(buff);
 			return -ENOMEM;
 		}
-		memcpy(skb_put(skb, MAX_IPC_SKB_SIZE),
-			buff + read_len, MAX_IPC_SKB_SIZE);
+
+		memcpy(skb_put(skb, alloc_size), buff + read_len, alloc_size);
+		read_len += alloc_size;
+
 		skb_queue_tail(&iod->sk_rx_q, skb);
-		read_len += MAX_IPC_SKB_SIZE;
 		wake_up(&iod->wq);
 	}
 	kfree(buff);
@@ -76,22 +80,27 @@ int mif_dump_log(struct modem_shared *msd, struct io_device *iod)
 {
 	struct sk_buff *skb;
 	unsigned long read_len = 0;
+	unsigned long alloc_size;
 	unsigned long int flags;
 
 	spin_lock_irqsave(&msd->lock, flags);
 	while (read_len < MAX_MIF_BUFF_SIZE) {
-		skb = alloc_skb(MAX_IPC_SKB_SIZE, GFP_ATOMIC);
+		alloc_size = min_t(unsigned long,
+			MAX_IPC_SKB_SIZE, (MAX_MIF_BUFF_SIZE - read_len));
+		skb = alloc_skb(alloc_size, GFP_ATOMIC);
 		if (!skb) {
 			pr_err("[MIF] <%s> alloc skb failed\n", __func__);
 			spin_unlock_irqrestore(&msd->lock, flags);
 			return -ENOMEM;
 		}
-		memcpy(skb_put(skb, MAX_IPC_SKB_SIZE),
-			msd->storage.addr + read_len, MAX_IPC_SKB_SIZE);
+
+		memcpy(skb_put(skb, alloc_size),
+			msd->storage.addr + read_len, alloc_size);
+		read_len += alloc_size;
+
 		skbpriv(skb)->iod = iod;
 		skbpriv(skb)->ld = get_current_link(iod);
 		skb_queue_tail(&iod->sk_rx_q, skb);
-		read_len += MAX_IPC_SKB_SIZE;
 		wake_up(&iod->wq);
 	}
 	spin_unlock_irqrestore(&msd->lock, flags);

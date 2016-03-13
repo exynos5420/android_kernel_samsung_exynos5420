@@ -927,12 +927,6 @@ static void mxt_report_input_data(struct mxt_data *data)
 					data->fingers[i].w);
 			input_report_abs(data->input_dev, ABS_MT_PRESSURE,
 					 data->fingers[i].z);
-#if TSP_USE_SHAPETOUCH
-			input_report_abs(data->input_dev, ABS_MT_COMPONENT,
-					 data->fingers[i].component);
-			input_report_abs(data->input_dev, ABS_MT_SUMSIZE,
-					 data->sumsize);
-#endif
 		}
 
 #if TSP_DEBUG_INFO
@@ -2124,10 +2118,6 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	input_set_abs_params(input_dev, ABS_MT_PRESSURE, pdata->min_z,
 			     pdata->max_z, 0, 0);
 
-#if TSP_USE_SHAPETOUCH
-	input_set_abs_params(input_dev, ABS_MT_COMPONENT, 0, 255, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_SUMSIZE, 0, 16 * 26, 0, 0);
-#endif
 	for (i = 0; i < data->num_fingers; i++)
 		data->fingers[i].state = MXT_STATE_INACTIVE;
 

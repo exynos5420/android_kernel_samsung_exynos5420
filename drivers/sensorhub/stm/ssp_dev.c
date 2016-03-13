@@ -46,7 +46,10 @@ void ssp_enable(struct ssp_data *data, bool enable)
 static irqreturn_t sensordata_irq_thread_fn(int iIrq, void *dev_id)
 {
 	struct ssp_data *data = dev_id;
+	struct timespec ts;
 
+	ts = ktime_to_timespec(ktime_get_boottime());
+	data->timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 	select_irq_msg(data);
 	data->uIrqCnt++;
 
@@ -66,6 +69,8 @@ static void initialize_variable(struct ssp_data *data)
 		data->batchLatencyBuf[iSensorIndex] = 0;
 		data->batchOptBuf[iSensorIndex] = 0;
 		data->aiCheckStatus[iSensorIndex] = INITIALIZATION_STATE;
+		data->lastTimestamp[iSensorIndex] = 0;
+		data->reportedData[iSensorIndex] = false;
 	}
 
 	atomic_set(&data->aSensorEnable, 0);
@@ -122,6 +127,7 @@ static void initialize_variable(struct ssp_data *data)
 	data->bMcuDumpMode = ssp_check_sec_dump_mode();
 	INIT_LIST_HEAD(&data->pending_list);
 
+	data->sealevelpressure = 0;
 	initialize_function_pointer(data);
 }
 

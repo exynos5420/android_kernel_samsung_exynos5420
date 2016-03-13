@@ -471,17 +471,17 @@ int ip_rt_ioctl(struct net *net, unsigned int cmd, void __user *arg)
 }
 
 const struct nla_policy rtm_ipv4_policy[RTA_MAX + 1] = {
-	[RTA_DST]		= { .type = NLA_U32 },
-	[RTA_SRC]		= { .type = NLA_U32 },
-	[RTA_IIF]		= { .type = NLA_U32 },
-	[RTA_OIF]		= { .type = NLA_U32 },
+	[RTA_DST]			= { .type = NLA_U32 },
+	[RTA_SRC]			= { .type = NLA_U32 },
+	[RTA_IIF]			= { .type = NLA_U32 },
+	[RTA_OIF]			= { .type = NLA_U32 },
 	[RTA_GATEWAY]		= { .type = NLA_U32 },
 	[RTA_PRIORITY]		= { .type = NLA_U32 },
 	[RTA_PREFSRC]		= { .type = NLA_U32 },
 	[RTA_METRICS]		= { .type = NLA_NESTED },
 	[RTA_MULTIPATH]		= { .len = sizeof(struct rtnexthop) },
-	[RTA_FLOW]		= { .type = NLA_U32 },
-	[RTA_UID]		= { .type = NLA_U32 },
+	[RTA_FLOW]			= { .type = NLA_U32 },
+	[RTA_UID]			= { .type = NLA_U32 },
 };
 
 static int rtm_to_fib_config(struct net *net, struct sk_buff *skb,

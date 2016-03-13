@@ -152,12 +152,15 @@ static const unsigned char SEQ_GLOBAL_PARA_33rd[] = {
 	0xB0,
 	0x20
 };
+
 static const unsigned char SEQ_POC_SETTING[] = {
 	0xFE,
-	0x00,
-	0x00,
-	0x00,
 	0x08
+};
+
+static const unsigned char SEQ_SETUP_MARGIN[] = {
+	0xFF,
+	0x00, 0x00, 0x00, 0x08
 };
 
 static unsigned char SEQ_PARTIAL_AREA[] = {

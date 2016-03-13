@@ -95,6 +95,8 @@ extern int sc_log_level;
 #define sc_ver_is_5a(sc)	(sc->ver == 0x3)
 #define sc_num_pbuf(sc)		(sc_ver_is_5a(sc) ? 2 : 3)
 
+#define SC_FMT_PREMULTI_FLAG	10
+
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 extern const struct sc_vb2 sc_vb2_cma;
 #elif defined(CONFIG_VIDEOBUF2_ION)
@@ -279,6 +281,7 @@ struct sc_frame {
 
 	struct sc_addr			addr;
 	unsigned long			bytesused[SC_MAX_PLANES];
+	bool			pre_multi;
 };
 
 struct sc_int_frame {
@@ -350,7 +353,6 @@ struct sc_dev {
 	struct clk			*pclk;
 	void __iomem			*regs;
 	struct resource			*regs_res;
-	struct pm_qos_request		qos_int;
 	wait_queue_head_t		wait;
 	unsigned long			state;
 	struct vb2_alloc_ctx		*alloc_ctx;
@@ -358,6 +360,12 @@ struct sc_dev {
 	spinlock_t			slock;
 	struct mutex			lock;
 	struct sc_wdt			wdt;
+	struct pm_qos_request		qos_int;
+	struct timer_list		pmqos_timer;
+	struct work_struct		pmqos_work;
+	struct workqueue_struct		*pmqos_wq;
+	struct mutex			pmqos_lock;
+	atomic_t			pmqos_count;
 	atomic_t			clk_cnt;
 	void				*clk_private;
 	void *(*setup_clocks)(void);
@@ -447,7 +455,7 @@ static inline struct sc_frame *ctx_get_frame(struct sc_ctx *ctx,
 
 int sc_hwset_src_image_format(struct sc_dev *sc, u32 pixelformat);
 int sc_hwset_dst_image_format(struct sc_dev *sc, u32 pixelformat);
-void sc_hwset_pre_multi_format(struct sc_dev *sc);
+void sc_hwset_pre_multi_format(struct sc_dev *sc, bool src, bool dst);
 void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi);
 void sc_hwset_color_fill(struct sc_dev *sc, unsigned int val);
 void sc_hwset_dith(struct sc_dev *sc, unsigned int val);

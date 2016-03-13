@@ -1230,7 +1230,9 @@ ecryptfs_getxattr_lower(struct dentry *lower_dentry, const char *name,
 	int rc = 0;
 
 	if (!lower_dentry->d_inode->i_op->getxattr) {
+#ifndef ECRYPT_FS_VIRTUAL_FAT_XATTR
 		rc = -EOPNOTSUPP;
+#endif
 		goto out;
 	}
 	mutex_lock(&lower_dentry->d_inode->i_mutex);

@@ -532,3 +532,13 @@ config CMA_BEST_FIT
 config FADV_NOACTIVE
 	bool "fadvise noactive option support"
 	default n
+
+config MIN_DIRTY_THRESH_PAGES
+	int "The lower bound of VM dirty_thresh value in number of pages"
+	default 2560
+	help
+	  Setting this to certain positive number guaranttees
+	  the VM Dirty-Thresh valus is always larger than that value.
+	  It is only effective when dirty_ratio is used. (Setting dirty_bytes
+	  disables this option.)
+	  Do not use it if you unsure.

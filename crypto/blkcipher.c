@@ -341,6 +341,12 @@ static int blkcipher_walk_first(struct blkcipher_desc *desc,
 			return err;
 	}
 
+	if (unlikely(!walk->in.sg->length) || unlikely(!walk->out.sg->length))
+	{
+		WARN_ON(1);
+		return 0;
+	}
+
 	scatterwalk_start(&walk->in, walk->in.sg);
 	scatterwalk_start(&walk->out, walk->out.sg);
 	walk->page = NULL;

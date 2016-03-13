@@ -3874,7 +3874,8 @@ static void set_ain_play_path(
 		if ((ignore_input_path != 0)
 		|| (mixer_ctl_info->input_path == MC_ASOC_INPUT_PATH_LIN1)) {
 			add_path_info(path_info,
-				(struct MCDRV_PATH_INFO *)&AnalogInputPath[idx]);
+				(struct MCDRV_PATH_INFO *)&AnalogInputPath[idx]
+			);
 			mask_ADC_src(path_info, mixer_ctl_info, preset_idx);
 			mask_BTOut_src(path_info, mixer_ctl_info->output_path);
 			return;
@@ -5681,7 +5682,7 @@ static int mc_asoc_hw_params(
 	} else {
 		sDioPathInfo.bMusicCh	= port->channels;
 		err	= _McDrv_Ctrl(MCDRV_SET_DIGITALIO_PATH, &sDioPathInfo,
-						NULL, MCDRV_MUSICNUM_UPDATE_FLAG);
+					NULL, MCDRV_MUSICNUM_UPDATE_FLAG);
 		if (err != MCDRV_SUCCESS) {
 			dev_err(codec->dev,
 				"%d: Error in MCDRV_SET_DIGITALIO_PATH\n",
@@ -8587,7 +8588,7 @@ static void hsdet_cb(UINT32 dFlags, struct MCDRV_HSDET_RES *psRes)
 			mc_asoc_MBSEL4	= 0x80;
 
 			stHSDetInfo.bEnPlugDetDb	=
-					bEnPlugDetDb & MCDRV_PLUGDETDB_DET_ENABLE;
+				bEnPlugDetDb & MCDRV_PLUGDETDB_DET_ENABLE;
 			stHSDetInfo.bEnMicDet		= bEnMicDet;
 			stHSDetInfo.bEnDlyKeyOff	= MCDRV_KEYEN_D_D_D;
 			stHSDetInfo.bEnDlyKeyOn		= MCDRV_KEYEN_D_D_D;
@@ -8896,7 +8897,7 @@ static void hsdet_cb(UINT32 dFlags, struct MCDRV_HSDET_RES *psRes)
 			dbg_info("cancel_delayed_work_mkdeten\n");
 			dbg_info("queue_delayed_work_mb4\n");
 			queue_delayed_work(workq_mb4, &delayed_work_mb4,
-							msecs_to_jiffies(MSDETMB4OFF));
+						msecs_to_jiffies(MSDETMB4OFF));
 		}
 	}
 
@@ -8940,12 +8941,13 @@ exit:
 		snd_soc_jack_report(&hs_jack,
 			mc_asoc_jack_status, SND_JACK_HEADSET);
 	}
-	if (jack_btn_on != 0) {
+
+	if (jack_btn_on != 0)
 		snd_soc_jack_report(&hs_jack, jack_btn_stat, jack_btn_on);
-	}
-	if (jack_btn_off != 0) {
+
+	if (jack_btn_off != 0)
 		snd_soc_jack_report(&hs_jack, 0, jack_btn_off);
-	}
+
 	mutex_unlock(&hsdet_mutex);
 }
 

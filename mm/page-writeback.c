@@ -258,6 +258,14 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
 	else
 		background = (dirty_background_ratio * available_memory) / 100;
 
+#if defined(CONFIG_MIN_DIRTY_THRESH_PAGES) && CONFIG_MIN_DIRTY_THRESH_PAGES > 0
+	if (!vm_dirty_bytes && dirty < CONFIG_MIN_DIRTY_THRESH_PAGES) {
+		dirty = CONFIG_MIN_DIRTY_THRESH_PAGES;
+		if (!dirty_background_bytes)
+			background = dirty / 2;
+	}
+#endif
+
 	if (background >= dirty)
 		background = dirty / 2;
 	tsk = current;

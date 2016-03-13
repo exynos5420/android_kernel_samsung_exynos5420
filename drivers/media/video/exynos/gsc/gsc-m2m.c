@@ -25,9 +25,11 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <media/v4l2-ioctl.h>
+#include <mach/smc.h>
 
 #include "gsc-core.h"
 
+#define SMC_PROTECTION_SET	0x81000000
 static int gsc_ctx_stop_req(struct gsc_ctx *ctx)
 {
 	struct gsc_ctx *curr_ctx;
@@ -125,7 +127,6 @@ void gsc_op_timer_handler(unsigned long arg)
 
 	clear_bit(ST_M2M_RUN, &gsc->state);
 	pm_runtime_put(&gsc->pdev->dev);
-	gsc->runtime_put_cnt++;
 
 	src_vb = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 	dst_vb = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
@@ -150,29 +151,11 @@ static void gsc_m2m_device_run(void *priv)
 
 	gsc = ctx->gsc_dev;
 
-	if (!in_irq()) {
-		pm_runtime_get_sync(&gsc->pdev->dev);
-		gsc->runtime_get_cnt++;
-	} else {
+	if (in_irq())
 		pm_runtime_get(&gsc->pdev->dev);
-		gsc->runtime_get_cnt++;
-		gsc_info("irq context");
-	}
+	else
+		pm_runtime_get_sync(&gsc->pdev->dev);
 
-#ifdef CONFIG_SOC_EXYNOS5420
-	if (!(readl(EXYNOS5_CLKSRC_TOP5) & (1 << 28))) {
-		if (clk_set_parent(gsc->clock[CLK_CHILD],
-			gsc->clock[CLK_PARENT])) {
-			u32 reg = readl(EXYNOS5_CLKSRC_TOP5);
-			reg |= (1 << 28);
-			writel(reg, EXYNOS5_CLKSRC_TOP5);
-			gsc_err("Unable to set parent of gsc");
-		}
-		gsc_err("get_cnt : %d, put_cnt : %d",
-			gsc->runtime_get_cnt, gsc->runtime_put_cnt);
-		gsc_err("state : 0x%lx", gsc->state);
-	}
-#endif
 	spin_lock_irqsave(&ctx->slock, flags);
 	/* Reconfigure hardware if the context has changed. */
 	if (gsc->m2m.ctx != ctx) {
@@ -255,7 +238,7 @@ static void gsc_m2m_device_run(void *priv)
 			goto put_device;
 		}
 		gsc->op_timer.expires = (jiffies + 2 * HZ);
-		add_timer(&gsc->op_timer);
+		mod_timer(&gsc->op_timer, gsc->op_timer.expires);
 	}
 
 	spin_unlock_irqrestore(&ctx->slock, flags);
@@ -541,6 +524,12 @@ static int gsc_m2m_streamon(struct file *file, void *fh,
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_ON, pdata->mif_min, pdata->int_min);
 
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 1);
+		gsc_dbg("DRM enable");
+	}
+
 	return v4l2_m2m_streamon(file, ctx->m2m_ctx, type);
 }
 
@@ -551,6 +540,12 @@ static int gsc_m2m_streamoff(struct file *file, void *fh,
 	struct gsc_dev *gsc = ctx->gsc_dev;
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
+
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_dbg("DRM disable");
+	}
 
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
@@ -752,12 +747,6 @@ static int gsc_m2m_release(struct file *file)
 	gsc_dbg("pid: %d, state: 0x%lx, refcnt= %d",
 		task_pid_nr(current), gsc->state, gsc->m2m.refcnt);
 
-	/* if we didn't properly sequence with the secure side to turn off
-	 * content protection, we may be left in a very bad state and the
-	 * only way to recover this reliably is to reboot.
-	 */
-	BUG_ON(gsc->protected_content);
-
 	kfree(ctx->m2m_ctx->cap_q_ctx.q.name);
 	kfree(ctx->m2m_ctx->out_q_ctx.q.name);
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
@@ -767,6 +756,15 @@ static int gsc_m2m_release(struct file *file)
 
 	if (--gsc->m2m.refcnt <= 0)
 		clear_bit(ST_M2M_OPEN, &gsc->state);
+
+	/* This is unnormal case */
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		gsc_err("DRM should be disabled before device close");
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_set_protected_content(gsc, false);
+	}
+
 	kfree(ctx);
 	return 0;
 }

@@ -580,7 +580,7 @@ static int fimg2d_check_dma_sync(struct fimg2d_bltcmd *cmd)
 		if (!c->size)
 			continue;
 
-		pt = fimg2d_check_pagetable(mm, c->addr, c->size);
+		pt = fimg2d_check_pagetable(mm, c->addr, c->size, i == IDST);
 		if (pt == PT_FAULT)
 			return -EFAULT;
 	}
@@ -617,7 +617,7 @@ int fimg2d_check_pgd(struct mm_struct *mm, struct fimg2d_bltcmd *cmd)
 		if (!c->size)
 			continue;
 
-		pt = fimg2d_check_pagetable(mm, c->addr, c->size);
+		pt = fimg2d_check_pagetable(mm, c->addr, c->size, i == IDST);
 		if (pt == PT_FAULT) {
 			ret = -EFAULT;
 			goto err_pgtable;

@@ -290,16 +290,6 @@ __acquires(ehci->lock)
 		status,
 		urb->actual_length, urb->transfer_buffer_length);
 #endif
-#if defined(CONFIG_MDM_HSIC_PM)
-	if (usb_pipeint(urb->pipe) && usb_pipein(urb->pipe))
-		ehci_dbg (ehci,
-				"%s %s urb %p ep%d%s status %d len %d/%d\n",
-				__func__, urb->dev->devpath, urb,
-				usb_pipeendpoint (urb->pipe),
-				usb_pipein (urb->pipe) ? "in" : "out",
-				status,
-				urb->actual_length, urb->transfer_buffer_length);
-#endif
 
 #ifdef CONFIG_HOST_COMPLIANT_TEST
 	if (likely(urb->transfer_flags == URB_HCD_DRIVER_TEST)) {

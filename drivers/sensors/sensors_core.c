@@ -22,10 +22,15 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/err.h>
+#include <linux/input.h>
+#include "sensors_core.h"
 
 struct class *sensors_class;
 struct class *sensors_event_class;
 static struct device *symlink_dev;
+static struct device *sensor_dev;
+static struct input_dev *meta_input_dev;
+
 static atomic_t sensor_count;
 
 struct axis_remap {
@@ -104,9 +109,22 @@ static const struct axis_remap axis_table[MAX_AXIS_REMAP_TAB_SZ] = {
 	{  1,    0,    2,     1,      1,     -1 }, /* P7 */
 };
 
-void remap_sensor_data(s16 *val, int idx)
+void remap_sensor_data(s16 *val, u32 idx)
 {
 	s16 tmp[3];
+
+	if (idx < MAX_AXIS_REMAP_TAB_SZ) {
+		tmp[0] = val[axis_table[idx].src_x] * axis_table[idx].sign_x;
+		tmp[1] = val[axis_table[idx].src_y] * axis_table[idx].sign_y;
+		tmp[2] = val[axis_table[idx].src_z] * axis_table[idx].sign_z;
+
+		memcpy(val, &tmp, sizeof(tmp));
+	}
+}
+
+void remap_sensor_data_32(int *val, u32 idx)
+{
+	int tmp[3];
 
 	if (idx < MAX_AXIS_REMAP_TAB_SZ) {
 		tmp[0] = val[axis_table[idx].src_x] * axis_table[idx].sign_x;
@@ -142,6 +160,32 @@ void sensors_remove_symlink(struct kobject *target, const char *name)
 	else
 		sysfs_delete_link(&symlink_dev->kobj, target, name);
 }
+
+static ssize_t set_flush(struct device *dev, struct device_attribute *attr,
+	const char *buf, size_t size)
+{
+	int64_t dTemp;
+	u8 sensor_type = 0;
+
+	if (kstrtoll(buf, 10, &dTemp) < 0)
+		return -EINVAL;
+
+	sensor_type = (u8)dTemp;
+
+	input_report_rel(meta_input_dev, REL_DIAL, 1);
+	input_report_rel(meta_input_dev, REL_HWHEEL, sensor_type + 1);
+	input_sync(meta_input_dev);
+
+	pr_info("[SENSOR] flush %d", sensor_type);
+	return size;
+}
+
+static DEVICE_ATTR(flush, S_IWUSR | S_IWGRP, NULL, set_flush);
+
+static struct device_attribute *sensor_attr[] = {
+	&dev_attr_flush,
+	NULL,
+};
 
 static void set_sensor_attr(struct device *dev,
 		struct device_attribute *attributes[])
@@ -190,7 +234,9 @@ void sensors_unregister(struct device *dev,
 void destroy_sensor_class(void)
 {
 	if (sensors_class) {
+		device_destroy(sensors_class, sensor_dev->devt);
 		class_destroy(sensors_class);
+		sensor_dev = NULL;
 		sensors_class = NULL;
 	}
 
@@ -202,6 +248,46 @@ void destroy_sensor_class(void)
 	}
 }
 
+int sensors_input_init(void)
+{
+	int ret;
+
+	/* Meta Input Event Initialization */
+	meta_input_dev = input_allocate_device();
+	if (!meta_input_dev) {
+		pr_err("[SENSOR CORE] failed alloc meta dev\n");
+		return -ENOMEM;
+	}
+
+	meta_input_dev->name = "meta_event";
+	input_set_capability(meta_input_dev, EV_REL, REL_HWHEEL);
+	input_set_capability(meta_input_dev, EV_REL, REL_DIAL);
+
+	ret = input_register_device(meta_input_dev);
+	if (ret < 0) {
+		pr_err("[SENSOR CORE] failed register meta dev\n");
+		input_free_device(meta_input_dev);
+	}
+
+	ret = sensors_create_symlink(&meta_input_dev->dev.kobj,
+		meta_input_dev->name);
+	if (ret < 0) {
+		pr_err("[SENSOR CORE] failed create meta symlink\n");
+		input_unregister_device(meta_input_dev);
+		input_free_device(meta_input_dev);
+	}
+
+	return ret;
+}
+
+void sensors_input_clean(void)
+{
+	sensors_remove_symlink(&meta_input_dev->dev.kobj,
+		meta_input_dev->name);
+	input_unregister_device(meta_input_dev);
+	input_free_device(meta_input_dev);
+}
+
 static int __init sensors_class_init(void)
 {
 	pr_info("[SENSORS CORE] sensors_class_init\n");
@@ -211,6 +297,20 @@ static int __init sensors_class_init(void)
 		pr_err("%s, create sensors_class is failed.(err=%ld)\n",
 			__func__, IS_ERR(sensors_class));
 		return PTR_ERR(sensors_class);
+	}
+
+	/* For flush sysfs */
+	sensor_dev = device_create(sensors_class, NULL, 0, NULL,
+		"%s", "sensor_dev");
+	if (IS_ERR(sensor_dev)) {
+		pr_err("[SENSORS CORE] sensor_dev create failed![%ld]\n",
+			IS_ERR(sensor_dev));
+
+		class_destroy(sensors_class);
+		return PTR_ERR(sensor_dev);
+	} else {
+		if ((device_create_file(sensor_dev, *sensor_attr)) < 0)
+			pr_err("[SENSOR CORE] failed flush device_file\n");
 	}
 
 	/* For symbolic link */
@@ -236,11 +336,16 @@ static int __init sensors_class_init(void)
 	atomic_set(&sensor_count, 0);
 	sensors_class->dev_uevent = NULL;
 
+	sensors_input_init();
+
 	return 0;
 }
 
 static void __exit sensors_class_exit(void)
 {
+	if (meta_input_dev)
+		sensors_input_clean();
+
 	if (sensors_class || sensors_event_class) {
 		class_destroy(sensors_class);
 		sensors_class = NULL;

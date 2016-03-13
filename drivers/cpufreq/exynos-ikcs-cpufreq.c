@@ -643,10 +643,12 @@ static int exynos_target(struct cpufreq_policy *policy,
 #endif
 	/* frequency and volt scaling */
 	ret = exynos_cpufreq_scale(target_freq, freqs[cur]->old, policy->cpu);
+	if (ret < 0)
+		goto out;
 
+	g_cpufreq = target_freq;
 out:
 	mutex_unlock(&cpufreq_lock);
-	g_cpufreq = target_freq;
 	return ret;
 }
 
@@ -724,6 +726,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 {
 	unsigned int freqCA7, freqCA15;
 	unsigned int bootfreqCA7, bootfreqCA15;
+	struct cpufreq_policy *policy;
 	int volt;
 
 	switch (pm_event) {
@@ -742,6 +745,24 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		exynos_info[CA7]->blocked = true;
 		exynos_info[CA15]->blocked = true;
 		mutex_unlock(&cpufreq_lock);
+
+		policy = cpufreq_cpu_get(0);
+		if (!policy) {
+			pr_err("%s: failed get cpu governor policy\n", __func__);
+			if (pm_qos_request_active(&max_cpu_qos_blank))
+				pm_qos_remove_request(&max_cpu_qos_blank);
+			return NOTIFY_BAD;
+		}
+
+		if (policy->cur >= STEP_LEVEL_CA15_MIN) {
+			if (pm_qos_request_active(&max_cpu_qos_blank))
+				pm_qos_remove_request(&max_cpu_qos_blank);
+
+			cpufreq_cpu_put(policy);
+			return NOTIFY_BAD;
+		}
+
+		cpufreq_cpu_put(policy);
 
 		bootfreqCA7 = VIRT_FREQ(get_boot_freq(CA7), CA7);
 		bootfreqCA15 = VIRT_FREQ(get_boot_freq(CA15), CA15);
@@ -1183,7 +1204,7 @@ struct freq_qos_val {
 
 static void get_boot_freq_qos(struct freq_qos_val *boot_freq_qos)
 {
-#if defined(CONFIG_RTC_DRV_MAX77802) || defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
+#if defined(CONFIG_RTC_DRV_MAX77802)
 	if (pmic_is_jig_attached) {
 #if defined(CONFIG_TARGET_LOCALE_DEMO)
 		boot_freq_qos->min_freq = 1000000;
@@ -1195,6 +1216,25 @@ static void get_boot_freq_qos(struct freq_qos_val *boot_freq_qos)
 		boot_freq_qos->min_timeout_us = 360000 * 1000;
 		boot_freq_qos->max_freq = 1000000;
 		boot_freq_qos->max_timeout_us = 360000 * 1000;
+#endif
+	} else {
+		boot_freq_qos->min_freq = 1500000;
+		boot_freq_qos->min_timeout_us = 40000 * 1000;
+		boot_freq_qos->max_freq = 1500000;
+		boot_freq_qos->max_timeout_us = 40000 * 1000;
+	}
+#elif defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
+	if (pmic_is_jig_attached) {
+#if defined(CONFIG_TARGET_LOCALE_DEMO)
+		boot_freq_qos->min_freq = 1000000;
+		boot_freq_qos->min_timeout_us = 900000 * 1000;
+		boot_freq_qos->max_freq = 1000000;
+		boot_freq_qos->max_timeout_us = 900000 * 1000;
+#else
+		boot_freq_qos->min_freq = 1000000;
+		boot_freq_qos->min_timeout_us = 500000 * 1000;
+		boot_freq_qos->max_freq = 1000000;
+		boot_freq_qos->max_timeout_us = 500000 * 1000;
 #endif
 	} else {
 		boot_freq_qos->min_freq = 1500000;
@@ -1308,6 +1348,14 @@ static int __init exynos_cpufreq_init(void)
 	register_reboot_notifier(&exynos_cpufreq_reboot_notifier);
 	exynos_tmu_add_notifier(&exynos_tmu_nb);
 
+        /* blocking frequency scale before acquire boot lock */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = true;
+	exynos_info[CA15]->blocked = true;
+	mutex_unlock(&cpufreq_lock);
+#endif
+
 	if (cpufreq_register_driver(&exynos_driver)) {
 		pr_err("%s: failed to register cpufreq driver\n", __func__);
 		goto err_cpufreq;
@@ -1354,6 +1402,14 @@ static int __init exynos_cpufreq_init(void)
 	pm_qos_add_request(&boot_min_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
 	pm_qos_update_request_timeout(&boot_min_cpu_qos, boot_freq_qos.min_freq,
 			boot_freq_qos.min_timeout_us);
+
+        /* unblocking frequency scale */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = false;
+	exynos_info[CA15]->blocked = false;
+	mutex_unlock(&cpufreq_lock);
+#endif
 
 	exynos_cpufreq_init_done = true;
 

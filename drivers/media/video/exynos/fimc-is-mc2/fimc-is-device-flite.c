@@ -819,6 +819,7 @@ static void tasklet_flite_end(unsigned long data)
 	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct fimc_is_frame *frame_done;
 	u32 index, bdone;
 
 	flite = (struct fimc_is_device_flite *)data;
@@ -849,7 +850,7 @@ static void tasklet_flite_end(unsigned long data)
 #endif
 			/* 1. current frame transition to completion */
 			index = frame->index;
-			fimc_is_frame_trans_pro_to_com(framemgr, frame);
+			frame_done = frame;
 
 			/* 2. next frame ready */
 			fimc_is_frame_request_head(framemgr, &frame);
@@ -865,11 +866,16 @@ static void tasklet_flite_end(unsigned long data)
 					merr("[SEN] request is empty0(%d slot)",
 						sensor, bdone);
 #endif
+				} else {
+					frame_done = NULL;
 				}
 			}
+			if (frame_done)
+				fimc_is_frame_trans_pro_to_com(framemgr, frame_done);
 
 			/* 3. current frame done */
-			buffer_done(flite->vctx, index);
+			if (frame_done)
+				buffer_done(flite->vctx, index);
 		} else {
 #ifdef TASKLET_MSG
 			merr("[SEN] process is empty(invalid state(%d, %ld))",

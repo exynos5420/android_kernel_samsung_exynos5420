@@ -13,7 +13,7 @@
 #define USB_CDC_NCM_NDP16_LENGTH_MIN		0x10
 
 /* Maximum NTB length */
-#define	CDC_NCM_NTB_MAX_SIZE_TX			32768	/* bytes */
+#define	CDC_NCM_NTB_MAX_SIZE_TX			16384	/* bytes */
 #define	CDC_NCM_NTB_MAX_SIZE_RX			32768	/* bytes */
 
 /* Minimum value for MaxDatagramSize, ch. 6.2.9 */
@@ -76,6 +76,7 @@ struct cdc_ncm_ctx {
 	u32 tx_speed;
 	u32 rx_max;
 	u32 tx_max;
+	u32 tx_max_setup;
 	u32 max_datagram_size;
 	u16 tx_max_datagrams;
 	u16 tx_remainder;
@@ -92,6 +93,8 @@ void cdc_ncm_unbind(struct if_usb_devdata *devdata, struct usb_interface *intf);
 struct sk_buff *cdc_ncm_tx_fixup(struct if_usb_devdata *devdata,
 		struct sk_buff *skb, gfp_t flags);
 int cdc_ncm_rx_fixup(struct if_usb_devdata *devdata, struct sk_buff *skb_in);
+int cdc_ncm_rx_fixup_copyskb(struct if_usb_devdata *devdata,
+							struct sk_buff *skb_in);
 
 void cdc_ncm_intr_complete(struct urb *urb);
 

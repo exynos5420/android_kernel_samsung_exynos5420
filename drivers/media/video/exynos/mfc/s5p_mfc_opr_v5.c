@@ -1628,10 +1628,19 @@ static inline void s5p_mfc_run_init_dec(struct s5p_mfc_ctx *ctx)
 	mfc_debug(2, "Preparing to init decoding.\n");
 	temp_vb = list_entry(ctx->src_queue.next, struct s5p_mfc_buf, list);
 	s5p_mfc_set_dec_desc_buffer(ctx);
-	mfc_debug(2, "Header size: %d\n", temp_vb->vb.v4l2_planes[0].bytesused);
-	s5p_mfc_set_dec_stream_buffer(ctx,
+	mfc_info("Header size: %d, (offset: %d)\n",
+		temp_vb->vb.v4l2_planes[0].bytesused, temp_vb->consumed);
+
+	if (temp_vb->consumed)
+		s5p_mfc_set_dec_stream_buffer(ctx,
+			s5p_mfc_mem_plane_addr(ctx, &temp_vb->vb, 0),
+			temp_vb->consumed,
+			temp_vb->vb.v4l2_planes[0].bytesused - temp_vb->consumed);
+	else
+		s5p_mfc_set_dec_stream_buffer(ctx,
 			s5p_mfc_mem_plane_addr(ctx, &temp_vb->vb, 0),
 			0, temp_vb->vb.v4l2_planes[0].bytesused);
+
 	spin_unlock_irqrestore(&dev->irqlock, flags);
 	dev->curr_ctx = ctx->num;
 	mfc_debug(2, "Header addr: 0x%08lx\n",
@@ -1692,16 +1701,6 @@ static inline int s5p_mfc_run_init_dec_buffers(struct s5p_mfc_ctx *ctx)
 		ctx->state = MFCINST_ERROR;
 	}
 	return ret;
-}
-
-static inline int s5p_mfc_ctx_ready(struct s5p_mfc_ctx *ctx)
-{
-	if (ctx->type == MFCINST_DECODER)
-		return s5p_mfc_dec_ctx_ready(ctx);
-	else if (ctx->type == MFCINST_ENCODER)
-		return s5p_mfc_enc_ctx_ready(ctx);
-
-	return 0;
 }
 
 /* Try running an operation on hardware */

@@ -52,6 +52,9 @@
 #include <linux/ioport.h>
 #include <asm/io.h>
 #include <linux/mm.h>
+#ifdef CONFIG_USB_HOST_NOTIFY
+#include <linux/host_notify.h>
+#endif
 
 #include "version.h"
 #include "smscusbnet.h"
@@ -3272,7 +3275,77 @@ static int smsc9500_eth_mac_addr(struct net_device *netdev, void *p)
 }
 //#endif 
 
+#ifdef CONFIG_USB_HOST_NOTIFY
+/*
+direction is 1 - Output config
+direction is 0 - Input config
+pull is 1 - push pull
+pull is 0 - open drain
+*/
+static int smsc9500_gpio_init(struct usbnet * dev, int gpio, int direction, int pull)
+{
+	u32 gpio_cfg;
+	int ret = 0;
 
+	if((ret = smsc9500_read_reg(dev, GPIO_CFG, &gpio_cfg)) < 0) {
+		SMSC_WARNING("Failed to read GPIO_CFG: %d", ret);
+		return ret;
+	}
+
+	gpio_cfg &=~(GPIO_CFG_GPO0_EN_ << (gpio-3));
+
+	if (!direction) {
+		gpio_cfg &=~(GPIO_CFG_GPO0_TYPE << (gpio-3));
+		gpio_cfg &=~(GPIO_CFG_GPO0_DIR_ << (gpio-3));
+	} else {
+		if (pull)
+			gpio_cfg |= (GPIO_CFG_GPO0_TYPE << (gpio-3));
+		else
+			gpio_cfg &=~(GPIO_CFG_GPO0_TYPE << (gpio-3));
+		gpio_cfg |= (GPIO_CFG_GPO0_DIR_ << (gpio-3));
+	}
+
+	if((ret = smsc9500_write_reg(dev, GPIO_CFG, gpio_cfg)) < 0) {
+		SMSC_WARNING("Failed to write GPIO_CFG: %d", ret);
+		return ret;
+	}
+	SMSC_TRACE(DBG_INIT,"%s\n", __func__);
+	return ret;
+}
+
+static int smsc9500_gpio_get(struct usbnet * dev, int gpio)
+{
+	u32 gpio_cfg;
+	u32 index = 0;
+	int ret = 0;
+
+	if((ret = smsc9500_read_reg(dev, GPIO_CFG, &gpio_cfg)) < 0) {
+		SMSC_WARNING("Failed to read GPIO_CFG: %d", ret);
+		return -EIO;
+	}
+
+	index = (GPIO_CFG_GPO0_DATA_ << (gpio-3));
+
+	ret = (index & gpio_cfg) ? 1 : 0;
+	return ret;
+}
+
+int smsc9500_ovc_gpio_check(void *data)
+{
+	struct usbnet *dev = (struct usbnet *)data;
+	int gpio = 0;
+	int ret = 0;
+
+	gpio = smsc9500_gpio_get(dev, 3);
+	if (gpio == 1)
+		ret = HNOTIFY_HIGH;
+	else if (gpio == 0)
+		ret = HNOTIFY_LOW;
+	else if (gpio < 0)
+		ret = HNOTIFY_INITIAL;
+	return ret;
+}
+#endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
 static const struct net_device_ops smsc95xx_netdev_ops = 
@@ -3504,6 +3577,11 @@ static int smsc9500_bind(struct usbnet *dev, struct usb_interface *intf)
         if (dynamicsuspend || linkdownsuspend)
                usb_enable_autosuspend(dev->udev);
 
+#ifdef CONFIG_USB_HOST_NOTIFY
+	register_ovc_func(smsc9500_ovc_gpio_check, dev);
+	ovc_start();
+#endif
+
 	SMSC_TRACE(DBG_INIT,"<--------out of bind, return 0\n");
 	return 0;
 
@@ -3521,6 +3599,10 @@ static void smsc9500_unbind(struct usbnet *dev, struct usb_interface *intf)
 {
 	PADAPTER_DATA  adapterData=(PADAPTER_DATA)(dev->data[0]);
 	SMSC_TRACE(DBG_CLOSE,"------->in smsc9500_unbind\n");
+
+#ifdef CONFIG_USB_HOST_NOTIFY
+	ovc_stop();
+#endif
 
 	if (adapterData != NULL){
 		SMSC_TRACE(DBG_CLOSE,"free adapterData\n");
@@ -4645,6 +4727,9 @@ static int smsc9500_reset(struct usbnet *dev)
 	if (!Phy_Initialize(dev, phy_addr, link_mode))
 		return SMSC9500_FAIL;
 
+#ifdef CONFIG_USB_HOST_NOTIFY
+	smsc9500_gpio_init(dev, 3, 0, 0);
+#endif
 	SMSC_TRACE(DBG_INIT,"<--------out of smsc9500_reset, return 0\n");
 
 	return 0;
