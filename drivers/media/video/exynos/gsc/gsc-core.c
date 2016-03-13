@@ -1235,7 +1235,6 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 		if (!ctx || !ctx->m2m_ctx) {
 			gsc_err("ctx : 0x%p", ctx);
 			pm_runtime_put(&gsc->pdev->dev);
-			gsc->runtime_put_cnt++;
 			goto isr_unlock;
 		}
 
@@ -1244,12 +1243,6 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 		if (src_vb && dst_vb) {
 			v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_DONE);
 			v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_DONE);
-
-			if (test_and_clear_bit(ST_STOP_REQ, &gsc->state))
-				wake_up(&gsc->irq_queue);
-			else
-				v4l2_m2m_job_finish(gsc->m2m.m2m_dev, ctx->m2m_ctx);
-
 			/* wake_up job_abort, stop_streaming */
 			spin_lock(&ctx->slock);
 			if (ctx->state & GSC_CTX_STOP_REQ) {
@@ -1257,9 +1250,13 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 				wake_up(&gsc->irq_queue);
 			}
 			spin_unlock(&ctx->slock);
+
+			if (test_and_clear_bit(ST_STOP_REQ, &gsc->state))
+				wake_up(&gsc->irq_queue);
+			else
+				v4l2_m2m_job_finish(gsc->m2m.m2m_dev, ctx->m2m_ctx);
 		}
 		pm_runtime_put(&gsc->pdev->dev);
-		gsc->runtime_put_cnt++;
 	} else if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 		if (!list_empty(&gsc->out.active_buf_q) &&
 		    !list_is_singular(&gsc->out.active_buf_q)) {
@@ -1356,21 +1353,16 @@ void gsc_clock_gating(struct gsc_dev *gsc, enum gsc_clk_status status)
 
 int gsc_set_protected_content(struct gsc_dev *gsc, bool enable)
 {
-	unsigned long flags;
 	if (gsc->protected_content == enable)
 		return 0;
 
-	if (enable) {
+	if (enable)
 		pm_runtime_get_sync(&gsc->pdev->dev);
-		gsc->runtime_get_cnt++;
-	}
 
 	gsc->vb2->set_protected(gsc->alloc_ctx, enable);
 
-	if (!enable) {
+	if (!enable)
 		pm_runtime_put_sync(&gsc->pdev->dev);
-		gsc->runtime_put_cnt++;
-	}
 
 	gsc->protected_content = enable;
 
@@ -1415,10 +1407,6 @@ static int gsc_runtime_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gsc_dev *gsc = (struct gsc_dev *)platform_get_drvdata(pdev);
 
-	if (!test_bit(ST_RUNTIME_RESUME, &gsc->state))
-		gsc_err("Already clear state");
-
-	clear_bit(ST_RUNTIME_RESUME, &gsc->state);
 	gsc_clock_gating(gsc, GSC_CLK_OFF);
 	if (gsc_m2m_opened(gsc))
 		gsc->m2m.ctx = NULL;
@@ -1437,10 +1425,6 @@ static int gsc_runtime_resume(struct device *dev)
 			gsc_clocks[CLK_CHILD], gsc_clocks[CLK_PARENT]);
 		return -EINVAL;
 	}
-	if (test_bit(ST_RUNTIME_RESUME, &gsc->state))
-		gsc_err("Already resume state");
-
-	set_bit(ST_RUNTIME_RESUME, &gsc->state);
 
 	gsc_clock_gating(gsc, GSC_CLK_ON);
 
@@ -1616,9 +1600,6 @@ static int gsc_probe(struct platform_device *pdev)
 
 	gsc_pm_runtime_enable(&pdev->dev);
 
-	gsc->runtime_get_cnt = 0;
-	gsc->runtime_put_cnt = 0;
-	clear_bit(ST_RUNTIME_RESUME, &gsc->state);
 	gsc_info("gsc-%d registered successfully", gsc->id);
 
 	return 0;

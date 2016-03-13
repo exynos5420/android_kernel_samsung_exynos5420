@@ -1491,8 +1491,6 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 					input_report_abs(rmi4_data->input_dev,
 							ABS_MT_WIDTH_MAJOR, f51->surface_data.width_major);
 					input_report_abs(rmi4_data->input_dev,
-							ABS_MT_ANGLE, f51->surface_data.angle);
-					input_report_abs(rmi4_data->input_dev,
 							ABS_MT_PALM, f51->surface_data.palm);
 				}
 			}
@@ -3586,9 +3584,6 @@ static int synaptics_rmi4_set_input_device
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_WIDTH_MAJOR, 0,
 			EDGE_SWIPE_WIDTH_MAX, 0, 0);
-	input_set_abs_params(rmi4_data->input_dev,
-			ABS_MT_ANGLE, 0,
-			EDGE_SWIPE_ANGLE_MAX, 0, 0);
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_PALM, 0,
 			EDGE_SWIPE_PALM_MAX, 0, 0);

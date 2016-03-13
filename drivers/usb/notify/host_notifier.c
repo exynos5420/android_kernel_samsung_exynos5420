@@ -17,10 +17,27 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/host_notify.h>
+#include <linux/timer.h>
+#include <linux/kthread.h>
 
 #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 #include <linux/earlysuspend.h>
 #endif
+
+#define DEFAULT_OVC_POLL_SEC 3
+
+struct  ovc {
+	wait_queue_head_t	 delay_wait;
+	struct completion	scanning_done;
+	struct task_struct *th;
+	struct mutex ovc_lock;
+	int thread_remove;
+	int can_ovc;
+	int poll_period;
+	int prev_state;
+	void *data;
+	int (*check_state)(void *);
+};
 
 struct  host_notifier_info {
 	struct host_notifier_platform_data *pdata;
@@ -30,6 +47,7 @@ struct  host_notifier_info {
 	wait_queue_head_t	delay_wait;
 	int	thread_remove;
 	int currentlimit_irq;
+	struct ovc ovc_info;
 };
 
 static struct host_notifier_info ninfo;
@@ -37,6 +55,108 @@ static struct host_notifier_info ninfo;
 #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 static struct early_suspend early_suspend;
 #endif
+
+void enable_ovc(int enable)
+{
+	ninfo.ovc_info.can_ovc = enable;
+}
+
+static int ovc_scan_thread(void *data)
+{
+	struct ovc *ovcinfo = NULL;
+	int state;
+
+	ovcinfo = &ninfo.ovc_info;
+	while (!kthread_should_stop()) {
+		wait_event_interruptible_timeout(ovcinfo->delay_wait,
+			ovcinfo->thread_remove, (ovcinfo->poll_period)*HZ);
+		if (ovcinfo->thread_remove)
+			break;
+		mutex_lock(&ninfo.ovc_info.ovc_lock);
+		if (ovcinfo->check_state
+			&& ovcinfo->data
+				&& ovcinfo->can_ovc) {
+
+			state = ovcinfo->check_state(data);
+
+			if (ovcinfo->prev_state != state) {
+				if (state == HNOTIFY_LOW) {
+					pr_err("%s overcurrent detected\n",
+							__func__);
+					host_state_notify(&ninfo.pdata->ndev,
+						NOTIFY_HOST_OVERCURRENT);
+				} else if (state == HNOTIFY_HIGH) {
+					pr_info("%s vbus draw detected\n",
+							__func__);
+					host_state_notify(&ninfo.pdata->ndev,
+						NOTIFY_HOST_NONE);
+				}
+			}
+			ovcinfo->prev_state = state;
+		}
+		mutex_unlock(&ninfo.ovc_info.ovc_lock);
+		if (!ovcinfo->can_ovc)
+			ovcinfo->thread_remove = 1;
+	}
+	pr_info("ovc_scan_thread exit\n");
+	complete_and_exit(&ovcinfo->scanning_done, 0);
+}
+
+void ovc_start(void)
+{
+	if (!ninfo.ovc_info.can_ovc)
+		goto skip;
+
+	ninfo.ovc_info.prev_state = HNOTIFY_INITIAL;
+	ninfo.ovc_info.poll_period = DEFAULT_OVC_POLL_SEC;
+	INIT_COMPLETION(ninfo.ovc_info.scanning_done);
+	ninfo.ovc_info.thread_remove = 0;
+	ninfo.ovc_info.th = kthread_run(ovc_scan_thread,
+			ninfo.ovc_info.data, "ovc-scan-thread");
+	if (IS_ERR(ninfo.ovc_info.th)) {
+		pr_err("Unable to start the ovc-scanning thread\n");
+		complete(&ninfo.ovc_info.scanning_done);
+	}
+	pr_info("%s on\n", __func__);
+	return;
+skip:
+	complete(&ninfo.ovc_info.scanning_done);
+	pr_info("%s skip\n", __func__);
+	return;
+}
+
+void ovc_stop(void)
+{
+	ninfo.ovc_info.thread_remove = 1;
+	wake_up_interruptible(&ninfo.ovc_info.delay_wait);
+	wait_for_completion(&ninfo.ovc_info.scanning_done);
+	mutex_lock(&ninfo.ovc_info.ovc_lock);
+	ninfo.ovc_info.check_state = NULL;
+	ninfo.ovc_info.data = 0;
+	mutex_unlock(&ninfo.ovc_info.ovc_lock);
+	pr_info("%s\n", __func__);
+}
+
+static void ovc_init(struct host_notifier_info *pinfo)
+{
+	init_waitqueue_head(&pinfo->ovc_info.delay_wait);
+	init_completion(&pinfo->ovc_info.scanning_done);
+	mutex_init(&pinfo->ovc_info.ovc_lock);
+	pinfo->ovc_info.prev_state = HNOTIFY_INITIAL;
+	pr_info("%s\n", __func__);
+}
+
+int register_ovc_func(int (*check_state)(void *), void *data)
+{
+	int ret = 0;
+
+	mutex_lock(&ninfo.ovc_info.ovc_lock);
+	ninfo.ovc_info.check_state = check_state;
+	ninfo.ovc_info.data = data;
+	mutex_unlock(&ninfo.ovc_info.ovc_lock);
+	pr_info("%s\n", __func__);
+	return ret;
+}
 
 static int currentlimit_thread(void *data)
 {
@@ -320,6 +440,8 @@ static int host_notifier_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to host_notify_dev_register\n");
 		return ret;
 	}
+
+	ovc_init(&ninfo);
 
 #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 	early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;

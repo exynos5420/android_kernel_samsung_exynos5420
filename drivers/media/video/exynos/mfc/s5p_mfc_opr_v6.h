@@ -151,6 +151,7 @@ void s5p_mfc_enc_calc_src_size(struct s5p_mfc_ctx *ctx);
 #define ENC_MPEG4_VOP_TIME_RES_MAX	((1 << 16) - 1)
 #define FRAME_DELTA_DEFAULT		1
 #define TIGHT_CBR_MAX			10
+#define I_LIMIT_CBR_MAX			5
 
 /* Definitions for shared memory compatibility */
 #define PIC_TIME_TOP		S5P_FIMV_D_RET_PICTURE_TAG_TOP

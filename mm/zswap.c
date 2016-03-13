@@ -46,9 +46,9 @@
 * statistics
 **********************************/
 /* Number of memory pages used by the compressed pool */
-static atomic_t zswap_pool_pages = ATOMIC_INIT(0);
+atomic_t zswap_pool_pages = ATOMIC_INIT(0);
 /* The number of compressed pages currently stored in zswap */
-static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+atomic_t zswap_stored_pages = ATOMIC_INIT(0);
 
 #ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 /* The number of outstanding pages awaiting writeback */
@@ -784,6 +784,12 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
 
 	if (!tree) {
 		ret = -ENODEV;
+		goto reject;
+	}
+
+	/* if this page got EIO on pageout before, give up immediately */
+	if (PageError(page)) {
+		ret = -ENOMEM;
 		goto reject;
 	}
 

@@ -38,13 +38,16 @@ void mfc_qos_operate(struct s5p_mfc_ctx *ctx, int opr_type, int idx)
 
 	switch (opr_type) {
 	case MFC_QOS_ADD:
+		mutex_lock(&dev->curr_rate_lock);
 		pm_qos_add_request(&dev->qos_req_int,
 				PM_QOS_DEVICE_THROUGHPUT,
 				qos_table[idx].freq_int);
+		dev->curr_rate = qos_table[idx].freq_mfc;
+		mutex_unlock(&dev->curr_rate_lock);
+
 		pm_qos_add_request(&dev->qos_req_mif,
 				PM_QOS_BUS_THROUGHPUT,
 				qos_table[idx].freq_mif);
-		dev->curr_rate = qos_table[idx].freq_mfc;
 
 #ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
 		pm_qos_add_request(&dev->qos_req_cpu,
@@ -55,11 +58,26 @@ void mfc_qos_operate(struct s5p_mfc_ctx *ctx, int opr_type, int idx)
 		mfc_debug(5, "QoS request: %d\n", idx + 1);
 		break;
 	case MFC_QOS_UPDATE:
-		pm_qos_update_request(&dev->qos_req_int,
-				qos_table[idx].freq_int);
-		pm_qos_update_request(&dev->qos_req_mif,
-				qos_table[idx].freq_mif);
-		dev->curr_rate = qos_table[idx].freq_mfc;
+		if (dev->curr_rate < qos_table[idx].freq_mfc) {
+
+			mutex_lock(&dev->curr_rate_lock);
+			pm_qos_update_request(&dev->qos_req_int,
+					qos_table[idx].freq_int);
+			dev->curr_rate = qos_table[idx].freq_mfc;
+			mutex_unlock(&dev->curr_rate_lock);
+
+			pm_qos_update_request(&dev->qos_req_mif,
+					qos_table[idx].freq_mif);
+		} else {
+			mutex_lock(&dev->curr_rate_lock);
+			dev->curr_rate = qos_table[idx].freq_mfc;
+			pm_qos_update_request(&dev->qos_req_int,
+					qos_table[idx].freq_int);
+			mutex_unlock(&dev->curr_rate_lock);
+
+			pm_qos_update_request(&dev->qos_req_mif,
+					qos_table[idx].freq_mif);
+		}
 
 #ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
 		pm_qos_update_request(&dev->qos_req_cpu,
@@ -69,9 +87,12 @@ void mfc_qos_operate(struct s5p_mfc_ctx *ctx, int opr_type, int idx)
 		mfc_debug(5, "QoS update: %d\n", idx + 1);
 		break;
 	case MFC_QOS_REMOVE:
-		pm_qos_remove_request(&dev->qos_req_int);
-		pm_qos_remove_request(&dev->qos_req_mif);
+		mutex_lock(&dev->curr_rate_lock);
 		dev->curr_rate = dev->min_rate;
+		pm_qos_remove_request(&dev->qos_req_int);
+		mutex_unlock(&dev->curr_rate_lock);
+
+		pm_qos_remove_request(&dev->qos_req_mif);
 
 #ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
 		pm_qos_remove_request(&dev->qos_req_cpu);
@@ -118,6 +139,10 @@ static inline int get_ctx_mb(struct s5p_mfc_ctx *ctx)
 	mb_width = (ctx->img_width + 15) / 16;
 	mb_height = (ctx->img_height + 15) / 16;
 	fps = ctx->framerate / 1000;
+
+	mfc_debug(2, "ctx[%d:%s], %d x %d @ %d fps\n", ctx->num,
+			(ctx->type == MFCINST_ENCODER ? "ENC" : "DEC"),
+			ctx->img_width, ctx->img_height, fps);
 
 	return mb_width * mb_height * fps;
 }

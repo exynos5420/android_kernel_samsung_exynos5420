@@ -1405,8 +1405,8 @@ static int s6e3fa0_fb_notifier_callback(struct notifier_block *self,
 			lcd->fb_unblank = 0;
 			break;
 		case FB_BLANK_UNBLANK:
-			update_brightness(lcd, 0, true);
 			lcd->fb_unblank = 1;
+			update_brightness(lcd, 0, true);
 			break;
 		default:
 			break;

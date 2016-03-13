@@ -72,6 +72,16 @@ if LINK_DEVICE_HSIC
 config EHCI_MODEM_PORTNUM
 	int "EHCI port number of modem connection"
 	default 2
+
+config PHY_HSIC_TUNE1
+	bool "Adjust S.LSI HSICPHYTUNE1 register"
+	default n
+endif
+
+if PHY_HSIC_TUNE1
+config PHY_HSIC_TUNE1_REG
+	hex "EHCI phy hsic tune"
+	default 0x3A
 endif
 
 endmenu

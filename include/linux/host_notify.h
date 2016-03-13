@@ -57,10 +57,20 @@ struct host_notifier_platform_data {
 	int		irq_enable;
 };
 
+enum ovc_check_value {
+	HNOTIFY_LOW,
+	HNOTIFY_HIGH,
+	HNOTIFY_INITIAL,
+};
+
 extern void host_state_notify(struct host_notify_dev *ndev, int state);
 extern int host_notify_dev_register(struct host_notify_dev *ndev);
 extern void host_notify_dev_unregister(struct host_notify_dev *ndev);
 extern int start_usbhostd_wakelock(void);
 extern int stop_usbhostd_wakelock(void);
 
+extern void enable_ovc(int enable);
+extern void ovc_start(void);
+extern void ovc_stop(void);
+extern int register_ovc_func(int (*check_state)(void *), void *data);
 #endif /* __LINUX_HOST_NOTIFY_H__ */

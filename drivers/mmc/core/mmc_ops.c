@@ -21,6 +21,8 @@
 #include "core.h"
 #include "mmc_ops.h"
 
+#define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+
 static int _mmc_select_card(struct mmc_host *host, struct mmc_card *card)
 {
 	int err;
@@ -384,6 +386,7 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 	int err;
 	struct mmc_command cmd = {0};
 	unsigned int ignore;
+	unsigned long timeout;
 	u32 status;
 
 	BUG_ON(!card);
@@ -402,6 +405,7 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 		return err;
 
 	/* Must check status to be sure of no errors */
+	timeout = jiffies + msecs_to_jiffies(MMC_OPS_TIMEOUT_MS);
 	ignore = (index == EXT_CSD_HS_TIMING) ? MMC_RSP_CRC : 0;
 
 	do {
@@ -412,6 +416,13 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 			break;
 		if (mmc_host_is_spi(card->host))
 			break;
+
+		/* Timeout if the device never leaves the program state. */
+		if (time_after(jiffies, timeout)) {
+			pr_err("%s: Card stuck in programming state! %s\n",
+				mmc_hostname(card->host), __func__);
+			return -ETIMEDOUT;
+		}
 	} while (R1_CURRENT_STATE(status) == R1_STATE_PRG);
 
 	if (mmc_host_is_spi(card->host)) {

@@ -205,7 +205,8 @@ static int fimg2d_sysmmu_fault_handler(struct device *dev, const char *mmuname,
 next:
 	ctrl->dump(ctrl);
 
-	BUG();
+	/* lsi temporary patch for debugging */
+	//BUG();
 	return 0;
 }
 

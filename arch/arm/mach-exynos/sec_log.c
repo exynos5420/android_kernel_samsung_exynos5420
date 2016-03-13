@@ -126,6 +126,49 @@ out:
 
 __setup("sec_log=", sec_log_setup);
 
+static ssize_t sec_log_read_all(struct file *file, char __user *buf,
+				size_t len, loff_t *offset)
+{
+	loff_t pos = *offset;
+	ssize_t count, size;
+
+	size = sec_log_size;
+
+	if (pos >= size)
+		return 0;
+
+	count = min(len, (size_t)size);
+	if (copy_to_user(buf, sec_log_buf + pos, count))
+		return -EFAULT;
+
+	*offset += count;
+	return count;
+}
+
+static const struct file_operations sec_log_file_ops = {
+	.owner = THIS_MODULE,
+	.read = sec_log_read_all,
+};
+
+static int __init sec_log_late_init(void)
+{
+	struct proc_dir_entry *entry;
+
+	if (sec_log_buf == NULL)
+		return 0;
+
+	entry = create_proc_entry("sec_log",  S_IRUSR | S_IRGRP, NULL);
+	if (!entry) {
+		pr_err("%s: failed to create proc entry\n", __func__);
+		return 0;
+	}
+	entry->proc_fops = &sec_log_file_ops;
+
+	return 0;
+}
+
+late_initcall(sec_log_late_init);
+
 #ifdef CONFIG_CORESIGHT_ETM
 static int __init sec_etb_setup(char *str)
 {
@@ -196,7 +239,7 @@ out:
 }
 __setup("sec_avc_log=", sec_avc_log_setup);
 
-#define BUF_SIZE 256
+#define BUF_SIZE 512
 void sec_debug_avc_log(char *fmt, ...)
 {
 	va_list args;
@@ -540,7 +583,7 @@ static const struct file_operations last_kmsg_file_ops = {
 	.read = sec_log_read_old,
 };
 
-static int __init sec_log_late_init(void)
+static int __init sec_log_last_kmsg_late_init(void)
 {
 	struct proc_dir_entry *entry;
 
@@ -558,7 +601,7 @@ static int __init sec_log_late_init(void)
 	return 0;
 }
 
-late_initcall(sec_log_late_init);
+late_initcall(sec_log_last_kmsg_late_init);
 #endif
 
 #ifdef CONFIG_SEC_DEBUG_TIMA_LOG

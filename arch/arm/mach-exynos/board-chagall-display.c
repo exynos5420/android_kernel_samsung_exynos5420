@@ -116,6 +116,7 @@ static int lcd_power_on(struct lcd_device *ld, int enable)
 		usleep_range(5000, 10000);
 		gpio_set_value(GPIO_LCD_EN, 0);
 		usleep_range(15000,16000);
+		msleep(300); //for chagall
 	}
 	regulator_put(regulator_1_9);
 
@@ -272,11 +273,6 @@ static struct s5p_platform_mipi_dsim dsim_platform_data = {
 	.init_d_phy		= s5p_dsim_init_d_phy,
 	.get_fb_frame_done	= NULL,
 	.trigger		= NULL,
-
-#if defined(CONFIG_FB_HW_TRIGGER)
-	.trigger_set = s3c_fb_enable_trigger_forcing,
-	.fimd1_device = &s5p_device_fimd1.dev,
-#endif
 };
 
 static const char * const keep_clock_arr[] = {

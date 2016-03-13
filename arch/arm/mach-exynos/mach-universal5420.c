@@ -146,7 +146,7 @@ static struct platform_device *universal5420_devices[] __initdata = {
 	&ramconsole_device,
 	&persistent_trace_device,
 	&persistent_clock,
-#ifdef CONFIG_MALI_T6XX
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04)
 	&exynos5_device_g3d,
 #endif
 	&s3c_device_adc,
@@ -383,7 +383,7 @@ static void __init universal5420_machine_init(void)
 	exynos5_universal5420_gpio_init();
 }
 
-MACHINE_START(UNIVERSAL5420, "UNIVERSAL5420")
+MACHINE_START(UNIVERSAL5420, "Samsung EXYNOS5420")
 	.atag_offset	= 0x100,
 	.init_early	= universal5420_init_early,
 	.init_irq	= exynos5_init_irq,

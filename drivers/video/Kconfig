@@ -2165,13 +2165,6 @@ config S5P_DP_ESD_RECOVERY
 	---help---
 	  This enables support for DP ESD recovery.
 
-config FB_S5P_EXTDSP
-	bool "Samsung Virtual Frame Buffer support"
-	depends on FB_S3C
-	default n
-	---help---
-	  This enables support for samsung virtual frame buffer device.
-
 config FB_S3C2410
 	tristate "S3C2410 LCD framebuffer support"
 	depends on FB && ARCH_S3C24XX

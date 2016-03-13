@@ -1091,12 +1091,6 @@ static void report_input_data(struct mxt540e_data *data)
 			printk(KERN_DEBUG "%s Y: %d\n", __func__, data->fingers[i].y);
 			printk(KERN_DEBUG "%s Z: %d\n", __func__, data->fingers[i].z);
 			printk(KERN_DEBUG "%s W: %d\n", __func__, data->fingers[i].w);
-#if 0
-			input_report_abs(data->input_dev, ABS_MT_COMPONENT,
-					 data->fingers[i].component);
-			input_report_abs(data->input_dev, ABS_MT_SUMSIZE,
-					 sumsize);
-#endif
 		}
 		report_count++;
 
@@ -2562,10 +2556,7 @@ static int __devinit mxt540e_probe(struct i2c_client *client,
 				pdata->max_z, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_PRESSURE, pdata->min_w,
 				pdata->max_w, 0, 0);
-/*
-	input_set_abs_params(input_dev, ABS_MT_COMPONENT, 0, 255, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_SUMSIZE, 0, 16 * 26, 0, 0);
-*/
+
 	ret = input_register_device(input_dev);
 	if (ret) {
 		input_free_device(input_dev);

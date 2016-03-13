@@ -1259,8 +1259,7 @@ static long misc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (ret < 0)
 			return -EFAULT;
 
-		mif_dump_log(iod->mc->msd, iod);
-		return 0;
+		return mif_dump_log(iod->mc->msd, iod);
 
 	default:
 		 /* If you need to handle the ioctl for specific link device,
@@ -1420,7 +1419,7 @@ static ssize_t misc_read(struct file *filp, char *buf, size_t count,
 continue_multiframe:
 	skb = skb_dequeue(rxq);
 	if (!skb) {
-		mif_info("%s: ERR! no data in rxq\n", iod->name);
+		printk_ratelimited("%s: ERR! no data in rxq\n", iod->name);
 		goto exit;
 	}
 

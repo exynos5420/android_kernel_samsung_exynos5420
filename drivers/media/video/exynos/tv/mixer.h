@@ -66,6 +66,10 @@
 #define MXR_PAD_SOURCE_GRP1	5
 #define MXR_PADS_NUM		6
 
+/* mixer device ID for smc call */
+#define MXR_SMC_PROTECTION_ID	8
+#define SMC_PROTECTION_SET  0x81000000
+
 /* HDMI and HPD state definitions */
 #define HPD_LOW		0
 #define HPD_HIGH	1
@@ -282,6 +286,8 @@ struct mxr_layer {
 	u32 chroma_val;
 	/** priority for each layer */
 	u8 prio;
+	/** protect for DRM scenario */
+	int protection;
 };
 
 /** description of mixers output interface */
@@ -423,6 +429,9 @@ struct mxr_device {
 	enum s5p_mixer_rgb color_range;
 	/** TV suspend */
 	int blank;
+
+	/** protection count */
+	int protection;
 };
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)

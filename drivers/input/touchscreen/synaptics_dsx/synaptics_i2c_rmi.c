@@ -954,8 +954,6 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 						wy = f51->edge_swipe_data.wy;
 					}
 					input_report_abs(rmi4_data->input_dev,
-							ABS_MT_SUMSIZE, f51->edge_swipe_data.sumsize);
-					input_report_abs(rmi4_data->input_dev,
 							ABS_MT_PALM, f51->edge_swipe_data.palm);
 				}
 #endif
@@ -3451,9 +3449,6 @@ static int synaptics_rmi4_set_input_device(struct synaptics_rmi4_data *rmi4_data
 			ABS_MT_DISTANCE, 0,
 			HOVER_Z_MAX, 0, 0);
 #ifdef EDGE_SWIPE
-	input_set_abs_params(rmi4_data->input_dev,
-			ABS_MT_SUMSIZE, 0,
-			EDGE_SWIPE_SUMSIZE_MAX, 0, 0);
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_PALM, 0,
 			EDGE_SWIPE_PALM_MAX, 0, 0);

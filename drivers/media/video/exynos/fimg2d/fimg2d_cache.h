@@ -104,4 +104,4 @@ void fimg2d_clean_outer_pagetable(struct mm_struct *mm, unsigned long addr,
 void fimg2d_dma_sync_outer(struct mm_struct *mm, unsigned long addr,
 		size_t size, enum cache_opr opr);
 enum pt_status fimg2d_check_pagetable(struct mm_struct *mm, unsigned long addr,
-		size_t size);
+		size_t size, int write);

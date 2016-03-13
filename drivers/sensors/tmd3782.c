@@ -109,7 +109,7 @@
 #define STA_PRXINTR			0x20
 
 #define PROX_AVG_COUNT			40
-#define MAX_LUX				39768
+#define MAX_LUX				150000
 
 #define PROX_MAX			1023
 #define PROX_MIN			0
@@ -156,6 +156,7 @@ struct tmd3782_p {
 	u16 reddata;
 	u16 grndata;
 	u16 bludata;
+	int lux;
 	int irdata;
 	int atime_ms;
 	int dgf;
@@ -345,15 +346,18 @@ static int tmd3782_light_get_lux(struct tmd3782_p *data)
 		break;
 	}
 
-	if (data->clrdata >= 18500) {
+	if (gain == 1 && data->clrdata < 25) {
+		tmd3782_i2c_write(data, CMD_REG | GAIN, 0x22);
+		return data->lux;
+	} else if (gain == 16 && data->clrdata > 15000) {
+		tmd3782_i2c_write(data, CMD_REG | GAIN, 0x20);
+		return data->lux;
+	}
+
+	if ((data->clrdata >= 18500) && (gain == 1)) {
 		lux = MAX_LUX;
 		return lux;
 	}
-
-	if (gain == 1 && data->clrdata < 25)
-		tmd3782_i2c_write(data, CMD_REG | GAIN, 0x22);
-	else if (gain == 16 && data->clrdata > 15000)
-		tmd3782_i2c_write(data, CMD_REG | GAIN, 0x20);
 
 	/* calculate lux */
 	data->irdata = ((int)data->reddata + (int)data->grndata \
@@ -379,6 +383,7 @@ static int tmd3782_light_get_lux(struct tmd3782_p *data)
 		lux /= gain;
 	}
 
+	data->lux = lux;
 	return lux;
 }
 
@@ -1276,6 +1281,7 @@ static int tmd3782_probe(struct i2c_client *client,
 
 	data->i2c_client = client;
 	i2c_set_clientdata(client, data);
+	data->lux = 0;
 
 	/* ID Check */
 	ret = i2c_smbus_read_byte_data(client, CMD_REG | CHIPID);

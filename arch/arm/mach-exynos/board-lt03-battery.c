@@ -83,6 +83,10 @@ static sec_charging_current_t charging_current_table[] = {
 	{1000,	1000,	250,	40*60},/* LAN hub */
 	{460,	460,	250,	40*60},/*mhl usb*/
 	{0, 0,	0,	0},/*power sharing*/
+	{900,	1200,	250,	40*60}, /* SMART_OTG */
+	{1500,	1500,	250,	40*60}, /* SMART_NOTG */
+	{1400,	1400,	250,	40*60}, /* MDOCK_TA */
+	{450,	450,	250,	40*60}  /* MDOCK_USB */
 };
 
 static bool sec_bat_adc_none_init(
@@ -728,6 +732,18 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
 
+#if defined(CONFIG_KLIMT)
+	.QRTable00 = 0x7B00,
+	.QRTable10 = 0x3700,
+	.QRTable20 = 0x1402,
+	.QRTable30 = 0x0F84,
+#elif defined(CONFIG_CHAGALL)
+	.QRTable00 = 0x8000,
+	.QRTable10 = 0x3700,
+	.QRTable20 = 0x0E08,
+	.QRTable30 = 0x098A,
+#endif
+
 #if defined(CONFIG_N2A)
 #if defined(CONFIG_TARGET_LOCALE_USA)
 	.temp_high_threshold_event = 510,
@@ -758,6 +774,35 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 #elif defined(CONFIG_CHAGALL)/*USA, Canna use csc files for setting*/
 #if defined(CONFIG_TARGET_LOCALE_USA)
+#if defined(CONFIG_CHAGALL_LTE)
+#if defined(CONFIG_BATT_TEMP_TMO)
+	.temp_high_threshold_event = 540,
+	.temp_high_recovery_event = 480,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 540,
+	.temp_high_recovery_normal = 480,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 530,
+	.temp_high_recovery_lpm = 500,
+	.temp_low_threshold_lpm = 0,
+	.temp_low_recovery_lpm = 30,
+#else
+	.temp_high_threshold_event = 560,
+	.temp_high_recovery_event = 480,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 560,
+	.temp_high_recovery_normal = 480,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 530,
+	.temp_high_recovery_lpm = 480,
+	.temp_low_threshold_lpm = 0,
+	.temp_low_recovery_lpm = 30,
+#endif
+#else
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 460,
 	.temp_low_threshold_event = -50,
@@ -770,6 +815,20 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 480,
 	.temp_low_threshold_lpm = 0,
 	.temp_low_recovery_lpm = 30,
+#endif
+#elif defined(CONFIG_TARGET_LOCALE_BMC)
+	.temp_high_threshold_event = 540,
+	.temp_high_recovery_event = 470,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 540,
+	.temp_high_recovery_normal = 470,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 540,
+	.temp_high_recovery_lpm = 470,
+	.temp_low_threshold_lpm = -50,
+	.temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 550,
 	.temp_high_recovery_event = 470,
@@ -786,17 +845,17 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 #elif defined(CONFIG_KLIMT)
 #if defined(CONFIG_TARGET_LOCALE_USA)
-	.temp_high_threshold_event = 510,
+	.temp_high_threshold_event = 530,
 	.temp_high_recovery_event = 460,
 	.temp_low_threshold_event = -50,
 	.temp_low_recovery_event = 0,
-	.temp_high_threshold_normal = 510,
+	.temp_high_threshold_normal = 530,
 	.temp_high_recovery_normal = 460,
 	.temp_low_threshold_normal = -50,
 	.temp_low_recovery_normal = 0,
 	.temp_high_threshold_lpm = 510,
 	.temp_high_recovery_lpm = 460,
-	.temp_low_threshold_lpm = -50,
+	.temp_low_threshold_lpm = -30,
 	.temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 530,
@@ -858,8 +917,8 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
 		SEC_BATTERY_FULL_CONDITION_VCELL,
-	.full_condition_soc = 97,
-	.full_condition_vcell = 4300,
+	.full_condition_soc = 95,
+	.full_condition_vcell = 4250,
 
 	.recharge_check_count = 2,
 	.recharge_condition_type =

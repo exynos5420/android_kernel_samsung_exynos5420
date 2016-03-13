@@ -202,7 +202,10 @@ static int hid_synaptics_probe(struct hid_device *hdev, const struct hid_device_
 	syntp_data->input = input_dev;
 	ret = input_register_device(syntp_data->input);
 	if (ret)
+	{
+		input_free_device(syntp_data->input);
 		goto hid_init_failed;
+	}
 
 	hid_set_drvdata(hdev, syntp_data);
 

@@ -238,7 +238,9 @@ int s5p_mfc_clock_on(void)
 	unsigned long flags;
 
 #ifdef CONFIG_MFC_USE_BUS_DEVFREQ
+	mutex_lock(&dev->curr_rate_lock);
 	s5p_mfc_clock_set_rate(dev, dev->curr_rate);
+	mutex_unlock(&dev->curr_rate_lock);
 #endif
 	ret = clk_enable(pm->clock);
 	if (ret < 0)

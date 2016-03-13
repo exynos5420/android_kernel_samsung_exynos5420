@@ -19,4 +19,13 @@ config MHL_VERSION
 		  For example, those device compliant
 		  with MHL Specification version 2.0
 		  shell set this MHL_VERSION to 0x20
+
+config MHL_SWING_LEVEL_VALUE
+        hex "MHL swing level"
+        default 0x25
+        ---help---
+          MHL swing level
+                support for tuning MHL swing level
+                0 1 2 bit data 3 4 5 bit clk
+                0x25 is default value 100101
 endmenu

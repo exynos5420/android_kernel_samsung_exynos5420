@@ -331,8 +331,8 @@ EXPORT_SYMBOL_GPL(mmc_force_presence_change);
 #if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
 static struct dw_mci_mon_table exynos_dwmci_tp_mon1_tbl[] = {
 	/* Byte/s, MIF clk, CPU clk */
-	{  15360000, 733000, 1500000},
-	{  10240000, 400000,       0},
+	{  15360000, 733000, 1900000},
+	{   7864320, 400000, 1500000},
 	{         0,      0,       0},
 };
 #endif
@@ -600,7 +600,7 @@ static struct dw_mci_board universal5420_dwmci2_pdata __initdata = {
 	.cfg_gpio		= exynos_dwmci2_cfg_gpio,
 	.get_bus_wd		= exynos_dwmci2_get_bus_wd,
 	.save_drv_st	= exynos_dwmci_save_drv_st,
-	.restore_drv_st	= exynos_dwmci_restore_drv_st_with_compensation,
+	.restore_drv_st	= exynos_dwmci_restore_drv_st,
 	.tuning_drv_st	= exynos_dwmci_tuning_drv_st,
 	.sdr_timing		= 0x03040000,
 	.ddr_timing		= 0x03020000,

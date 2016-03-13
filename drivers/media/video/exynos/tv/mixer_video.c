@@ -20,6 +20,7 @@
 #include <linux/export.h>
 #include <plat/iovmm.h>
 #include <mach/devfreq.h>
+#include <mach/smc.h>
 
 #include <media/exynos_mc.h>
 #include <media/v4l2-ioctl.h>
@@ -457,6 +458,9 @@ static int mxr_s_ctrl(struct file *file, void *fh, struct v4l2_control *ctrl)
 		break;
 	case V4L2_CID_TV_UPDATE:
 		ret = mxr_update(mdev);
+		break;
+	case V4L2_CID_CONTENT_PROTECTION:
+		layer->protection = v;
 		break;
 	default:
 		mxr_err(mdev, "invalid control id\n");
@@ -1144,6 +1148,17 @@ static int start_streaming(struct vb2_queue *vq, unsigned int count)
 		exynos5_update_media_layers(TYPE_MIXER, n_layer);
 	}
 
+	/* enable IP protection */
+	if (layer->protection) {
+		if (mdev->protection == 0) {
+			exynos_smc(SMC_PROTECTION_SET, 0,
+					MXR_SMC_PROTECTION_ID, MXR_ENABLE);
+			mxr_info(mdev, "enabled mixer protection\n");
+		}
+		mdev->protection++;
+		mxr_dbg(mdev, "mixer protection count+:%d\n", mdev->protection);
+	}
+
 	/* enabling layer in hardware */
 	layer->ops.stream_set(layer, MXR_ENABLE);
 	/* store starting entity ptr on the tv graphic pipeline */
@@ -1208,6 +1223,17 @@ static int stop_streaming(struct vb2_queue *vq)
 	pipe->layer = layer;
 	/* stop streaming all entities on the pipeline */
 	ret = tv_graph_pipeline_stream(pipe, 0);
+
+	/* disable IP protection */
+	if (layer->protection) {
+		if (mdev->protection == 1) {
+			exynos_smc(SMC_PROTECTION_SET, 0,
+					MXR_SMC_PROTECTION_ID, MXR_DISABLE);
+			mxr_info(mdev, "disabled mixer protection\n");
+		}
+		mdev->protection--;
+		mxr_dbg(mdev, "mixer protection count-:%d\n", mdev->protection);
+	}
 
 	/* Informing BTS of the number of layers turned on */
 	if (is_ip_ver_5s) {

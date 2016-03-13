@@ -673,6 +673,7 @@ static void fg_test_print(struct i2c_client *client)
 
 static void fg_periodic_read(struct i2c_client *client)
 {
+	struct sec_fuelgauge_info *fuelgauge = i2c_get_clientdata(client);
 	u8 reg;
 	int i;
 	int data[0x10];
@@ -681,7 +682,32 @@ static void fg_periodic_read(struct i2c_client *client)
 	str = kzalloc(sizeof(char)*1024, GFP_KERNEL);
 	if (!str)
 		return;
-
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	if((fg_read_register(client, 0x12) != fuelgauge->pdata->QRTable00)) {
+		if (fg_write_register(client, 0x12, (u16)fuelgauge->pdata->QRTable00) < 0) {
+			dev_err(&client->dev, "%s: Failed to write QRtable0 \n",
+				__func__);
+				}
+		}
+	if((fg_read_register(client, 0x22) != fuelgauge->pdata->QRTable10)) {
+		if (fg_write_register(client, 0x22, (u16)fuelgauge->pdata->QRTable10) < 0) {
+			dev_err(&client->dev, "%s: Failed to write QRtable10 \n",
+				__func__);
+				}
+		}
+	if((fg_read_register(client, 0x32) != fuelgauge->pdata->QRTable20)) {
+		if (fg_write_register(client, 0x32, (u16)fuelgauge->pdata->QRTable20) < 0) {
+			dev_err(&client->dev, "%s: Failed to write QRtable20 \n",
+				__func__);
+				}
+		}
+	if((fg_read_register(client, 0x42) != fuelgauge->pdata->QRTable30)) {
+		if (fg_write_register(client, 0x42, (u16)fuelgauge->pdata->QRTable30) < 0) {
+			dev_err(&client->dev, "%s: Failed to write QRtable30 \n",
+				__func__);
+				}
+		}
+#endif
 	for (i = 0; i < 16; i++) {
 		for (reg = 0; reg < 0x10; reg++)
 			data[reg] = fg_read_register(client, reg + i * 0x10);
@@ -2093,7 +2119,7 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 
 	psy_do_property("battery", get,
 		POWER_SUPPLY_PROP_STATUS, value);
-
+#if 0
 	/* Algorithm for reducing time to fully charged (from MAXIM) */
 	if (value.intval != POWER_SUPPLY_STATUS_DISCHARGING &&
 		value.intval != POWER_SUPPLY_STATUS_FULL &&
@@ -2122,7 +2148,7 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 			fuelgauge->info.full_check_flag = 3;
 	} else
 		fuelgauge->info.full_check_flag = 0;
-
+#endif
 	/*  Checks vcell level and tries to compensate SOC if needed.*/
 	/*  If jig cable is connected, then skip low batt compensation check. */
 	if (!fuelgauge->pdata->check_jig_status() &&

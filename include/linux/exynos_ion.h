@@ -127,6 +127,7 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 void exynos_ion_sync_sg_for_cpu(struct device *dev,
 					struct sg_table *sgt,
 					enum dma_data_direction dir);
+int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
 #endif /* __KERNEL */
 
 #endif /* _LINUX_ION_H */

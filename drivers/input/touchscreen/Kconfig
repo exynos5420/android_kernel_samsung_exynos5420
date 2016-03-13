@@ -907,6 +907,18 @@ config TOUCHSCREEN_ATMEL_MXT1664S
 	  To compile this driver as a module, choose M here: the
 	  module will be called mxt1664s.
 
+config TOUCHSCREEN_CHAGALLLTE_USA
+	tristate "Synaptics DSX i2c touchscreen"
+	default n
+	help
+	  Say Y here to load firmware for touchscreen.
+
+config TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN
+	tristate "Synaptics DSX i2c touchscreen"
+	default n
+	help
+	  Say Y here to load firmware for touchscreen.
+
 source "drivers/input/touchscreen/mxt_t/Kconfig"
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 

@@ -46,13 +46,25 @@ config MALI_T6XX_RT_PM
 	help
 	  Choose this option to enable runtime power management on MALI T6XX DDK.
 
-config MALI_T6XX_ENABLE_TRACE
+menuconfig MALI_T6XX_ENABLE_TRACE
 	bool "Enable kbase tracing"
 	depends on MALI_T6XX
-	default n
+	default y
 	help
 	  Enables tracing in kbase.  Trace log available through
 	  the "mali_trace" debugfs file, when the CONFIG_DEBUG_FS is enabled
+
+config MALI_EXYNOS_TRACE
+	bool "Enable LSI trace"
+	depends on MALI_T6XX && MALI_T6XX_ENABLE_TRACE
+	help
+	  Enable tracing in kbase. It defined by S.LSI
+
+config MALI_FULL_TRACE
+	bool "Enable FULL trace"
+	depends on MALI_T6XX && MALI_T6XX_ENABLE_TRACE
+	help
+	  Enable tracing in kbase. It defined by ARM and work fully.
 
 config MALI_T6XX_DEBUG_SYS
 	bool "Enable sysfs for mali t6xx"
@@ -89,25 +101,10 @@ config MALI_PLATFORM_FAKE
 	  supports creating the platform device outside of the Linux platform-specific code.
 	  Enable this option if would like to use a platform device configuration from within the device driver.
 
-choice
-	prompt "Platform configuration"
-	depends on MALI_T6XX && MALI_EXPERT
-	default MALI_PLATFORM_VEXPRESS
-	help
-	  Select the SOC platform that contains a Mali-T6XX
-
-config MALI_PLATFORM_VEXPRESS
-	depends on ARCH_VEXPRESS && (ARCH_VEXPRESS_CA9X4 || ARCH_VEXPRESS_CA15X4)
-	bool "Versatile Express"
-config MALI_PLATFORM_GOLDFISH
-	depends on ARCH_GOLDFISH
-	bool "Android Goldfish virtual CPU"
-config MALI_PLATFORM_PBX
-	depends on ARCH_REALVIEW && REALVIEW_EB_A9MP && MACH_REALVIEW_PBX
-	bool "Realview PBX-A9"
 config MALI_PLATFORM_THIRDPARTY
 	bool "Third Party Platform"
-endchoice
+	depends on MALI_T6XX && MALI_EXPERT
+	default n
 
 config MALI_PLATFORM_THIRDPARTY_NAME
 	depends on MALI_T6XX && MALI_PLATFORM_THIRDPARTY && MALI_EXPERT

@@ -1150,8 +1150,7 @@ static long misc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (ret < 0)
 			return -EFAULT;
 
-		mif_dump_log(iod->mc->msd, iod);
-		return 0;
+		return mif_dump_log(iod->mc->msd, iod);
 
 	default:
 		 /* If you need to handle the ioctl for specific link device,

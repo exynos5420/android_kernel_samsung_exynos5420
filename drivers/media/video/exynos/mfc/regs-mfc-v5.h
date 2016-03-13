@@ -398,6 +398,9 @@ static inline unsigned int r2h_bits(int cmd)
 #define S5P_FIMV_ERR_FRAME_CONCEAL		-1
 #define S5P_FIMV_R2H_CMD_DPB_FLUSH_RET		-2
 
+/* for compatibility */
+#define S5P_FIMV_E_GOP_CONFIG2		-1
+
 /* Error handling defines */
 #define S5P_FIMV_ERR_WARNINGS_START		145
 #define S5P_FIMV_ERR_WARNINGS_END		182
@@ -440,6 +443,7 @@ static inline unsigned int r2h_bits(int cmd)
 #define S5P_FIMV_SHARED_NEW_I_PERIOD		0x0098
 #define S5P_FIMV_SHARED_H264_I_PERIOD		0x009C
 #define S5P_FIMV_SHARED_RC_CONTROL_CONFIG	0x00A0
+#define S5P_FIMV_SHARED_NEW_RC_QP_BOUND		0x00E4
 #define S5P_FIMV_SHARED_DISP_FRAME_TYPE_SHIFT	2
 
 #define S5P_FIMV_SHARED_FRAME_PACK_SEI_AVAIL    0x16C
@@ -463,5 +467,6 @@ static inline unsigned int r2h_bits(int cmd)
 #define S5P_FIMV_NEW_I_PERIOD			S5P_FIMV_SHARED_NEW_I_PERIOD
 #define S5P_FIMV_NEW_RC_FRAME_RATE		S5P_FIMV_SHARED_NEW_RC_FRAME_RATE
 #define S5P_FIMV_NEW_RC_BIT_RATE		S5P_FIMV_SHARED_NEW_RC_BIT_RATE
+#define S5P_FIMV_NEW_RC_QP_BOUND		S5P_FIMV_SHARED_NEW_RC_QP_BOUND
 
 #endif /* _REGS_FIMV_V5_H */

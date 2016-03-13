@@ -501,6 +501,12 @@ static int enable_periodic (struct ehci_hcd *ehci)
 	ehci_writel(ehci, cmd, &ehci->regs->command);
 	/* posted write ... PSS happens later */
 
+#if defined(CONFIG_MDM_HSIC_PM)
+	status = handshake(ehci, &ehci->regs->status, STS_PSS, STS_PSS, 2000);
+	if (status)
+		ehci_dbg (ehci, "%s handshake %d\n", __func__, status);
+#endif
+
 	/* make sure ehci_work scans these */
 	ehci->next_uframe = ehci_read_frame_index(ehci)
 		% (ehci->periodic_size << 3);
@@ -540,6 +546,10 @@ static int disable_periodic (struct ehci_hcd *ehci)
 	cmd = ehci_readl(ehci, &ehci->regs->command) & ~CMD_PSE;
 	ehci_writel(ehci, cmd, &ehci->regs->command);
 	/* posted write ... */
+
+#if defined(CONFIG_MDM_HSIC_PM)
+	status = handshake(ehci, &ehci->regs->status, STS_PSS, 0, 2000);
+#endif
 
 	free_cached_lists(ehci);
 

@@ -589,9 +589,9 @@ static void	MakeInitInfoLog
 	sprintf(sbStr, " bDio2SdoHiz=%02X", pvPrm1->bDio2SdoHiz);
 	strcat(gsbLogString, sbStr);
 	sprintf(sbStr, " bDio0ClkHiz=%02X", pvPrm1->bDio0ClkHiz);
-	strcat(gsbLogString, sbStr);			
+	strcat(gsbLogString, sbStr);
 	sprintf(sbStr, " bDio1ClkHiz=%02X", pvPrm1->bDio1ClkHiz);
-	strcat(gsbLogString, sbStr);			
+	strcat(gsbLogString, sbStr);
 	sprintf(sbStr, " bDio2ClkHiz=%02X", pvPrm1->bDio2ClkHiz);
 	strcat(gsbLogString, sbStr);
 	sprintf(sbStr, " bDio0PcmHiz=%02X", pvPrm1->bDio0PcmHiz);

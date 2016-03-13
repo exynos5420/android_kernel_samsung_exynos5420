@@ -119,6 +119,8 @@ struct ion_handle {
 	unsigned int kmap_cnt;
 };
 
+static struct ion_device *g_idev;
+
 /* this function should only be called while dev->lock is held */
 static void ion_buffer_add(struct ion_device *dev,
 			   struct ion_buffer *buffer)
@@ -479,10 +481,9 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 	 * request of the caller allocate from it.  Repeat until allocate has
 	 * succeeded or all heaps have been tried
 	 */
+	len = PAGE_ALIGN(len);
 	if (WARN_ON(!len))
 		return ERR_PTR(-EINVAL);
-
-	len = PAGE_ALIGN(len);
 
 	down_read(&dev->lock);
 	plist_for_each_entry(heap, &dev->heaps, node) {
@@ -572,6 +573,10 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 		mutex_unlock(&client->lock);
 		return -ENODEV;
 	}
+
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+	mutex_unlock(&buffer->lock);
 	mutex_unlock(&client->lock);
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 	return ret;
@@ -682,6 +687,21 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	const char *names[ION_NUM_HEAP_IDS] = {0};
 	int i;
 
+	down_read(&g_idev->lock);
+
+	/* check validity of the client */
+	for (n = rb_first(&g_idev->clients); n; n = rb_next(n)) {
+		struct ion_client *c = rb_entry(n, struct ion_client, node);
+		if (client == c)
+			break;
+	}
+
+	if (IS_ERR_OR_NULL(n)) {
+		pr_err("%s: invalid client %p\n", __func__, client);
+		up_read(&g_idev->lock);
+		return -EINVAL;
+	}
+
 	mutex_lock(&client->lock);
 	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
@@ -693,6 +713,7 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 		sizes[id] += handle->buffer->size;
 	}
 	mutex_unlock(&client->lock);
+	up_read(&g_idev->lock);
 
 	seq_printf(s, "%16.16s: %16.16s\n", "heap_name", "size_in_bytes");
 	for (i = 0; i < ION_NUM_HEAP_IDS; i++) {
@@ -814,6 +835,9 @@ struct sg_table *ion_sg_table(struct ion_client *client,
 	}
 	buffer = handle->buffer;
 	table = buffer->sg_table;
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+	mutex_unlock(&buffer->lock);
 	mutex_unlock(&client->lock);
 	return table;
 }
@@ -977,6 +1001,10 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 		return -EINVAL;
 	}
 
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+	mutex_unlock(&buffer->lock);
+
 	if (ion_buffer_fault_user_mappings(buffer)) {
 		vma->vm_private_data = buffer;
 		vma->vm_ops = &ion_vma_ops;
@@ -990,7 +1018,6 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	mutex_lock(&buffer->lock);
 	/* now map it to userspace */
 	ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
-	ion_buffer_make_ready(buffer);
 	mutex_unlock(&buffer->lock);
 
 	return ret;
@@ -1738,6 +1765,9 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	ret = ion_device_reserve_vm(idev);
 	if (ret)
 		panic("ion: failed to reserve vm area\n");
+
+	/* backup of ion device: assumes there is only one ion device */
+	g_idev = idev;
 
 	return idev;
 }

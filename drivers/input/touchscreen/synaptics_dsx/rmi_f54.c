@@ -3287,6 +3287,7 @@ static void run_rawcap_read(void)
 	struct factory_data *data = f54->factory_data;
 	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
 	unsigned char cmd_state = CMD_STATUS_RUNNING;
+	unsigned char no_sleep = 0;
 	int retry = DO_PREPATION_RETRY_COUNT;
 
 	set_default_result(data);
@@ -3301,6 +3302,32 @@ static void run_rawcap_read(void)
 	}
 
 	do {
+		retval = f54->fn_ptr->read(rmi4_data,
+			rmi4_data->f01_ctrl_base_addr, &no_sleep, sizeof(no_sleep));
+		if (retval <= 0) {
+			tsp_debug_err(true, &rmi4_data->i2c_client->dev,
+				"%s: fail to read no_sleep[ret:%d]\n",
+				__func__, retval);
+			snprintf(data->cmd_buff, CMD_RESULT_STR_LEN,
+				"%s", "Error read of f01_ctrl00");
+			cmd_state = CMD_STATUS_FAIL;
+			goto out;
+		}
+
+		no_sleep |= NO_SLEEP_ON;
+
+		retval = f54->fn_ptr->write(rmi4_data,
+			rmi4_data->f01_ctrl_base_addr, &no_sleep, sizeof(no_sleep));
+		if (retval <= 0) {
+			tsp_debug_err(true, &rmi4_data->i2c_client->dev,
+				"%s: fail to write no_sleep[ret:%d]\n",
+				__func__, retval);
+			snprintf(data->cmd_buff, CMD_RESULT_STR_LEN,
+				"%s", "Error write to f01_ctrl00");
+			cmd_state = CMD_STATUS_FAIL;
+			goto out;
+		}
+
 		retval = do_preparation();
 		if (retval >= 0)
 			break;
@@ -3320,7 +3347,7 @@ static void run_rawcap_read(void)
 				__func__);
 		snprintf(data->cmd_buff, CMD_RESULT_STR_LEN, "%s", "Error preparation");
 		cmd_state = CMD_STATUS_NOT_APPLICABLE;
-		goto out;
+		goto sw_reset;
 	}
 
 	if (!synaptics_rmi4_f54_get_report_type(F54_FULL_RAW_CAP_RX_COUPLING_COMP)) {
@@ -6118,6 +6145,7 @@ static void synaptics_rmi4_remove_factory_mode(struct synaptics_rmi4_data *rmi4_
 	if (!f54)
 		return;
 
+	sysfs_remove_link(&f54->factory_data->fac_dev_ts->kobj, "input");
 	sysfs_remove_group(&f54->factory_data->fac_dev_ts->kobj, &cmd_attr_group);
 	if (rmi4_data->sec_tsp_class_create) {
 		device_destroy(sec_class, SEC_CLASS_DEVT_TSP);
@@ -6228,6 +6256,15 @@ static int synaptics_rmi4_init_factory_mode(struct synaptics_rmi4_data *rmi4_dat
 		if (retval < 0) {
 			tsp_debug_err(true, &rmi4_data->i2c_client->dev,
 				"%s: Failed to create sysfs attributes\n",
+				__func__);
+			goto exit_cmd_attr_group;
+		}
+
+		retval = sysfs_create_link(&factory_data->fac_dev_ts->kobj,
+			&rmi4_data->input_dev->dev.kobj, "input");
+		if (retval < 0) {
+			tsp_debug_err(true, &rmi4_data->i2c_client->dev,
+				"%s: Failed to create link\n",
 				__func__);
 			goto exit_cmd_attr_group;
 		}

@@ -109,6 +109,7 @@
  * fucntionality.
  */
 #define SURFACE_TOUCH
+
 #if defined(SURFACE_TOUCH) && defined(PROXIMITY_TSP)
 #define EDGE_SWIPE
 #endif
@@ -243,8 +244,6 @@
 #define EDGE_SWIPE_DATA_OFFSET	9
 
 #define EDGE_SWIPE_WIDTH_MAX	255
-#define EDGE_SWIPE_ANGLE_MIN	(-90)
-#define EDGE_SWIPE_ANGLE_MAX	90
 #define EDGE_SWIPE_PALM_MAX		1
 #endif
 #define F51_FINGER_TIMEOUT 50 /* ms */

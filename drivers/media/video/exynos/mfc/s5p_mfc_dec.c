@@ -21,6 +21,7 @@
 #include <linux/workqueue.h>
 #include <linux/videodev2.h>
 #include <linux/videodev2_exynos_media.h>
+#include <linux/videodev2_exynos_media_ext.h>
 #include <media/videobuf2-core.h>
 
 #include "s5p_mfc_common.h"
@@ -405,6 +406,15 @@ static struct v4l2_queryctrl controls[] = {
 		.id = V4L2_CID_MPEG_MFC_GET_EXT_INFO,
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.name = "Get extra information",
+		.minimum = INT_MIN,
+		.maximum = INT_MAX,
+		.step = 1,
+		.default_value = 0,
+	},
+	{
+		.id = V4L2_CID_MPEG_MFC_SET_BUF_PROCESS_TYPE,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.name = "Set buffer process type",
 		.minimum = INT_MIN,
 		.maximum = INT_MAX,
 		.step = 1,
@@ -1672,6 +1682,7 @@ static int vidioc_querybuf(struct file *file, void *priv,
 	return ret;
 }
 
+extern int no_order;
 /* Queue a buffer */
 static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
 {
@@ -1696,7 +1707,7 @@ static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
 			return -EIO;
 		}
 
-		if (dec->is_dts_mode) {
+		if (no_order && dec->is_dts_mode) {
 			mfc_debug(7, "timestamp: %ld %ld\n",
 					buf->timestamp.tv_sec,
 					buf->timestamp.tv_usec);
@@ -1715,6 +1726,7 @@ static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
 			ctx->framerate = ctx->last_framerate;
 			s5p_mfc_qos_on(ctx);
 		}
+		mfc_debug(2, "Src input size = %d\n", buf->m.planes[0].bytesused);
 		ret = vb2_qbuf(&ctx->vq_src, buf);
 	} else {
 		ret = vb2_qbuf(&ctx->vq_dst, buf);
@@ -2137,6 +2149,9 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
 			dec->sh_handle.fd = -1;
 			return -EINVAL;
 		}
+		break;
+	case V4L2_CID_MPEG_MFC_SET_BUF_PROCESS_TYPE:
+		ctx->buf_process_type = ctrl->value;
 		break;
 	default:
 		list_for_each_entry(ctx_ctrl, &ctx->ctrls, list) {
@@ -2676,6 +2691,7 @@ static int s5p_mfc_stop_streaming(struct vb2_queue *q)
 	int aborted = 0;
 	int index = 0;
 	int prev_state;
+	int ret = 0;
 
 	if (!ctx) {
 		mfc_err("no mfc context to run\n");
@@ -2694,17 +2710,23 @@ static int s5p_mfc_stop_streaming(struct vb2_queue *q)
 
 	if (!aborted && mfc_need_wait_got_inst(ctx)) {
 		ctx->state = MFCINST_ABORT;
-		if (s5p_mfc_wait_for_done_ctx(ctx,
-				S5P_FIMV_R2H_CMD_SEQ_DONE_RET, 0))
+		ret = s5p_mfc_wait_for_done_ctx(ctx,
+				S5P_FIMV_R2H_CMD_SEQ_DONE_RET, 0);
+		if (ret == 1)
 			s5p_mfc_cleanup_timeout(ctx);
+		else if (ret == -1)
+			mfc_err("continue progress\n");
 		aborted = 1;
 	}
 
 	if (!aborted && mfc_need_wait_frame_start(ctx)) {
 		ctx->state = MFCINST_ABORT;
-		if (s5p_mfc_wait_for_done_ctx(ctx,
-				S5P_FIMV_R2H_CMD_FRAME_DONE_RET, 0))
+		ret = s5p_mfc_wait_for_done_ctx(ctx,
+				S5P_FIMV_R2H_CMD_FRAME_DONE_RET, 0);
+		if (ret == 1)
 			s5p_mfc_cleanup_timeout(ctx);
+		else if (ret == -1)
+			mfc_err("continue progress\n");
 		aborted = 1;
 	}
 
@@ -2728,6 +2750,7 @@ static int s5p_mfc_stop_streaming(struct vb2_queue *q)
 		dec->dpb_queue_cnt = 0;
 		dec->consumed = 0;
 		dec->remained_size = 0;
+		dec->y_addr_for_pb = 0;
 
 		while (index < MFC_MAX_BUFFERS) {
 			index = find_next_bit(&ctx->dst_ctrls_avail,
@@ -2767,6 +2790,7 @@ static int s5p_mfc_stop_streaming(struct vb2_queue *q)
 		spin_lock_irq(&dev->condlock);
 		set_bit(ctx->num, &dev->ctx_work_bits);
 		spin_unlock_irq(&dev->condlock);
+		s5p_mfc_clean_ctx_int_flags(ctx);
 		s5p_mfc_try_run(dev);
 		if (s5p_mfc_wait_for_done_ctx(ctx,
 				S5P_FIMV_R2H_CMD_DPB_FLUSH_RET, 0))
@@ -2827,6 +2851,7 @@ static void s5p_mfc_buf_queue(struct vb2_buffer *vb)
 
 	if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
 		buf->used = 0;
+		buf->consumed = 0;
 		mfc_debug(2, "Src queue: %p\n", &ctx->src_queue);
 		mfc_debug(2, "Adding to src: %p (0x%08lx, 0x%08lx)\n", vb,
 			(unsigned long)s5p_mfc_mem_plane_addr(ctx, vb, 0),
@@ -2977,6 +3002,7 @@ int s5p_mfc_init_dec_ctx(struct s5p_mfc_ctx *ctx)
 #ifdef CONFIG_MFC_USE_BUS_DEVFREQ
 	INIT_LIST_HEAD(&ctx->qos_list);
 #endif
+	INIT_LIST_HEAD(&ctx->ts_list);
 
 	INIT_LIST_HEAD(&dec->dpb_queue);
 	dec->dpb_queue_cnt = 0;

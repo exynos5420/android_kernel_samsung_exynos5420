@@ -283,6 +283,8 @@ int max77803_muic_charger_cb(enum cable_type_muic cable_type)
 	case CABLE_TYPE_AUDIODOCK_MUIC:
 	case CABLE_TYPE_JIG_UART_OFF_VB_MUIC:
 	case CABLE_TYPE_CDP_MUIC:
+	case CABLE_TYPE_MMDOCK_MUIC:
+	case CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC:
 		is_cable_attached = true;
 		break;
 	default:
@@ -350,6 +352,7 @@ int max77803_muic_charger_cb(enum cable_type_muic cable_type)
 	case CABLE_TYPE_DESKDOCK_TA_MUIC:
 	case CABLE_TYPE_SMARTDOCK_MUIC:
 	case CABLE_TYPE_SMARTDOCK_TA_MUIC:
+	case CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC:
 		current_cable_type = POWER_SUPPLY_TYPE_MAINS;
 		break;
 	case CABLE_TYPE_AUDIODOCK_MUIC:
@@ -364,6 +367,8 @@ int max77803_muic_charger_cb(enum cable_type_muic cable_type)
 	case CABLE_TYPE_PS_CABLE_MUIC:
 		current_cable_type = POWER_SUPPLY_TYPE_POWER_SHARING;
 		break;
+	case CABLE_TYPE_MMDOCK_MUIC:
+		return 0;
 	default:
 		pr_err("%s: invalid type for charger:%d\n",
 			__func__, cable_type);
@@ -495,6 +500,13 @@ void max77803_muic_usb_cb(u8 usb_mode)
 	} else if (usb_mode == USB_POWERED_HOST_ATTACHED) {
 #ifdef CONFIG_USB_HOST_NOTIFY
 		host_noti_pdata->powered_booster(1);
+
+		if (cable_type == CABLE_TYPE_MMDOCK_MUIC) {
+			enable_ovc(1);
+			host_state_notify(&host_noti_pdata->ndev,
+				NOTIFY_HOST_NONE);
+		}
+
 		if (cable_type == CABLE_TYPE_LANHUB_MUIC)
 		{
 			host_noti_pdata->ndev.mode = NOTIFY_HOST_MODE;
@@ -510,6 +522,11 @@ void max77803_muic_usb_cb(u8 usb_mode)
 		max77803_check_id_state(1);
 #ifdef CONFIG_USB_HOST_NOTIFY
 		host_noti_pdata->powered_booster(0);
+
+		if (cable_type == CABLE_TYPE_MMDOCK_MUIC) {
+			enable_ovc(0);
+		}
+
 		if (host_noti_pdata->ndev.mode == NOTIFY_HOST_MODE)
 		{
 			host_noti_pdata->ndev.mode = NOTIFY_NONE_MODE;

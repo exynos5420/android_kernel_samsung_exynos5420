@@ -1166,6 +1166,11 @@ config TARGET_LOCALE_USA
 	help
 	  Enable universal5420 LOCALE USA.
 
+config TARGET_LOCALE_BMC
+	bool "Locale BMC support"
+	help
+	  Enable universal5420 LOCALE BMC.
+
 config TARGET_LOCALE_DEMO
 	bool "Locale DEMO support"
 	help
@@ -1419,6 +1424,13 @@ menuconfig SEC_DEBUG
 	default y
 	help
 	  Samsung TN Ramdump Feature. Use INFORM3 and magic number at 0xc0000000.
+
+comment "BSP Feature"
+menuconfig SEC_BSP
+	bool "Samsung TN BSP Feature"
+	default n
+	help
+		Samsung TN BSP Feature.
 
 if SEC_DEBUG
 config SEC_DEBUG_SCHED_LOG

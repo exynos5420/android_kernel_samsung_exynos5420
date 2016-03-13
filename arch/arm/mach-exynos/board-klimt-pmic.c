@@ -484,7 +484,11 @@ static struct sec_pmic_platform_data exynos5_s2m_pdata = {
 	.buck3_ramp_enable	= 1,
 	.buck4_ramp_enable	= 1,
 	.buck6_ramp_enable	= 1,
+#ifdef CONFIG_SEC_FACTORY
+	.wtsr_smpl		= false,
+#else
 	.wtsr_smpl		= true,
+#endif
 	.jig_smpl_disable	= true,
 };
 

@@ -1437,14 +1437,24 @@ static int sii8240_init_regs(struct sii8240_data *sii8240)
 static int sii8240_msc_req_locked(struct sii8240_data *sii8240, u8 req_type,
 				  u8 offset, u8 first_data, u8 second_data)
 {
-	int ret;
+	int ret = 1;
 	struct i2c_client *cbus = sii8240->pdata->cbus_client;
-	bool write_offset = req_type & (START_READ_DEVCAP |
+	bool write_offset;
+	bool write_first_data;
+	bool write_second_data;
+
+	mutex_unlock(&sii8240->lock);
+	mutex_lock(&sii8240->msc_lock);
+
+	write_offset = req_type & (START_READ_DEVCAP |
 			START_WRITE_STAT_SET_INT | START_WRITE_BURST);
-	bool write_first_data = req_type &
+	write_first_data = req_type &
 		(START_WRITE_STAT_SET_INT | START_MSC_MSG);
-	bool write_second_data = req_type & START_MSC_MSG;
+	write_second_data = req_type & START_MSC_MSG;
+
+
 	pr_debug("SEND:offset = 0x%x\n", offset);
+	init_completion(&sii8240->cbus_complete);
 
 	if (write_offset)
 		mhl_write_byte_reg(cbus, MSC_CMD_OR_OFFSET_REG, offset);
@@ -1453,12 +1463,12 @@ static int sii8240_msc_req_locked(struct sii8240_data *sii8240, u8 req_type,
 	if (write_second_data)
 		mhl_write_byte_reg(cbus, MSC_SEND_DATA2_REG, second_data);
 
-	mutex_unlock(&sii8240->lock);
-	mutex_lock(&sii8240->msc_lock);
-	init_completion(&sii8240->cbus_complete);
 	mhl_write_byte_reg(cbus, CBUS_MSC_CMD_START_REG, req_type);
-	ret = wait_for_completion_timeout(&sii8240->cbus_complete,
-					  msecs_to_jiffies(1800));
+
+	if (!completion_done(&sii8240->cbus_complete))
+		ret = wait_for_completion_timeout(&sii8240->cbus_complete,
+				msecs_to_jiffies(1800));
+
 	mutex_unlock(&sii8240->msc_lock);
 	mutex_lock(&sii8240->lock);
 
@@ -1622,20 +1632,24 @@ static void cbus_process_rcp_key(struct sii8240_data *sii8240, u8 key)
 		switch_set_state(&sii8240->mhl_event_switch, 1);
 	}
 
-	if (key < SII8240_RCP_NUM_KEYS && is_key_supported(sii8240, key)) {
-		/* Report the key */
-		rcp_key_report(sii8240, sii8240->keycode[key]);
+	if (key < SII8240_RCP_NUM_KEYS) {
+		if (is_key_supported(sii8240, key)) {
+			/* Report the key */
+			rcp_key_report(sii8240, sii8240->keycode[key]);
+			/* Send the RCP ack */
+			sii8240_msc_req_locked(sii8240, START_MSC_MSG, 0, MSG_RCPK, key);
+		} else {
+			/* Send a RCPE(RCP Error Message) to Peer followed by RCPK with
+			 * old key-code so that initiator(TV) can recognize
+			 * failed key code */
+			sii8240_msc_req_locked(sii8240, START_MSC_MSG,
+					0, MSG_RCPE, RCPE_KEY_INVALID);
+		}
 	} else {
-
-		/* Send a RCPE(RCP Error Message) to Peer followed by RCPK with
-		 * old key-code so that initiator(TV) can recognize
-		 * failed key code */
-		sii8240_msc_req_locked(sii8240, START_MSC_MSG,
-				0, MSG_RCPE, RCPE_KEY_INVALID);
+		/* Input key value is release key
+		 * Send the RCP ack */
+		sii8240_msc_req_locked(sii8240, START_MSC_MSG, 0, MSG_RCPK, key);
 	}
-
-	/* Send the RCP ack */
-	sii8240_msc_req_locked(sii8240, START_MSC_MSG, 0, MSG_RCPK, key);
 }
 
 static void cbus_process_rap_key(struct sii8240_data *sii8240, u8 key)
@@ -2646,39 +2660,6 @@ static int sii8240_detection_callback(struct notifier_block *this,
 	}
 
 	mutex_unlock(&sii8240->lock);
-
-	ret = wait_event_timeout(sii8240->wq, (sii8240->rgnd != RGND_UNKNOWN),
-				msecs_to_jiffies(T_WAIT_TIMEOUT_RGND_INT));
-
-	mutex_lock(&sii8240->lock);
-	if (ret == 0) {
-		pr_err("[ERROR] no RGND interrupt\n");
-		goto unhandled;
-	}
-
-	if (sii8240->rgnd == RGND_UNKNOWN) {
-		pr_err("[ERROR] RGND is UNKNOWN\n");
-		goto unhandled;
-	}
-
-	mutex_unlock(&sii8240->lock);
-	pr_info("sii8240: waiting for connection to be established\n");
-	ret = wait_event_timeout(sii8240->wq,
-				(sii8240->state == STATE_MHL_DISCOVERY_ON ||
-				sii8240->state == STATE_MHL_DISCOVERY_FAIL ||
-				sii8240->state == STATE_MHL_DISCOVERY_SUCCESS),
-				msecs_to_jiffies(T_WAIT_TIMEOUT_DISC_INT));
-
-	mutex_lock(&sii8240->lock);
-
-	if (sii8240->state == STATE_DISCONNECTED)
-		goto unhandled;
-
-	if (sii8240->state == STATE_MHL_DISCOVERY_SUCCESS)
-		pr_info("sii8240: connection established\n");
-
-	mutex_unlock(&sii8240->lock);
-
 	pr_info("sii8240: detection_callback return !\n");
 
 	return MHL_CON_HANDLED;

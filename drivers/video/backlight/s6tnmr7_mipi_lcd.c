@@ -162,23 +162,11 @@ int lcd_get_mipi_state(struct device *dsim_device)
 	struct lcd_info *lcd = g_lcd;
 
 	if (lcd->connected && !lcd->err_count)
-		return mutex_is_locked(&lcd->bl_lock);
+		return 0;
 	else
 		return -ENODEV;
 }
-
-static void s6tnmr7_hw_trigger_set(struct lcd_info *lcd, u32 enable)
-{
-	struct s5p_platform_mipi_dsim *pd = lcd->dsim->pd;
-
-	if (lcd->err_count && enable)
-		return;
-
-	if (pd->trigger_set && pd->fimd1_device)
-		pd->trigger_set(pd->fimd1_device, enable);
-}
 #endif
-
 static int s6tnmr7_write(struct lcd_info *lcd, const u8 *seq, u32 len)
 {
 	int ret;
@@ -189,9 +177,6 @@ static int s6tnmr7_write(struct lcd_info *lcd, const u8 *seq, u32 len)
 		return -EINVAL;
 
 	mutex_lock(&lcd->lock);
-#if defined(CONFIG_FB_HW_TRIGGER)
-	s6tnmr7_hw_trigger_set(lcd, 1);
-#endif
 
 	if (len > 2)
 		cmd = MIPI_DSI_DCS_LONG_WRITE;
@@ -562,9 +547,6 @@ static void err_detection_work(struct work_struct *work)
 		return;
 	}
 
-#if defined(CONFIG_FB_HW_TRIGGER)
-	s6tnmr7_hw_trigger_set(lcd, 0);
-#endif
 	s5p_mipi_dsi_disable_by_fimd(lcd->dev);
 	msleep(50);
 	s5p_mipi_dsi_enable_by_fimd(lcd->dev);

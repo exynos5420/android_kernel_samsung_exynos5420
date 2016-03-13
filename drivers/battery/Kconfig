@@ -200,3 +200,9 @@ config SAMSUNG_LPM_MODE
 	  Before enable this feature,
 	  implemet power off charging in the bootloader.
 
+config BATT_TEMP_TMO
+       bool "chagall lte tmo model"
+       default n
+       help
+        Say Y to include support for chagall lte tmo model
+	This value defined device

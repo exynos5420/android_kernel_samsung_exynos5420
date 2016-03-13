@@ -68,6 +68,14 @@ static int exynos_xhci_suspend(struct device *dev)
 	if (!hcd)
 		return -EINVAL;
 
+	/* Prevent any more root-hub status calls from the timer
+	 * The HCD might still restart the timer (if a port status change
+	 * interrupt occurs), but usb_hcd_poll_rh_status() won't invoke
+	 * the hub_status_data() callback.
+	 */
+	hcd->rh_pollable = 0;
+	hcd->shared_hcd->rh_pollable = 0;
+
 	xhci = hcd_to_xhci(hcd);
 
 	if (hcd->state != HC_STATE_SUSPENDED ||
@@ -201,6 +209,9 @@ static int exynos_xhci_runtime_resume(struct device *dev)
 	hcd = exynos_xhci->hcd;
 	if (!hcd)
 		return -EINVAL;
+
+	hcd->rh_pollable = 1;
+	hcd->shared_hcd->rh_pollable = 1;
 
 	if (dev->power.is_suspended) {
 		dev_dbg(dev, "xhci is system suspended\n");

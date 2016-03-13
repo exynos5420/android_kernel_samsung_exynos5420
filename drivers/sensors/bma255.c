@@ -94,6 +94,7 @@ struct bma255_p {
 	int irq_state;
 	int acc_int1;
 	int time_count;
+	u64 timestamp;
 };
 
 static int bma255_open_calibration(struct bma255_p *);
@@ -319,6 +320,13 @@ static void bma255_work_func(struct work_struct *work)
 	int ret;
 	struct bma255_v acc;
 	struct bma255_p *data = container_of(work, struct bma255_p, work);
+	struct timespec ts;
+	int time_hi, time_lo;
+
+	ts = ktime_to_timespec(ktime_get_boottime());
+	data->timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+	time_lo = (int)(data->timestamp & TIME_LO_MASK);
+	time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
 
 	ret = bma255_read_accel_xyz(data, &acc);
 	if (ret < 0)
@@ -331,6 +339,8 @@ static void bma255_work_func(struct work_struct *work)
 	input_report_rel(data->input, REL_X, data->accdata.x);
 	input_report_rel(data->input, REL_Y, data->accdata.y);
 	input_report_rel(data->input, REL_Z, data->accdata.z);
+	input_report_rel(data->input, REL_DIAL, time_hi);
+	input_report_rel(data->input, REL_MISC, time_lo);
 	input_sync(data->input);
 
 exit:
@@ -872,6 +882,9 @@ static int bma255_input_init(struct bma255_p *data)
 	input_set_capability(dev, EV_REL, REL_X);
 	input_set_capability(dev, EV_REL, REL_Y);
 	input_set_capability(dev, EV_REL, REL_Z);
+	input_set_capability(dev, EV_REL, REL_DIAL); /* time_hi */
+	input_set_capability(dev, EV_REL, REL_MISC); /* time_lo */
+
 	input_set_drvdata(dev, data);
 
 	ret = input_register_device(dev);

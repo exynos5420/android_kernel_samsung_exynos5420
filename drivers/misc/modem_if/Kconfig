@@ -107,5 +107,18 @@ config SIM_DETECT
 config SIM_SLOT_SWITCH
 	bool "SIM_SLOT_SWITCH"
 	default n
+
+if LINK_DEVICE_HSIC
+config PHY_HSIC_TUNE1
+	bool "Adjust S.LSI HSICPHYTUNE1 register"
+	default n
+endif
+
+if PHY_HSIC_TUNE1
+config PHY_HSIC_TUNE1_REG
+	hex "EHCI phy hsic tune"
+	default 0x3A
+endif
+
 endmenu
 endif

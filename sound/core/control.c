@@ -1178,7 +1178,7 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
 	if (replace) {
 		err = snd_ctl_remove_user_ctl(file, &info->id);
 		if (err)
-			return err;
+		return err;
 	}
 
 	if (card->user_ctl_count >= MAX_USER_CONTROLS)
