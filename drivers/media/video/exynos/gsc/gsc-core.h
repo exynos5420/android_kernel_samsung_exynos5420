@@ -138,7 +138,6 @@ enum gsc_dev_flags {
 	ST_CAPT_SHUT,
 	ST_CAPT_APPLY_CFG,
 	ST_CAPT_JPEG,
-	ST_RUNTIME_RESUME,
 };
 
 enum gsc_cap_input_entity {
@@ -585,8 +584,6 @@ struct gsc_dev {
 	struct clk			*clk_child;
 	struct clk			*clk_parent;
 	struct timer_list		op_timer;
-	u32				runtime_get_cnt;
-	u32				runtime_put_cnt;
 };
 
 /**

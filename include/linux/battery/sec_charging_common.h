@@ -35,7 +35,7 @@
 
 
 /* definitions */
-#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	17
+#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	POWER_SUPPLY_TYPE_MAX
 
 enum sec_battery_voltage_mode {
 	/* average voltage */
@@ -457,6 +457,11 @@ struct sec_battery_platform_data {
 
 	sec_battery_temp_check_t temp_check_type;
 	unsigned int temp_check_count;
+	
+	unsigned int QRTable00;
+	unsigned int QRTable10;
+	unsigned int QRTable20;
+	unsigned int QRTable30;
 	/*
 	 * limit can be ADC value or Temperature
 	 * depending on temp_check_type
@@ -531,6 +536,9 @@ struct sec_battery_platform_data {
 	int capacity_max_margin;
 	int capacity_min;
 
+	/* MTBF test for CMCC */
+	bool is_hc_usb;
+
 	/* charger */
 	char *charger_name;
 	int chg_gpio_en;
@@ -599,10 +607,10 @@ do {	\
 	[(driver)->pdata->battery_type])
 
 #define GET_MAIN_CABLE_TYPE(extended)	\
-	((extended >> ONLINE_TYPE_MAIN_SHIFT)&0xf)
+	((extended >> ONLINE_TYPE_MAIN_SHIFT)&0xFF)
 #define GET_SUB_CABLE_TYPE(extended)	\
-	((extended >> ONLINE_TYPE_SUB_SHIFT)&0xf)
+	((extended >> ONLINE_TYPE_SUB_SHIFT)&0xFF)
 #define GET_POWER_CABLE_TYPE(extended)	\
-	((extended >> ONLINE_TYPE_PWR_SHIFT)&0xf)
+	((extended >> ONLINE_TYPE_PWR_SHIFT)&0xFF)
 
 #endif /* __SEC_CHARGING_COMMON_H */

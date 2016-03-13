@@ -19,7 +19,6 @@
 
 const struct v4l2_ioctl_ops *get_dec_v4l2_ioctl_ops(void);
 int s5p_mfc_init_dec_ctx(struct s5p_mfc_ctx *ctx);
-int s5p_mfc_dec_ctx_ready(struct s5p_mfc_ctx *ctx);
 void s5p_mfc_dec_store_crop_info(struct s5p_mfc_ctx *ctx);
 int dec_cleanup_user_shared_handle(struct s5p_mfc_ctx *ctx);
 

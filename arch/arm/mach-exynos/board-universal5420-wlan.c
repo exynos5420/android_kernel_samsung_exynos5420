@@ -77,7 +77,7 @@ void *wlan_static_scan_buf0;
 void *wlan_static_scan_buf1;
 void *wlan_static_dhd_info_buf;
 
-#if defined(CONFIG_N1A)
+#if defined(CONFIG_N1A) || defined(CONFIG_HA)
 #define ENABLE_4339_COB_BT_WAR
 #endif
 

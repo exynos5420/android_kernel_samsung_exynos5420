@@ -268,10 +268,6 @@ static struct s5p_platform_mipi_dsim dsim_platform_data = {
 	.get_fb_frame_done	= NULL,
 	.trigger		= NULL,
 
-#if defined(CONFIG_FB_HW_TRIGGER)
-	.trigger_set = s3c_fb_enable_trigger_forcing,
-	.fimd1_device = &s5p_device_fimd1.dev,
-#endif
 };
 
 

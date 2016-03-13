@@ -238,7 +238,6 @@ read_start:
 		dev_info(ksb->fs_dev.this_device, " read: count:%d space:%d copied:%d", count,
 				space, copied);
 		if (count == 8) {
-			pm_runtime_allow(&ksb->udev->dev);
 			pr_info("%s: usage=%d, child=%d\n", __func__,
 					atomic_read(&ksb->udev->dev.power.usage_count),
 					atomic_read(&ksb->udev->dev.power.child_count));
@@ -519,6 +518,8 @@ static void ksb_rx_cb(struct urb *urb)
 	struct ks_bridge *ksb = pkt->ctxt;
 	bool wakeup = true;
 
+	usb_mark_last_busy(ksb->udev);
+
 	dbg_log_event(ksb, "C RX_URB", urb->status, urb->actual_length);
 
 #if 0
@@ -552,18 +553,9 @@ static void ksb_rx_cb(struct urb *urb)
 	}
 
 	if (urb->actual_length == 48) {
-		struct device *dev = &ksb->udev->dev;
-
-		spin_lock_irq(&dev->power.lock);
-		if (!dev->power.runtime_auto)
-			goto out;
-		dev->power.runtime_auto = false;
-		atomic_inc(&dev->power.usage_count);
-out:
 		pr_info("%s: usage=%d, child=%d\n", __func__,
 				atomic_read(&ksb->udev->dev.power.usage_count),
 				atomic_read(&ksb->udev->dev.power.child_count));
-		spin_unlock_irq(&dev->power.lock);
 	}
 
 add_to_list:

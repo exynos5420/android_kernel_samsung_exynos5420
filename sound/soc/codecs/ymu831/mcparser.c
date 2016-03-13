@@ -74,22 +74,22 @@
 
 
 static SINT32	AnalyzeAESubChunk(
-				const UINT8 * pbPrm,
+				const UINT8 *pbPrm,
 				UINT32 *pdPos,
 				UINT32 *pdSubChunkSize,
 				struct MCDRV_AEC_INFO *psAECInfo);
 static SINT32	AnalyzeVBoxSubChunk(
-				const UINT8 * pbPrm,
+				const UINT8 *pbPrm,
 				UINT32 *pdPos,
 				UINT32 *pdSubChunkSize,
 				struct MCDRV_AEC_INFO *psAECInfo);
 static SINT32	AnalyzeSysEqExSubChunk(
-				const UINT8 * pbPrm,
+				const UINT8 *pbPrm,
 				UINT32 *pdPos,
 				UINT32 *pdSubChunkSize,
 				struct MCDRV_AEC_SYSEQ_EX *psSysEqEx);
 static SINT32	AnalyzeEDSPSubChunk(
-				const UINT8 * pbPrm,
+				const UINT8 *pbPrm,
 				UINT32 *pdPos,
 				UINT32 *pdSubChunkSize,
 				struct MCDRV_AEC_INFO *psAECInfo);

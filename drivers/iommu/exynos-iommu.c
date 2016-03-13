@@ -2221,12 +2221,12 @@ static void __init __create_debugfs_entry(struct sysmmu_drvdata *drvdata)
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'sysmmu_list'\n");
 
-	if (!debugfs_create_file("next_sibling", 0x444, drvdata->debugfs_root,
+	if (!debugfs_create_file("next_sibling", 0444, drvdata->debugfs_root,
 				drvdata->sysmmu, &debug_next_sibling_fops))
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'next_siblings'\n");
 
-	if (!debugfs_create_file("master", 0x444, drvdata->debugfs_root,
+	if (!debugfs_create_file("master", 0444, drvdata->debugfs_root,
 				drvdata->sysmmu, &debug_master_fops))
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'next_siblings'\n");

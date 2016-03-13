@@ -258,8 +258,10 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	if (err)
 		kfree(SDCARDFS_F(file));
 	else {
-		fsstack_copy_attr_all(inode, sdcardfs_lower_inode(inode));
-		fix_derived_permission(inode); 
+		mutex_lock(&inode->i_mutex);
+		sdcardfs_copy_inode_attr(inode, sdcardfs_lower_inode(inode));
+		fix_derived_permission(inode);
+		mutex_unlock(&inode->i_mutex);
 	}
 
 out_revert_cred:
@@ -324,6 +326,11 @@ static int sdcardfs_fasync(int fd, struct file *file, int flag)
 	return err;
 }
 
+static struct file *sdcardfs_get_lower_file(struct file *f)
+{
+	return sdcardfs_lower_file(f);
+}
+
 const struct file_operations sdcardfs_main_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= sdcardfs_read,
@@ -338,6 +345,7 @@ const struct file_operations sdcardfs_main_fops = {
 	.release	= sdcardfs_file_release,
 	.fsync		= sdcardfs_fsync,
 	.fasync		= sdcardfs_fasync,
+	.get_lower_file = sdcardfs_get_lower_file,
 };
 
 /* trimmed directory options */
@@ -354,4 +362,5 @@ const struct file_operations sdcardfs_dir_fops = {
 	.flush		= sdcardfs_flush,
 	.fsync		= sdcardfs_fsync,
 	.fasync		= sdcardfs_fasync,
+	.get_lower_file = sdcardfs_get_lower_file,
 };

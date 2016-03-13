@@ -14,8 +14,8 @@
  */
 #include "ssp.h"
 
-#define SSP_FIRMWARE_REVISION_STM	14011400 /* after hw_rev 6 */
-#define SSP_FIRMWARE_REVISION_STM_REV5	13072401 /* upto hw_rev 5 */
+#define SSP_FIRMWARE_REVISION_STM	15011600 /* from hw_rev 6 */
+#define SSP_FIRMWARE_REVISION_STM_REV5	14111800 /* upto hw_rev 5 */
 
 #define BOOT_SPI_HZ	500000
 #define NORM_SPI_HZ	5000000

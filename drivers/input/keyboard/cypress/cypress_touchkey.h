@@ -61,8 +61,22 @@
 #define TK_EXIT_UPDATE 2
 #define TK_RUN_CHK 3
 
+/* multi touch */
+#define TK_CMD_DUAL_DETECTION	0x01
+#define TK_BIT_DETECTION_CONFIRM	0xEE
+#define CYPRESS_DETECTION_FLAG		0x1B
+#define TK_DUAL_REG 0x18
+#if defined(CONFIG_KLIMT)
+#define TK_MULTI_FW_VER  0x08
+#endif
+#if defined(CONFIG_HA)
+#define TK_MULTI_FW_VER  0x11
+#endif
+
 /* Flip cover*/
+#ifndef CONFIG_KLIMT
 #define TKEY_FLIP_MODE
+#endif
 
 #ifdef TKEY_FLIP_MODE
 #define TK_BIT_FLIP	0x08
@@ -236,6 +250,7 @@ struct touchkey_i2c {
 	const struct firmware *firm_data;
 	struct fw_image *fw_img;
 	bool do_checksum;
+	int support_multi_touch;
 };
 
 extern struct class *sec_class;

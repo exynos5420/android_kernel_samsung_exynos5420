@@ -580,9 +580,6 @@ static int suspend(struct platform_device *pdev, pm_message_t state)
 	if (g_bIsPlaying) {
 		ret = -EBUSY;
 	} else {
-		/* Disable system timers */
-		vibetonz_clk_off(&pdev->dev);
-
 		ret = 0;
 	}
 
@@ -592,16 +589,6 @@ static int suspend(struct platform_device *pdev, pm_message_t state)
 
 static int resume(struct platform_device *pdev)
 {
-	u32 __iomem *pram;
-
-	/* Restart system timers */
-	vibetonz_clk_on(&pdev->dev);
-
-	/* Restore system timers configuration */
-	pram = ioremap(S5P_PA_TIMER, 4);
-	writel(0x0F00, pram);
-	iounmap(pram);
-
 	DbgOut((KERN_DEBUG "tspdrv: %s.\n", __func__));
 	return 0;
 }

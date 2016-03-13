@@ -150,7 +150,8 @@ void host_state_notify(struct host_notify_dev *ndev, int state)
 	       ndev->name, ndev->state, state);
 	if (ndev->state != state) {
 		ndev->state = state;
-		kobject_uevent(&ndev->dev->kobj, KOBJ_CHANGE);
+		if (state != NOTIFY_HOST_NONE)
+			kobject_uevent(&ndev->dev->kobj, KOBJ_CHANGE);
 	}
 }
 EXPORT_SYMBOL_GPL(host_state_notify);

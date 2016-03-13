@@ -290,7 +290,7 @@ static UINT8 AppOnOff(UINT8 bOnOff, UINT8 bApp, UINT8 bAppExec)
  *	CheckAppOnOff
  *
  *	Function:
- *			
+ *
  *	Arguments:
  *			psBdspInfo	MCDRV_BDSP_AEC_BDSP_INFO
  *					structure pointer
@@ -1761,7 +1761,7 @@ SINT32 McBdsp_GetTransition(void)
  *			pbData		Pointer to the data get area
  *			dSize		data size
  *	Return:
- *			
+ *
  *
  ****************************************************************************/
 SINT32 McBdsp_GetDSP(UINT32 dTarget, UINT32 dAddress,
@@ -1951,7 +1951,7 @@ SINT32 McBdsp_Stop(void)
 					| MCDRV_PACKET_REGTYPE_IF
 					| (UINT32)MCI_BDSPTREQ),
 					MCI_BDSPTREQ_DEF);
-	
+
 	gsBdspInfo.bDSPCtl = (UINT8)MCI_BDSPCTRL_DEF;
 	McDevIf_AddPacket((MCDRV_PACKET_TYPE_WRITE
 					| MCDRV_PACKET_REGTYPE_B

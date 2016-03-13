@@ -600,9 +600,6 @@ static void mxt_report_input_data(struct mxt_data *data)
 			input_report_abs(data->input_dev, ABS_MT_PRESSURE,
 					 data->fingers[i].z);
 #if TSP_USE_SHAPETOUCH
-			input_report_abs(data->input_dev, ABS_MT_COMPONENT,
-					data->fingers[i].component);
-
 			sum_size = data->sumsize;
 /* Change for palm swape motion (20131211 USE_FOR_SUFACE) */
 #if USE_FOR_SUFACE
@@ -617,8 +614,6 @@ static void mxt_report_input_data(struct mxt_data *data)
 			}
 #endif
 #endif
-			input_report_abs(data->input_dev, ABS_MT_SUMSIZE,
-					sum_size);
 #endif
 #if TSP_USE_PALM_FLAG
 			input_report_abs(data->input_dev, ABS_MT_PALM,
@@ -2425,12 +2420,6 @@ static int __devinit mxt_probe(struct i2c_client *client,
 				0, MXT_AREA_MAX, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
 				0, MXT_AMPLITUDE_MAX, 0, 0);
-#if TSP_USE_SHAPETOUCH
-	input_set_abs_params(input_dev, ABS_MT_COMPONENT,
-				0, MXT_COMPONENT_MAX, 0, 0);
-	input_set_abs_params(input_dev, ABS_MT_SUMSIZE,
-				0, MXT_SUMSIZE_MAX, 0, 0);
-#endif
 #if TSP_USE_PALM_FLAG
 	input_set_abs_params(input_dev, ABS_MT_PALM,
 				0, MXT_PALM_MAX, 0, 0);

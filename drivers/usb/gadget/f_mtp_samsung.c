@@ -785,7 +785,7 @@ static void interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 }
 */
 static ssize_t interrupt_write(struct file *fd,
-			const char __user *buf, size_t count)
+			struct mtp_event *event, size_t count)
 {
 	struct mtpg_dev *dev = fd->private_data;
 	struct usb_request *req = 0;
@@ -805,7 +805,7 @@ static ssize_t interrupt_write(struct file *fd,
 		return -ENOMEM;
 	}
 
-	if (copy_from_user(req->buf, buf, count)) {
+	if (copy_from_user(req->buf, (void __user *)event->data, count)) {
 		mtpg_req_put(dev, &dev->intr_idle, req);
 		printk(KERN_ERR "[%s]copy from user has failed\n", __func__);
 		return -EIO;
@@ -814,7 +814,7 @@ static ssize_t interrupt_write(struct file *fd,
 	req->length = count;
 	/*req->complete = interrupt_complete;*/
 
-	ret = usb_ep_queue(dev->int_in, req, GFP_ATOMIC);
+	ret = usb_ep_queue(dev->int_in, req, GFP_KERNEL);
 
 	if (ret) {
 		printk(KERN_ERR "[%s:%d]\n", __func__, __LINE__);
@@ -943,6 +943,7 @@ static void read_send_work(struct work_struct *work)
 static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
 {
 	struct mtpg_dev		*dev = fd->private_data;
+  struct mtp_event        event;
 	struct usb_composite_dev *cdev;
 	struct usb_request	*req;
 	int status = 0;
@@ -1002,8 +1003,9 @@ static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
 	case MTP_WRITE_INT_DATA:
 		printk(KERN_INFO "[%s]\t%d MTP intrpt_Write no slep\n",
 						__func__, __LINE__);
-		ret_value = interrupt_write(fd, (const char *)arg,
-					MTP_MAX_PACKET_LEN_FROM_APP);
+		if (copy_from_user(&event, (void __user *)arg, sizeof(event)))
+			status = -EFAULT;
+		ret_value = interrupt_write(fd, &event, MTP_MAX_PACKET_LEN_FROM_APP);
 		if (ret_value < 0) {
 			printk(KERN_ERR "[%s]\t%d interptFD failed\n",
 							 __func__, __LINE__);
@@ -1156,6 +1158,15 @@ exit:
 	return status;
 }
 
+#ifdef CONFIG_COMPAT  //2014.11.12 for 64bit kernel & 32bit platform
+static long mtpg_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret;
+	ret = mtpg_ioctl(file, cmd, (unsigned long)compat_ptr(arg));
+	return ret;
+}
+#endif
+
 static int mtpg_release_device(struct inode *ip, struct file *fp)
 {
 	printk(KERN_DEBUG "[%s]\tline = [%d]\n", __func__, __LINE__);
@@ -1172,6 +1183,9 @@ static const struct file_operations mtpg_fops = {
 	.open    = mtpg_open,
 	.unlocked_ioctl = mtpg_ioctl,
 	.release = mtpg_release_device,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl =   mtpg_compat_ioctl,
+#endif	
 };
 
 static struct miscdevice mtpg_device = {

@@ -81,6 +81,7 @@ struct s3c_fb_win_config {
 	int	y;
 	__u32	w;
 	__u32	h;
+	bool	protection;
 };
 
 #define WIN_CONFIG_DMA(x) (regs->otf_state[x] != S3C_FB_WIN_STATE_OTF)

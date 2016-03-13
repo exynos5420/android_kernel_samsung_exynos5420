@@ -118,7 +118,7 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
 		rdesc[84] = rdesc[89] = 0x4d;
 		rdesc[85] = rdesc[90] = 0x10;
 	}
-	if ((quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
+	if ((quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
 			rdesc[49] == 0x81 && rdesc[51] == 0x06) {
 		hid_info(hdev,
