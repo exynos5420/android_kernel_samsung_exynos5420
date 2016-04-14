@@ -42,6 +42,7 @@
 #include <linux/mutex.h>
 #include <linux/delay.h>
 #include <linux/swap.h>
+#include <linux/zcache.h>
 
 #include <linux/ratelimit.h>
 
@@ -176,7 +177,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 
 	other_free = global_page_state(NR_FREE_PAGES);
 	other_file = global_page_state(NR_FILE_PAGES) -
-						global_page_state(NR_SHMEM);
+						global_page_state(NR_SHMEM) + zcache_pages();
 	reclaim_state = current->reclaim_state;
 #if defined(CONFIG_ZSWAP)
 	other_file -= total_swapcache_pages;
