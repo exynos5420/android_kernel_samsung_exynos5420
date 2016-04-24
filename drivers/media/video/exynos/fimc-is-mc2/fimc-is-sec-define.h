@@ -85,12 +85,12 @@
 #define FW_IMX134	"E08LS"
 
 #define SDCARD_FW
-#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/media/0/"
+#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/camera/"
 #define FIMC_IS_FW				"fimc_is_fw2.bin"
 #define FIMC_IS_FW_3L2				"fimc_is_fw2_3L2.bin"
 #define FIMC_IS_FW_IMX134			"fimc_is_fw2_IMX134.bin"
 #define FIMC_IS_FW_IMX134_EEPROM		"fimc_is_fw2_IMX134_EEPROM.bin"
-#define FIMC_IS_FW_SDCARD			"/data/media/0/fimc_is_fw2.bin"
+#define FIMC_IS_FW_SDCARD			"/data/camera/fimc_is_fw2.bin"
 #define FIMC_IS_IMX135_SETF			"setfile_imx135.bin"
 #define FIMC_IS_IMX134_SETF			"setfile_imx134.bin"
 #define FIMC_IS_IMX134_EEPROM_SETF		"setfile_imx134_eeprom.bin"
@@ -98,14 +98,14 @@
 #define FIMC_IS_6B2_SETF			"setfile_6b2.bin"
 #define FIMC_IS_6B2_EEPROM_SETF			"setfile_6b2_eeprom.bin"
 #define FIMC_IS_FW_PATH				"/system/vendor/firmware/"
-#define FIMC_IS_FW_DUMP_PATH			"/data/"
+#define FIMC_IS_FW_DUMP_PATH			"/data/camera/"
 
 #define FIMC_IS_FW_BASE_MASK			((1 << 26) - 1)
 #define FIMC_IS_VERSION_SIZE			42
 #define FIMC_IS_SETFILE_VER_OFFSET		0x40
 #define FIMC_IS_SETFILE_VER_SIZE		52
 
-#define FIMC_IS_CAL_SDCARD			"/data/cal_data.bin"
+#define FIMC_IS_CAL_SDCARD			"/data/camera/cal_data.bin"
 
 #ifdef CONFIG_CAMERA_EEPROM
 #define FIMC_IS_MAX_FW_SIZE			(8 * 1024)
