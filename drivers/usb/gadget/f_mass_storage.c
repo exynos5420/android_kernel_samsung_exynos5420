@@ -2954,13 +2954,7 @@ static void fsg_common_release(struct kref *ref)
 
 		/* In error recovery common->nluns may be zero. */
 		for (; i; --i, ++lun) {
-<<<<<<< HEAD
-=======
-#ifdef CONFIG_USB_MSC_PROFILING
-			device_remove_file(&lun->dev, &dev_attr_perf);
-#endif
 			device_remove_file(&lun->dev, &dev_attr_cdrom);
->>>>>>> 11bd63a... usb: gadget: mass_storage: added sysfs entry for cdrom to LUNs
 			device_remove_file(&lun->dev, &dev_attr_nofua);
 			device_remove_file(&lun->dev, &dev_attr_ro);
 			device_remove_file(&lun->dev, &dev_attr_file);
