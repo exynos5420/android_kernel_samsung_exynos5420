@@ -59,7 +59,7 @@ struct device;
 struct media_device {
 	/* dev->driver_data points to this struct. */
 	struct device *dev;
-	struct media_devnode devnode;
+	struct media_devnode *devnode;
 
 	char model[32];
 	char serial[40];
@@ -78,9 +78,6 @@ struct media_device {
 	int (*link_notify)(struct media_pad *source,
 			   struct media_pad *sink, u32 flags);
 };
-
-/* media_devnode to media_device */
-#define to_media_device(node) container_of(node, struct media_device, devnode)
 
 int __must_check __media_device_register(struct media_device *mdev,
 					 struct module *owner);
