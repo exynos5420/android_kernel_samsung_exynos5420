@@ -8,7 +8,6 @@ menu "File systems"
 config DCACHE_WORD_ACCESS
        bool
 
-# klaatu@sec
 config LOW_ORDER_SEQ_MALLOC
 	bool "Let seq_file allocation only low order page memory"
 	default y
@@ -112,7 +111,6 @@ if BLOCK
 menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
-source "fs/exfat/Kconfig"
 source "fs/ntfs/Kconfig"
 
 endmenu
@@ -209,8 +207,6 @@ if MISC_FILESYSTEMS
 source "fs/adfs/Kconfig"
 source "fs/affs/Kconfig"
 source "fs/ecryptfs/Kconfig"
-source "fs/scfs/Kconfig"
-source "fs/sdcardfs/Kconfig"
 source "fs/hfs/Kconfig"
 source "fs/hfsplus/Kconfig"
 source "fs/befs/Kconfig"
@@ -237,6 +233,7 @@ source "fs/pstore/Kconfig"
 source "fs/sysv/Kconfig"
 source "fs/ufs/Kconfig"
 source "fs/exofs/Kconfig"
+source "fs/f2fs/Kconfig"
 
 endif # MISC_FILESYSTEMS
 
