@@ -66,7 +66,7 @@
 #define TK_BIT_DETECTION_CONFIRM	0xEE
 #define CYPRESS_DETECTION_FLAG		0x1B
 #define TK_DUAL_REG 0x18
-#if defined(CONFIG_KLIMT)
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 #define TK_MULTI_FW_VER  0x08
 #endif
 #if defined(CONFIG_HA)
