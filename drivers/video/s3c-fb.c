@@ -1735,15 +1735,14 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
-#ifndef CONFIG_FB_I80IF
-		if (pd->dsim_off)
-			pd->dsim_off(dsim_device);
-#endif
 		ret = s3c_fb_disable(sfb);
 #if defined(CONFIG_FB_MIC)
 		s5p_mic_disable(g_mic);
 #endif
-
+#ifndef CONFIG_FB_I80IF
+		if (pd->dsim_off)
+			pd->dsim_off(dsim_device);
+#endif
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_mif_qos, FIMD_MIF_BUS_MIN);
 		pm_qos_update_request(&exynos5_int_qos, FIMD_INT_BUS_MIN);
@@ -5141,6 +5140,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	/* If VCLK is faster than Bus clock or same with ACLK */
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_83_ENABLE;
+	reg |= VIDCON0_VCLK_FREE;
 	writel(reg, sfb->regs + VIDCON0);
 
 	/* set video clock running at under-run */
@@ -5950,6 +5950,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_83_ENABLE;
+	reg |= VIDCON0_VCLK_FREE;
 	writel(reg, sfb->regs + VIDCON0);
 
 	/* set video clock running at under-run */
@@ -6019,7 +6020,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #if defined(CONFIG_FB_HW_TRIGGER)
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
-
 #ifndef CONFIG_FB_I80IF
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
