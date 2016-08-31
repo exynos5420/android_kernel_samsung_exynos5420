@@ -1404,6 +1404,12 @@ static int wacom_i2c_probe(struct i2c_client *client,
 			    "epen:failed to create sysfs group\n");
 		goto err_sysfs_create_group;
 	}
+	ret = sysfs_create_link(&wac_i2c->dev->kobj, &wac_i2c->input_dev->dev.kobj, "input");
+	if (ret < 0) {
+		dev_err(&client->dev,
+				"%s: Failed to create input symbolic link\n",
+				__func__);
+	}
 
 	/* firmware info */
 	printk(KERN_NOTICE "epen:wacom fw ver : 0x%x, new fw ver : 0x%x\n",
