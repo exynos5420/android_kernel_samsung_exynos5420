@@ -171,7 +171,7 @@ static unsigned short tune_email[] = {
 static unsigned short tune_auto_ui[] = {
 /*start Vienna auto ui*/
 	0x0000, 0x0000,	/*BANK 0*/
-	0x0008, 0x0120,	/*SCR2 CC1 | CS2 DE1 | 0*/
+	0x0008, 0x0020,	/*SCR2 CC1 | CS2 DE1 | 0*/
 	0x0009, 0x0000,	/*MCM off*/
 	0x000a, 0x0000,	/*UC off*/
 	0x00c0, 0x1010,	/*CS hg ry*/
@@ -179,16 +179,6 @@ static unsigned short tune_auto_ui[] = {
 	0x00c2, 0x1010,	/*CS hg bm*/
 	0x00c3, 0x1404,	/*CS weight grayTH*/
 	0x0000, 0x0001,	/*BANK 1*/
-	0x003f, 0x0080,	/*CC chsel strength*/
-	0x0040, 0x0000,	/*CC lut r  0*/
-	0x0041, 0x0a98,	/*CC lut r  16 144 */
-	0x0042, 0x1aaa,	/*CC lut r  32 160*/
-	0x0043, 0x2cbc,	/*CC lut r  48 176*/
-	0x0044, 0x3ece,	/*CC lut r  64 192*/
-	0x0045, 0x50e0,	/*CC lut r  80 208*/
-	0x0046, 0x62f2,	/*CC lut r  96 224*/
-	0x0047, 0x74fa,	/*CC lut r 112 240*/
-	0x0048, 0x86ff,	/*CC lut r 128 255*/
 	0x0071, 0xff00,	/*SCR RrCr*/
 	0x0072, 0x00ff,	/*SCR RgCg*/
 	0x0073, 0x00ff,	/*SCR RbCb*/
@@ -368,14 +358,14 @@ static unsigned short tune_dynamic_ui[] = {
 	0x0000, 0x0001,	/*BANK 1*/
 	0x003f, 0x0080,	/*CC chsel strength*/
 	0x0040, 0x0000,	/*CC lut r  0*/
-	0x0041, 0x08a0,	/*CC lut r  16 144 */
-	0x0042, 0x16b4,	/*CC lut r  32 160*/
-	0x0043, 0x28c8,	/*CC lut r  48 176*/
-	0x0044, 0x3cdc,	/*CC lut r  64 192*/
-	0x0045, 0x50ec,	/*CC lut r  80 208*/
-	0x0046, 0x64f6,	/*CC lut r  96 224*/
-	0x0047, 0x78fc,	/*CC lut r 112 240*/
-	0x0048, 0x8cff,	/*CC lut r 128 255*/
+	0x0041, 0x0893,	/*CC lut r  16 144 */
+	0x0042, 0x1aa5,	/*CC lut r  32 160*/
+	0x0043, 0x29b7,	/*CC lut r  48 176*/
+	0x0044, 0x39c8,	/*CC lut r  64 192*/
+	0x0045, 0x4bd8,	/*CC lut r  80 208*/
+	0x0046, 0x5de6,	/*CC lut r  96 224*/
+	0x0047, 0x6ff4,	/*CC lut r 112 240*/
+	0x0048, 0x81ff,	/*CC lut r 128 255*/
 	0x0071, 0xff00,	/*SCR RrCr*/
 	0x0072, 0x00ff,	/*SCR RgCg*/
 	0x0073, 0x00ff,	/*SCR RbCb*/
