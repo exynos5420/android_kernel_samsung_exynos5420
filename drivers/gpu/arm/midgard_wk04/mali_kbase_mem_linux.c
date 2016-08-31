@@ -897,7 +897,9 @@ STATIC void kbase_cpu_vm_close(struct vm_area_struct *vma)
 
 	if (map->region) {
 		KBASE_DEBUG_ASSERT((map->region->flags & KBASE_REG_ZONE_MASK) == KBASE_REG_ZONE_SAME_VA);
-		kbase_mem_free_region(map->kctx, map->region);
+		/* MALI_SEC_INTEGRATION */
+		if (!(current->flags & PF_EXITING))
+			kbase_mem_free_region(map->kctx, map->region);
 	}
 
 	list_del(&map->mappings_list);
