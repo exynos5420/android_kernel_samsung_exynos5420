@@ -496,7 +496,11 @@ struct platform_device s3c_device_i2c24 = {
 
 static struct lp855x_rom_data lp8556_eprom_arr[] = {
 	{EPROM_CFG98_ADDR, 0xA1},
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	{EPROM_CFG1_ADDR, 0x3F},
+#else
 	{EPROM_CFG1_ADDR, 0x5F},
+#endif
 	{EPROM_CFG3_ADDR, 0x5E},
 	{EPROM_CFG5_ADDR, 0x04},
 	{EPROM_CFG8_ADDR, 0x00},

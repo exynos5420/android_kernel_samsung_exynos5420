@@ -47,6 +47,7 @@ extern unsigned int lcdtype;
 #define FW_IMAGE_NAME_5710 "tsp_synaptics/synaptics_chagall_5710.fw"
 #define FW_IMAGE_NAME_5710_USA "tsp_synaptics/synaptics_chagall_usa_5710.fw"
 #define FW_IMAGE_NAME_5710_CHN "tsp_synaptics/synaptics_chagall_chn_5710.fw"
+#define FW_IMAGE_NAME_5710_CAN "tsp_synaptics/synaptics_chagall_can_5710.fw"
 
 #define DSX_I2C_ADDR 0x20
 #define DSX_ATTN_GPIO EXYNOS5420_GPX1(6)
@@ -204,8 +205,10 @@ static struct synaptics_rmi4_platform_data dsx_platformdata = {
 #endif
 #if defined(CONFIG_TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN)
 	.firmware_name = FW_IMAGE_NAME_5710_CHN,
-#elif !defined(CONFIG_TOUCHSCREEN_CHAGALLLTE_USA)
+#elif !defined(CONFIG_TOUCHSCREEN_CHAGALLLTE_USA) && !defined (CONFIG_TOUCHSCREEN_CHAGALLLTE_CAN)
 	.firmware_name = FW_IMAGE_NAME_5710,
+#elif defined(CONFIG_TOUCHSCREEN_CHAGALLLTE_CAN)
+	.firmware_name = FW_IMAGE_NAME_5710_CAN,
 #else
 	.firmware_name = FW_IMAGE_NAME_5710_USA,
 #endif
