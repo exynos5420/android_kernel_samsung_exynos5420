@@ -396,6 +396,9 @@ struct usb_composite_dev {
 	 */
 	bool				mute_switch;
 	bool				force_disconnect;
+#ifdef CONFIG_V1A
+	struct work_struct redriver_work;
+#endif
 #endif
 };
 
