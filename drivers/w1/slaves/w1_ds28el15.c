@@ -1834,35 +1834,22 @@ static void w1_ds28el15_update_slave_info(struct w1_slave *sl)
 	u8 rdbuf[32];
 	int ret, retry = 0;
 
-	ret = w1_ds28el15_get_buffer(sl, &rdbuf[0], 10);
-	if (ret != 0)
-		pr_info("%s : fail to get buffer %d\n", __func__, ret);
-
-	while ((rdbuf[0] < ID_MIN) || (rdbuf[0] > ID_MAX) ||
-		(rdbuf[1] < CO_MIN) || (rdbuf[1] > CO_MAX)) {
-		printk(KERN_ERR "%s : out of range : %d %d\n", __func__, rdbuf[0], rdbuf[1]);
-		if (retry > 10) {
-			printk(KERN_ERR "%s : out of range over 10 times\n", __func__);
+	for (retry = 0; retry < RETRY_LIMIT; retry++) {
+		ret = w1_ds28el15_get_buffer(sl, &rdbuf[0], RETRY_LIMIT);
+		if (ret != 0 || rdbuf[0] < ID_MIN || rdbuf[0] > ID_MAX || rdbuf[1] < CO_MIN || rdbuf[1] > CO_MAX)
+			pr_info("%s : fail to get buffer %d, retry count[%d]\n", __func__, ret, retry);
+		else
 			break;
-		}
-
-		ret = w1_ds28el15_get_buffer(sl, &rdbuf[0], 10);
-		if (ret != 0)
-			pr_info("%s : fail to get buffer %d\n", __func__, ret);
-
-		retry++;
 	}
 
-	if ((rdbuf[0] < ID_MIN) || (rdbuf[0] > ID_MAX))
-		id = 1;
-	else
+	if (retry < RETRY_LIMIT) {
 		id = rdbuf[0];
-
-	if ((rdbuf[0] < CO_MIN) || (rdbuf[0] > CO_MAX))
-		color = 1;
-	else
 		color = rdbuf[1];
-
+	} else {
+		pr_info("%s : setting default id and color\n", __func__);
+		id = 1;
+		color = 1;
+	}
 	pr_info("%s Read ID(%d) & Color(%d) & Verification State(%d)\n",
 		__func__, id, color, verification);
 }

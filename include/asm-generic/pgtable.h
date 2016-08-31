@@ -512,7 +512,7 @@ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
 	if (pmd_none(pmdval) || pmd_trans_huge(pmdval))
 		return 1;
 	if (unlikely(pmd_bad(pmdval))) {
-			pmd_clear_bad(pmd);
+		pmd_clear_bad(pmd);
 		return 1;
 	}
 	return 0;

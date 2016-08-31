@@ -21,6 +21,9 @@
 #define __SEC_BATTERY_H __FILE__
 
 #include <linux/battery/sec_charging_common.h>
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+#include "../arch/arm/mach-exynos/board-universal5420.h"
+#endif
 #if defined(ANDROID_ALARM_ACTIVATED)
 #include <linux/android_alarm.h>
 #endif
@@ -241,6 +244,9 @@ enum {
 	BATT_TEMP_TABLE,
 #if defined(CONFIG_SAMSUNG_BATTERY_ENG_TEST)
 	BATT_TEST_CHARGE_CURRENT,
+#endif
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+    BATT_CAPACITY_MAX,
 #endif
 	BATT_INBAT_VOLTAGE,
 	BATT_HIGH_CURRENT_USB,
