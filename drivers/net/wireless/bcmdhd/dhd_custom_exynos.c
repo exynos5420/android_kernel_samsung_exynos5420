@@ -1,7 +1,7 @@
 /*
  * Platform Dependent file for Samsung Exynos
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2015, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_custom_exynos.c 489763 2014-07-08 02:05:45Z $
+ * $Id: dhd_custom_exynos.c 557500 2015-05-19 06:30:12Z $
  */
 #include <linux/device.h>
 #include <linux/gpio.h>
@@ -46,19 +46,31 @@
 #include <linux/platform_device.h>
 #include <linux/wlan_plat.h>
 
+#ifndef CONFIG_MACH_UNIVERSAL7580
 #include <mach/gpio.h>
+#endif /* CONFIG_MACH_UNIVERSAL7580 */
+
 #include <mach/irqs.h>
 #include <linux/sec_sysfs.h>
 
 #include <plat/gpio-cfg.h>
 
+#ifdef CONFIG_MACH_A7LTE
+#define PINCTL_DELAY 150
+#endif /* CONFIG_MACH_A7LTE */
 #ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
 
 #define WLAN_STATIC_SCAN_BUF0		5
 #define WLAN_STATIC_SCAN_BUF1		6
 #define WLAN_STATIC_DHD_INFO_BUF	7
-#define WLAN_SCAN_BUF_SIZE		(64 * 1024)
+#define WLAN_STATIC_DHD_WLFC_INFO	8
+#define WLAN_SCAN_BUF_SIZE		(128 * 1024)
+#if defined(CONFIG_64BIT)
+#define WLAN_DHD_INFO_BUF_SIZE  (24 * 1024)
+#else
 #define WLAN_DHD_INFO_BUF_SIZE	(16 * 1024)
+#endif /* CONFIG_64BIT */
+#define WLAN_DHD_WLFC_BUF_SIZE	(64 * 1024)
 #define PREALLOC_WLAN_SEC_NUM		4
 #define PREALLOC_WLAN_BUF_NUM		160
 #define PREALLOC_WLAN_SECTION_HEADER	24
@@ -75,11 +87,11 @@
 
 #define WLAN_SKB_BUF_NUM	17
 
-#if defined(CUSTOMER_HW4) && defined(ARGOS_CPU_SCHEDULER)
-extern int argos_irq_affinity_setup(unsigned int irq, int dev_num,
+#if defined(CONFIG_ARGOS)
+extern int argos_irq_affinity_setup_label(unsigned int irq, const char *label,
                  struct cpumask *affinity_cpu_mask,
                  struct cpumask *default_cpu_mask);
-#endif /* CUSTOMER_HW4 && ARGOS_CPU_SCHEDULER */
+#endif /* CONFIG_ARGOS */
 static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
 
 struct wlan_mem_prealloc {
@@ -94,9 +106,10 @@ static struct wlan_mem_prealloc wlan_mem_array[PREALLOC_WLAN_SEC_NUM] = {
 	{NULL, (WLAN_SECTION_SIZE_3 + PREALLOC_WLAN_SECTION_HEADER)}
 };
 
-void *wlan_static_scan_buf0;
-void *wlan_static_scan_buf1;
-void *wlan_static_dhd_info_buf;
+void *wlan_static_scan_buf0 = NULL;
+void *wlan_static_scan_buf1 = NULL;
+void *wlan_static_dhd_info_buf = NULL;
+void *wlan_static_dhd_wlfc_buf = NULL;
 
 static void *dhd_wlan_mem_prealloc(int section, unsigned long size)
 {
@@ -117,6 +130,16 @@ static void *dhd_wlan_mem_prealloc(int section, unsigned long size)
 			return NULL;
 		}
 		return wlan_static_dhd_info_buf;
+	}
+
+	if (section == WLAN_STATIC_DHD_WLFC_INFO)  {
+		if (size > WLAN_STATIC_DHD_WLFC_INFO_SIZE) {
+			pr_err("request DHD_WLFC_INFO size(%lu) is bigger than"
+				" static size(%d).\n",
+				size, WLAN_STATIC_DHD_WLFC_INFO_SIZE);
+			return NULL;
+		}
+		return wlan_static_dhd_wlfc_buf;
 	}
 
 	if ((section < 0) || (section > PREALLOC_WLAN_SEC_NUM))
@@ -169,6 +192,11 @@ static int dhd_init_wlan_mem(void)
 	if (!wlan_static_dhd_info_buf)
 		goto err_mem_alloc;
 
+	wlan_static_dhd_wlfc_buf = kmalloc(WLAN_STATIC_DHD_WLFC_INFO_SIZE, GFP_KERNEL);
+	if (!wlan_static_dhd_wlfc_buf) {
+		goto err_mem_alloc;
+	}
+
 	pr_err("%s: WIFI MEM Allocated\n", __FUNCTION__);
 	return 0;
 
@@ -180,6 +208,8 @@ err_mem_alloc:
 		kfree(wlan_static_scan_buf1);
 	if (wlan_static_dhd_info_buf)
 		kfree(wlan_static_dhd_info_buf);
+	if (wlan_static_dhd_wlfc_buf)
+		kfree(wlan_static_dhd_wlfc_buf);
 
 	for (j = 0; j < i; j++)
 		kfree(wlan_mem_array[j].mem_ptr);
@@ -198,18 +228,42 @@ err_skb_alloc:
 static struct device *wlan_dev;
 static int wlan_pwr_on = -1;
 static int wlan_host_wake_irq = 0;
+#ifdef CONFIG_MACH_A7LTE
+extern struct device *mmc_dev_for_wlan;
+#endif /* CONFIG_MACH_A7LTE */
 
 static int dhd_wlan_power(int onoff)
 {
+#ifdef CONFIG_MACH_A7LTE
+	struct pinctrl *pinctrl = NULL;
+#endif /* CONFIG_MACH_A7LTE */
+
 	printk(KERN_INFO"------------------------------------------------");
 	printk(KERN_INFO"------------------------------------------------\n");
 	printk(KERN_INFO"%s Enter: power %s\n", __FUNCTION__, onoff ? "on" : "off");
+
+#ifdef CONFIG_MACH_A7LTE
+	if (onoff) {
+		pinctrl = devm_pinctrl_get_select(mmc_dev_for_wlan, "sdio_wifi_on");
+		if (IS_ERR(pinctrl))
+			printk(KERN_INFO "%s WLAN SDIO GPIO control error\n", __FUNCTION__);
+		msleep(PINCTL_DELAY);
+	}
+#endif /* CONFIG_MACH_A7LTE */
 
 	if (gpio_direction_output(wlan_pwr_on, onoff)) {
 		printk(KERN_ERR "%s failed to control WLAN_REG_ON to %s\n",
 			__FUNCTION__, onoff ? "HIGH" : "LOW");
 		return -EIO;
 	}
+
+#ifdef CONFIG_MACH_A7LTE
+	if (!onoff) {
+		pinctrl = devm_pinctrl_get_select(mmc_dev_for_wlan, "sdio_wifi_off");
+		if (IS_ERR(pinctrl))
+			printk(KERN_INFO "%s WLAN SDIO GPIO control error\n", __FUNCTION__);
+	}
+#endif /* CONFIG_MACH_A7LTE */
 
 	return 0;
 }
@@ -233,6 +287,29 @@ static int dhd_wlan_set_carddetect(int val)
 		pr_warning("%s: Nobody to notify\n", __FUNCTION__);
 
 	return 0;
+}
+
+int dhd_get_system_rev(void)
+{
+	const char *wlan_node = "samsung,brcm-wlan";
+	struct device_node *root_node = NULL;
+	unsigned int base_system_rev_for_nv = 0;
+	int ret;
+
+	root_node = of_find_compatible_node(NULL, NULL, wlan_node);
+	if (!root_node) {
+		printk(KERN_ERR "couldn't get root node\n");
+		return -ENODEV;
+	}
+
+	ret = of_property_read_u32(root_node, "base_system_rev_for_nv",
+			&base_system_rev_for_nv);
+	if (ret) {
+		printk(KERN_INFO "couldn't get base_system_rev_for_nv\n");
+		return -ENODEV;
+	}
+
+	return base_system_rev_for_nv;
 }
 
 int __init dhd_wlan_init_gpio(void)
@@ -285,18 +362,15 @@ int __init dhd_wlan_init_gpio(void)
 	return 0;
 }
 
-#if defined(CUSTOMER_HW4) && defined(ARGOS_CPU_SCHEDULER)
+#if defined(CONFIG_ARGOS)
 void set_cpucore_for_interrupt(cpumask_var_t default_cpu_mask,
 	cpumask_var_t affinity_cpu_mask) {
-#if defined(CONFIG_MACH_UNIVERSAL5422)
-	argos_irq_affinity_setup(EXYNOS5_IRQ_HSMMC1, 2, affinity_cpu_mask, default_cpu_mask);
-	argos_irq_affinity_setup(EXYNOS_IRQ_EINT16_31, 2, affinity_cpu_mask, default_cpu_mask);
-#elif defined(CONFIG_MACH_UNIVERSAL5430)
-	argos_irq_affinity_setup(IRQ_SPI(226), 2, affinity_cpu_mask, default_cpu_mask);
-	argos_irq_affinity_setup(IRQ_SPI(2), 2, affinity_cpu_mask, default_cpu_mask);
+#if defined(CONFIG_MACH_UNIVERSAL5430)
+	argos_irq_affinity_setup_label(IRQ_SPI(226), "WIFI", affinity_cpu_mask, default_cpu_mask);
+	argos_irq_affinity_setup_label(IRQ_SPI(2), "WIFI", affinity_cpu_mask, default_cpu_mask);
 #endif
 }
-#endif /* CUSTOMER_HW4 && ARGOS_CPU_SCHEDULER */
+#endif /* CONFIG_ARGOS */
 
 void interrupt_set_cpucore(int set)
 {
@@ -354,7 +428,7 @@ int __init dhd_wlan_init(void)
 	dhd_wlan_resources.end = wlan_host_wake_irq;
 
 #ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
-	dhd_init_wlan_mem();
+	ret = dhd_init_wlan_mem();
 #endif
 
 	return ret;
