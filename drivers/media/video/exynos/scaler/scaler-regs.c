@@ -327,12 +327,11 @@ static struct sc_bl_op_val sc_bl_op_tbl[] = {
 	{ONE,	 ONE,	ONE,	ONE},		/* ADD */
 };
 
-
 int sc_hwset_src_image_format(struct sc_dev *sc, u32 pixelformat)
 {
 	unsigned long cfg = readl(sc->regs + SCALER_SRC_CFG);
 
-	cfg &= ~SCALER_CFG_FMT_MASK;
+	cfg &= ~(SCALER_CFG_TILE_EN|SCALER_CFG_FMT_MASK);
 
 	switch (pixelformat) {
 	case V4L2_PIX_FMT_RGB565:
@@ -370,34 +369,22 @@ int sc_hwset_src_image_format(struct sc_dev *sc, u32 pixelformat)
 		break;
 	case V4L2_PIX_FMT_NV21:
 	case V4L2_PIX_FMT_NV21M:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR420_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB420_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB420_2P;
 		break;
 	case V4L2_PIX_FMT_NV16:
 		cfg |= SCALER_CFG_FMT_YCBCR422_2P;
 		break;
 	case V4L2_PIX_FMT_NV61:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR422_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB422_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB422_2P;
+		break;
+	case V4L2_PIX_FMT_YUV422P:
+		cfg |= SCALER_CFG_FMT_YCBCR422_3P;
 		break;
 	case V4L2_PIX_FMT_NV24:
 		cfg |= SCALER_CFG_FMT_YCBCR444_2P;
 		break;
 	case V4L2_PIX_FMT_NV42:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR444_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB444_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB444_2P;
 		break;
 	case V4L2_PIX_FMT_YUV420:
 	case V4L2_PIX_FMT_YUV420M:
@@ -419,7 +406,7 @@ int sc_hwset_dst_image_format(struct sc_dev *sc, u32 pixelformat)
 	unsigned long cfg = readl(sc->regs + SCALER_DST_CFG);
 	bool is_rgb = false;
 
-	cfg &= ~SCALER_CFG_FMT_MASK;
+	cfg &= ~(SCALER_CFG_SWAP_MASK|SCALER_CFG_FMT_MASK);
 
 	switch (pixelformat) {
 	case V4L2_PIX_FMT_RGB565:
@@ -435,8 +422,8 @@ int sc_hwset_dst_image_format(struct sc_dev *sc, u32 pixelformat)
 		is_rgb = true;
 		break;
 	case V4L2_PIX_FMT_RGB32:
-		cfg |= SCALER_CFG_FMT_ARGB8888;
-		cfg |= SCALER_CFG_BYTE_SWAP;
+		cfg |= SCALER_CFG_FMT_RGBA8888;
+		cfg |= SCALER_CFG_BYTE_HWORD_SWAP;
 		is_rgb = true;
 		break;
 	case V4L2_PIX_FMT_BGR32:
@@ -453,48 +440,27 @@ int sc_hwset_dst_image_format(struct sc_dev *sc, u32 pixelformat)
 		cfg |= SCALER_CFG_FMT_YVYU;
 		break;
 	case V4L2_PIX_FMT_NV12:
-		cfg |= SCALER_CFG_FMT_YCBCR420_2P;
-		break;
-	case V4L2_PIX_FMT_NV21:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR420_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB420_2P;
-		}
-		break;
 	case V4L2_PIX_FMT_NV12M:
 		cfg |= SCALER_CFG_FMT_YCBCR420_2P;
 		break;
+	case V4L2_PIX_FMT_NV21:
 	case V4L2_PIX_FMT_NV21M:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR420_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB420_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB420_2P;
 		break;
 	case V4L2_PIX_FMT_NV16:
 		cfg |= SCALER_CFG_FMT_YCBCR422_2P;
 		break;
 	case V4L2_PIX_FMT_NV61:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR422_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB422_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB422_2P;
+		break;
+	case V4L2_PIX_FMT_YUV422P:
+		cfg |= SCALER_CFG_FMT_YCBCR422_3P;
 		break;
 	case V4L2_PIX_FMT_NV24:
 		cfg |= SCALER_CFG_FMT_YCBCR444_2P;
 		break;
 	case V4L2_PIX_FMT_NV42:
-		if (sc_ver_is_5a(sc)) {
-			cfg |= SCALER_CFG_FMT_YCBCR444_2P;
-			cfg |= SCALER_CFG_HWORD_SWAP;
-		} else {
-			cfg |= SCALER_CFG_FMT_YCRCB444_2P;
-		}
+		cfg |= SCALER_CFG_FMT_YCRCB444_2P;
 		break;
 	case V4L2_PIX_FMT_YUV420:
 	case V4L2_PIX_FMT_YUV420M:
@@ -562,7 +528,8 @@ void get_blend_value(unsigned int *cfg, u32 val, bool pre_multi)
 		*cfg |= (1 << SCALER_OP_SEL_INV_SHIFT);
 }
 
-void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi)
+void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi,
+		unsigned char g_alpha)
 {
 	unsigned int cfg = readl(sc->regs + SCALER_CFG);
 	int idx = bl_op - 1;
@@ -572,21 +539,29 @@ void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi)
 
 	cfg = readl(sc->regs + SCALER_SRC_BLEND_COLOR);
 	get_blend_value(&cfg, sc_bl_op_tbl[idx].src_color, pre_multi);
+	if (g_alpha < 0xff)
+		cfg |= (SRC_GA << SCALER_OP_SEL_SHIFT);
 	writel(cfg, sc->regs + SCALER_SRC_BLEND_COLOR);
 	sc_dbg("src_blend_color is 0x%x, %d\n", cfg, pre_multi);
 
 	cfg = readl(sc->regs + SCALER_SRC_BLEND_ALPHA);
 	get_blend_value(&cfg, sc_bl_op_tbl[idx].src_alpha, 1);
+	if (g_alpha < 0xff)
+		cfg |= (SRC_GA << SCALER_OP_SEL_SHIFT) | (g_alpha << 0);
 	writel(cfg, sc->regs + SCALER_SRC_BLEND_ALPHA);
 	sc_dbg("src_blend_alpha is 0x%x\n", cfg);
 
 	cfg = readl(sc->regs + SCALER_DST_BLEND_COLOR);
 	get_blend_value(&cfg, sc_bl_op_tbl[idx].dst_color, pre_multi);
+	if (g_alpha < 0xff)
+		cfg |= ((INV_SAGA & 0xf) << SCALER_OP_SEL_SHIFT);
 	writel(cfg, sc->regs + SCALER_DST_BLEND_COLOR);
 	sc_dbg("dst_blend_color is 0x%x\n", cfg);
 
 	cfg = readl(sc->regs + SCALER_DST_BLEND_ALPHA);
 	get_blend_value(&cfg, sc_bl_op_tbl[idx].dst_alpha, 1);
+	if (g_alpha < 0xff)
+		cfg |= ((INV_SAGA & 0xf) << SCALER_OP_SEL_SHIFT);
 	writel(cfg, sc->regs + SCALER_DST_BLEND_ALPHA);
 	sc_dbg("dst_blend_alpha is 0x%x\n", cfg);
 
@@ -858,16 +833,14 @@ void sc_hwset_src_addr(struct sc_dev *sc, struct sc_addr *addr)
 {
 	writel(addr->y, sc->regs + SCALER_SRC_Y_BASE);
 	writel(addr->cb, sc->regs + SCALER_SRC_CB_BASE);
-	if (!sc_ver_is_5a(sc))
-		writel(addr->cr, sc->regs + SCALER_SRC_CR_BASE);
+	writel(addr->cr, sc->regs + SCALER_SRC_CR_BASE);
 }
 
 void sc_hwset_dst_addr(struct sc_dev *sc, struct sc_addr *addr)
 {
 	writel(addr->y, sc->regs + SCALER_DST_Y_BASE);
 	writel(addr->cb, sc->regs + SCALER_DST_CB_BASE);
-	if (!sc_ver_is_5a(sc))
-		writel(addr->cr, sc->regs + SCALER_DST_CR_BASE);
+	writel(addr->cr, sc->regs + SCALER_DST_CR_BASE);
 }
 
 void sc_hwset_int_en(struct sc_dev *sc, u32 enable)
@@ -875,8 +848,7 @@ void sc_hwset_int_en(struct sc_dev *sc, u32 enable)
 	unsigned long cfg = readl(sc->regs + SCALER_INT_EN);
 	int val;
 
-	val = sc_ver_is_5a(sc) ? \
-	      SCALER_INT_EN_FRAME_END : SCALER_INT_EN_ALL;
+	val = SCALER_INT_EN_ALL;
 
 	if (enable)
 		cfg |= val;
@@ -909,10 +881,13 @@ int sc_hwget_version(struct sc_dev *sc)
 
 void sc_hwset_soft_reset(struct sc_dev *sc)
 {
-	unsigned long cfg = readl(sc->regs + SCALER_CFG);
+	unsigned long cfg;
 
-	cfg |= SCALER_CFG_SOFT_RST;
-	cfg &= ~((1 << 10) | (1 << 9));
+#ifdef SC_NO_SOFTRST
+	cfg = (SCALER_CFG_CSC_Y_OFFSET_SRC|SCALER_CFG_CSC_Y_OFFSET_DST);
+#else
+	cfg = SCALER_CFG_SOFT_RST;
+#endif
 	writel(cfg, sc->regs + SCALER_CFG);
 	sc_dbg("done soft reset\n");
 

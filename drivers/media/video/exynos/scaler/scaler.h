@@ -24,20 +24,20 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-mem2mem.h>
 #include <media/v4l2-ctrls.h>
-
-#include "scaler-regs.h"
-
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 #include <media/videobuf2-cma-phys.h>
 #elif defined(CONFIG_VIDEOBUF2_ION)
 #include <media/videobuf2-ion.h>
 #endif
 
+#include <mach/exynos-scaler.h>
+#include "scaler-regs.h"
+
 extern int sc_log_level;
 #define sc_dbg(fmt, args...)						\
 	do {								\
 		if (sc_log_level)					\
-			printk(KERN_DEBUG "[%s:%d] "			\
+			pr_debug("[%s:%d] "				\
 			fmt, __func__, __LINE__, ##args);		\
 	} while (0)
 
@@ -194,9 +194,11 @@ enum sc_bl_comp {
 	SRC_A,
 	SRC_C,
 	DST_A,
+	SRC_GA = 0x5,
 	INV_SA = 0x11,
 	INV_SC,
 	INV_DA,
+	INV_SAGA = 0x17,
 	ZERO = 0xff,
 };
 
@@ -286,7 +288,6 @@ struct sc_frame {
 
 struct sc_int_frame {
 	struct sc_frame			frame;
-	void				*cookie;
 	struct ion_client		*client;
 	struct ion_handle		*handle[3];
 	struct sc_addr			src_addr;
@@ -326,7 +327,7 @@ struct sc_vb2;
  * @pdata:	pointer to the device platform data
  * @variant:	the IP variant information
  * @m2m:	memory-to-memory V4L2 device information
- * @id:		Rotator device index (0..SC_MAX_DEVS)
+ * @id:		scaler device index (0..SC_MAX_DEVS)
  * @aclk:	aclk required for scaler operation
  * @pclk:	pclk required for scaler operation
  * @regs:	the mapped hardware registers
@@ -339,7 +340,10 @@ struct sc_vb2;
  * @slock:	the spinlock pscecting this data structure
  * @lock:	the mutex pscecting this data structure
  * @wdt:	watchdog timer information
- * @clk_cnt:	scator clock on/off count
+ * @clk_cnt:	scalor clock on/off count
+ * @clksel_cnt: child-parent clkset cnt
+ * @clk_chld:   index list of child clocks
+ * @clk_parent: index list of parent clocks
  */
 struct sc_dev {
 	struct device			*dev;
@@ -348,6 +352,7 @@ struct sc_dev {
 	struct sc_m2m_device		m2m;
 	int				id;
 	int				ver;
+	int				platid;
 	int				irq;
 	struct clk			*aclk;
 	struct clk			*pclk;
@@ -367,6 +372,9 @@ struct sc_dev {
 	struct mutex			pmqos_lock;
 	atomic_t			pmqos_count;
 	atomic_t			clk_cnt;
+	int				clksel_cnt;
+	struct clk			*clk_chld[SC_MAX_CLKSEL];
+	struct clk			*clk_parn[SC_MAX_CLKSEL];
 	void				*clk_private;
 	void *(*setup_clocks)(void);
 	bool (*init_clocks)(void *p);
@@ -388,7 +396,8 @@ struct sc_dev {
  * @bl_op:		image blend mode
  * @dith:		image dithering mode
  * @g_alpha:		global alpha value
- * @color_fill:		color fill value
+ * @color_fill:		enable color fill
+ * @color:		color fill value
  * @flags:		context state flags
  * @slock:		spinlock pscecting this data structure
  * @cacheable:		cacheability of current frame
@@ -411,7 +420,10 @@ struct sc_ctx {
 	enum sc_blend_op		bl_op;
 	u32				dith;
 	u32				g_alpha;
-	unsigned int			color_fill;
+	bool				color_fill;
+	unsigned int			color;
+	unsigned int			h_ratio;
+	unsigned int			v_ratio;
 	unsigned long			flags;
 	spinlock_t			slock;
 	bool				cacheable;
@@ -456,7 +468,8 @@ static inline struct sc_frame *ctx_get_frame(struct sc_ctx *ctx,
 int sc_hwset_src_image_format(struct sc_dev *sc, u32 pixelformat);
 int sc_hwset_dst_image_format(struct sc_dev *sc, u32 pixelformat);
 void sc_hwset_pre_multi_format(struct sc_dev *sc, bool src, bool dst);
-void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi);
+void sc_hwset_blend(struct sc_dev *sc, enum sc_blend_op bl_op, bool pre_multi,
+		unsigned char g_alpha);
 void sc_hwset_color_fill(struct sc_dev *sc, unsigned int val);
 void sc_hwset_dith(struct sc_dev *sc, unsigned int val);
 void sc_hwset_csc_coef(struct sc_dev *sc, enum sc_csc_idx idx,
