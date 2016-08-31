@@ -69,6 +69,9 @@ static struct device_attribute sec_battery_attrs[] = {
 #if defined(CONFIG_SAMSUNG_BATTERY_ENG_TEST)
 	SEC_BATTERY_ATTR(test_charge_current),
 #endif
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+    SEC_BATTERY_ATTR(batt_capacity_max),
+#endif
 	SEC_BATTERY_ATTR(batt_inbat_voltage),
 	SEC_BATTERY_ATTR(batt_high_current_usb),
 };
@@ -467,6 +470,32 @@ static bool sec_bat_get_cable_type(
 
 	return ret;
 }
+
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+static void sec_bat_set_charging_status(struct sec_battery_info *battery,
+		int status) {
+	union power_supply_propval value;
+	switch (status) {
+		case POWER_SUPPLY_STATUS_NOT_CHARGING:
+		case POWER_SUPPLY_STATUS_DISCHARGING:
+			if((battery->status == POWER_SUPPLY_STATUS_FULL) ||
+					(battery->capacity == 100)){
+				value.intval = battery->capacity;
+				psy_do_property(battery->pdata->fuelgauge_name, set,
+						POWER_SUPPLY_PROP_CHARGE_FULL, value);
+				/* To get SOC value (NOT raw SOC), need to reset value */
+				value.intval = 0;
+				psy_do_property(battery->pdata->fuelgauge_name, get,
+						POWER_SUPPLY_PROP_CAPACITY, value);
+				battery->capacity = value.intval;
+			}
+			break;
+		default:
+			break;
+	}
+	battery->status = status;
+}
+#endif
 
 static bool sec_bat_battery_cable_check(struct sec_battery_info *battery)
 {
@@ -1521,6 +1550,16 @@ static void sec_bat_do_fullcharged(
 			POWER_SUPPLY_PROP_STATUS, value);
 	}
 
+#if !defined(CONFIG_DISABLE_SAVE_CAPACITY_MAX)
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+	value.intval = battery->capacity;
+#else
+	value.intval = POWER_SUPPLY_TYPE_BATTERY;
+#endif
+	psy_do_property(battery->pdata->fuelgauge_name, set,
+			POWER_SUPPLY_PROP_CHARGE_FULL, value);
+#endif
+
 	/* platform can NOT get information of battery
 	 * because wakeup time is too short to check uevent
 	 * To make sure that target is wakeup if full-charged,
@@ -1556,7 +1595,11 @@ static void sec_bat_get_battery_info(
 				struct sec_battery_info *battery)
 {
 	union power_supply_propval value;
-
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	static struct timespec old_ts;
+	struct timespec c_ts;
+	c_ts = ktime_to_timespec(ktime_get_boottime());
+#endif
 	psy_do_property("sec-fuelgauge", get,
 		POWER_SUPPLY_PROP_VOLTAGE_NOW, value);
 	battery->voltage_now = value.intval;
@@ -1599,13 +1642,21 @@ static void sec_bat_get_battery_info(
 		else
 			battery->capacity = value.intval;
 	}
-#elif defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#elif defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 	/* if the battery status was full, and SOC wasn't 100% yet,
 		then ignore FG SOC, and report (previous SOC +1)% */
 	if (battery->status != POWER_SUPPLY_STATUS_FULL)
 		battery->capacity = value.intval;
-	else if (battery->capacity != 100)
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	else if ((battery->capacity != 100) && ((c_ts.tv_sec - old_ts.tv_sec) >= 30)){
+		old_ts = c_ts;
+#else
+	else if (battery->capacity != 100){
+#endif
 		battery->capacity++;
+		pr_info("%s : forced full-charged sequence for the capacity(%d)\n",
+			__func__, battery->capacity);
+	}
 #else
 	battery->capacity = value.intval;
 #endif
@@ -1997,9 +2048,15 @@ static void sec_bat_cable_work(struct work_struct *work)
 		SEC_BATTERY_CABLE_CHECK_NOINCOMPATIBLECHARGE) &&
 		battery->cable_type == POWER_SUPPLY_TYPE_UNKNOWN)) {
 		if (battery->status == POWER_SUPPLY_STATUS_FULL) {
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+			val.intval = battery->capacity;
+			psy_do_property(battery->pdata->fuelgauge_name, set,
+					POWER_SUPPLY_PROP_CHARGE_FULL, val);
+#else
 			val.intval = POWER_SUPPLY_TYPE_BATTERY;
 			psy_do_property("sec-fuelgauge", set,
 					POWER_SUPPLY_PROP_CHARGE_FULL, val);
+#endif
 			/* To get SOC value (NOT raw SOC), need to reset value */
 			val.intval = 0;
 			psy_do_property("sec-fuelgauge", get,
@@ -2326,6 +2383,18 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 					value.intval);
 		}
 		break;
+#endif
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+#if !defined(CONFIG_DISABLE_SAVE_CAPACITY_MAX)
+	case BATT_CAPACITY_MAX:
+        {
+            union power_supply_propval value;
+            psy_do_property(battery->pdata->fuelgauge_name, get,
+                POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, value);
+            i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", value.intval);
+        }
+		break;
+#endif
 #endif
 	case BATT_INBAT_VOLTAGE:
 		ret = sec_bat_get_inbat_vol_by_adc(battery);
@@ -2687,6 +2756,24 @@ ssize_t sec_bat_store_attrs(
 		}
 		break;
 #endif
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+#if !defined(CONFIG_DISABLE_SAVE_CAPACITY_MAX)
+	case BATT_CAPACITY_MAX:
+		if (sscanf(buf, "%d\n", &x) == 1) {
+			union power_supply_propval value;
+			dev_err(battery->dev,
+				"%s: BATT_CAPACITY_MAX(%d), fg_reset(%d)\n",
+				__func__,  x, fg_reset);
+			if ((x  > 800 && x < 1200) && !fg_reset) {
+				value.intval = x;
+				psy_do_property(battery->pdata->fuelgauge_name, set,
+					POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, value);
+			}
+			ret = count;
+		}
+		break;
+#endif
+#endif
 	case BATT_HIGH_CURRENT_USB:
 		if (sscanf(buf, "%d\n", &x) == 1) {
 			battery->pdata->is_hc_usb = x ? true : false;
@@ -2870,7 +2957,7 @@ static int sec_bat_get_property(struct power_supply *psy,
 						return 0;
 					}
 			}
-#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 			if (battery->status == POWER_SUPPLY_STATUS_FULL &&
 				battery->capacity != 100) {
 				val->intval = POWER_SUPPLY_STATUS_CHARGING;
@@ -2936,7 +3023,7 @@ static int sec_bat_get_property(struct power_supply *psy,
 		val->intval = battery->charging_mode;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 		val->intval = battery->capacity;
 #else
 		/* In full-charged status, SOC is always 100% */
@@ -3220,6 +3307,10 @@ static int __devinit sec_battery_probe(struct platform_device *pdev)
 		       "sec-battery-vbus");
 
 	/* initialization of battery info */
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+    sec_bat_set_charging_status(battery,
+		POWER_SUPPLY_STATUS_DISCHARGING);
+#endif
 	battery->status = POWER_SUPPLY_STATUS_DISCHARGING;
 	battery->health = POWER_SUPPLY_HEALTH_GOOD;
 	battery->present = true;

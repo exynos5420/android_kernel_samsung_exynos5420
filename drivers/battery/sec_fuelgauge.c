@@ -145,12 +145,68 @@ static int sec_fg_get_property(struct power_supply *psy,
 				sec_fg_get_atomic_capacity(fuelgauge, val);
 		}
 		break;
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+    case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
+        val->intval = fuelgauge->capacity_max;
+        break;
+#endif
 	default:
 		return -EINVAL;
 	}
 	return 0;
 }
 
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+static int sec_fg_calculate_dynamic_scale(
+				struct sec_fuelgauge_info *fuelgauge, int capacity)
+{
+	union power_supply_propval raw_soc_val;
+
+	raw_soc_val.intval = SEC_FUELGAUGE_CAPACITY_TYPE_RAW;
+	if (!sec_hal_fg_get_property(fuelgauge->client,
+		POWER_SUPPLY_PROP_CAPACITY,
+		&raw_soc_val))
+		return -EINVAL;
+	raw_soc_val.intval /= 10;
+
+	if (raw_soc_val.intval <
+		fuelgauge->pdata->capacity_max -
+		fuelgauge->pdata->capacity_max_margin) {
+		fuelgauge->capacity_max =
+			fuelgauge->pdata->capacity_max -
+			fuelgauge->pdata->capacity_max_margin;
+		dev_dbg(&fuelgauge->client->dev, "%s: capacity_max (%d)",
+			__func__, fuelgauge->capacity_max);
+	} else {
+		fuelgauge->capacity_max =
+			(raw_soc_val.intval >
+			fuelgauge->pdata->capacity_max +
+			fuelgauge->pdata->capacity_max_margin) ?
+			(fuelgauge->pdata->capacity_max +
+			fuelgauge->pdata->capacity_max_margin) :
+			raw_soc_val.intval;
+		dev_dbg(&fuelgauge->client->dev, "%s: raw soc (%d)",
+			__func__, fuelgauge->capacity_max);
+	}
+
+    if (capacity != 100) {
+		fuelgauge->capacity_max =
+			(fuelgauge->capacity_max * 100 / capacity);
+		fuelgauge->capacity_old = capacity;
+	} else {
+		fuelgauge->capacity_max =
+			(fuelgauge->capacity_max * 99 / 100);
+		fuelgauge->capacity_old = 100;
+	}
+
+	dev_info(&fuelgauge->client->dev, "%s: %d is used for capacity_max\n",
+		__func__, fuelgauge->capacity_max);
+
+	fuelgauge->capacity_old = 100;
+
+	return fuelgauge->capacity_max;
+}
+#else
 static int sec_fg_calculate_dynamic_scale(
 				struct sec_fuelgauge_info *fuelgauge)
 {
@@ -193,6 +249,7 @@ static int sec_fg_calculate_dynamic_scale(
 
 	return fuelgauge->capacity_max;
 }
+#endif
 
 static int sec_fg_set_property(struct power_supply *psy,
 			    enum power_supply_property psp,
@@ -210,7 +267,11 @@ static int sec_fg_set_property(struct power_supply *psy,
 		if (val->intval == POWER_SUPPLY_TYPE_BATTERY) {
 			if (fuelgauge->pdata->capacity_calculation_type &
 				SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE)
-				sec_fg_calculate_dynamic_scale(fuelgauge);
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+                sec_fg_calculate_dynamic_scale(fuelgauge, val->intval);
+#else
+                sec_fg_calculate_dynamic_scale(fuelgauge);
+#endif
 		}
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
@@ -382,8 +443,11 @@ static int __devinit sec_fuelgauge_probe(struct i2c_client *client,
 			POWER_SUPPLY_PROP_CAPACITY, &raw_soc_val);
 	raw_soc_val.intval /= 10;
 	if(raw_soc_val.intval > fuelgauge->pdata->capacity_max)
-		sec_fg_calculate_dynamic_scale(fuelgauge);
-
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+		sec_fg_calculate_dynamic_scale(fuelgauge, 100);
+#else
+        sec_fg_calculate_dynamic_scale(fuelgauge);
+#endif
 	if (!fuelgauge->pdata->fg_gpio_init()) {
 		dev_err(&client->dev,
 			"%s: Failed to Initialize GPIO\n", __func__);
