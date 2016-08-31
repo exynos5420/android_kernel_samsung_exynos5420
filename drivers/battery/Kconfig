@@ -90,6 +90,12 @@ config FUELGAUGE_MAX17050_COULOMB_COUNTING
 	 This mode is for target that consumes high current
 	 like tablet.
 
+config PREVENT_SOC_JUMP
+	tristate "prevent soc jump at full-charged"
+	default n
+	depends on BATTERY_SAMSUNG
+	help
+	 Say Y to prevent soc jump
 
 # Charger
 
@@ -199,6 +205,16 @@ config SAMSUNG_LPM_MODE
 	  This value defined at bootloader.
 	  Before enable this feature,
 	  implemet power off charging in the bootloader.
+
+config DISABLE_SAVE_CAPACITY_MAX
+	bool "Disable to save capacity max in efs"
+	default n
+	depends on BATTERY_SAMSUNG
+	help
+	  Say Y to include support to disable it
+	  capacity_max is saved in /efs/Battery/batt_capacity_max
+	  capacity_max is restored after boot up
+	  You can find the code in healthd
 
 config BATT_TEMP_TMO
        bool "chagall lte tmo model"
