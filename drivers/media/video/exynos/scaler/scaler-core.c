@@ -55,7 +55,7 @@ static struct sc_fmt sc_formats[] = {
 		.bitperpixel	= { 16 },
 		.color		= SC_COLOR_RGB,
 	}, {
-		.name		= "ARGB8888",
+		.name		= "RGBA8888",
 		.pixelformat	= V4L2_PIX_FMT_RGB32,
 		.num_planes	= 1,
 		.num_comp	= 1,
@@ -68,27 +68,6 @@ static struct sc_fmt sc_formats[] = {
 		.num_comp	= 1,
 		.bitperpixel	= { 32 },
 		.color		= SC_COLOR_RGB,
-	}, {
-		.name		= "YUV 4:2:2 packed, YCbYCr",
-		.pixelformat	= V4L2_PIX_FMT_YUYV,
-		.num_planes	= 1,
-		.num_comp	= 1,
-		.bitperpixel	= { 16 },
-		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YUV 4:2:2 packed, CbYCrY",
-		.pixelformat	= V4L2_PIX_FMT_UYVY,
-		.num_planes	= 1,
-		.num_comp	= 1,
-		.bitperpixel	= { 16 },
-		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YUV 4:2:2 packed, YCrYCb",
-		.pixelformat	= V4L2_PIX_FMT_YVYU,
-		.num_planes	= 1,
-		.num_comp	= 1,
-		.bitperpixel	= { 16 },
-		.color		= SC_COLOR_YUV,
 	}, {
 		.name		= "YUV 4:2:0 contiguous 2-planar, Y/CbCr",
 		.pixelformat	= V4L2_PIX_FMT_NV12,
@@ -135,6 +114,63 @@ static struct sc_fmt sc_formats[] = {
 		.bitperpixel	= { 8, 4 },
 		.color		= SC_COLOR_YUV,
 	}, {
+		.name		= "YUV 4:2:0 contiguous 3-planar, Y/Cb/Cr",
+		.pixelformat	= V4L2_PIX_FMT_YUV420,	/* I420 */
+		.num_planes	= 1,
+		.num_comp	= 3,
+		.h_shift	= 1,
+		.v_shift	= 1,
+		.bitperpixel	= { 12 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YVU 4:2:0 contiguous 3-planar, Y/Cr/Cb",
+		.pixelformat	= V4L2_PIX_FMT_YVU420,	/* YV12 */
+		.num_planes	= 1,
+		.num_comp	= 3,
+		.h_shift	= 1,
+		.v_shift	= 1,
+		.bitperpixel	= { 12 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YUV 4:2:0 non-contiguous 3-planar, Y/Cb/Cr",
+		.pixelformat	= V4L2_PIX_FMT_YUV420M,
+		.num_planes	= 3,
+		.num_comp	= 3,
+		.h_shift	= 1,
+		.v_shift	= 1,
+		.bitperpixel	= { 8, 2, 2 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YVU 4:2:0 non-contiguous 3-planar, Y/Cr/Cb",
+		.pixelformat	= V4L2_PIX_FMT_YVU420M,
+		.num_planes	= 3,
+		.num_comp	= 3,
+		.h_shift	= 1,
+		.v_shift	= 1,
+		.bitperpixel	= { 8, 2, 2 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YUV 4:2:2 packed, YCbYCr",
+		.pixelformat	= V4L2_PIX_FMT_YUYV,
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.bitperpixel	= { 16 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YUV 4:2:2 packed, CbYCrY",
+		.pixelformat	= V4L2_PIX_FMT_UYVY,
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.bitperpixel	= { 16 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YUV 4:2:2 packed, YCrYCb",
+		.pixelformat	= V4L2_PIX_FMT_YVYU,
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.bitperpixel	= { 16 },
+		.color		= SC_COLOR_YUV,
+	}, {
 		.name		= "YUV 4:2:2 contiguous 2-planar, Y/CbCr",
 		.pixelformat	= V4L2_PIX_FMT_NV16,
 		.num_planes	= 1,
@@ -147,6 +183,14 @@ static struct sc_fmt sc_formats[] = {
 		.pixelformat	= V4L2_PIX_FMT_NV61,
 		.num_planes	= 1,
 		.num_comp	= 2,
+		.h_shift	= 1,
+		.bitperpixel	= { 16 },
+		.color		= SC_COLOR_YUV,
+	}, {
+		.name		= "YUV 4:2:2 contiguous 3-planar, Y/Cb/Cr",
+		.pixelformat	= V4L2_PIX_FMT_YUV422P,
+		.num_planes	= 1,
+		.num_comp	= 3,
 		.h_shift	= 1,
 		.bitperpixel	= { 16 },
 		.color		= SC_COLOR_YUV,
@@ -164,68 +208,10 @@ static struct sc_fmt sc_formats[] = {
 		.num_comp	= 2,
 		.bitperpixel	= { 24 },
 		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YUV 4:2:0 contiguous 3-planar, Y/Cb/Cr",
-		.pixelformat	= V4L2_PIX_FMT_YUV420,
-		.num_planes	= 1,
-		.num_comp	= 3,
-		.h_shift	= 1,
-		.v_shift	= 1,
-		.bitperpixel	= { 12 },
-		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YUV 4:2:0 non-contiguous 3-planar, Y/Cb/Cr",
-		.pixelformat	= V4L2_PIX_FMT_YUV420M,
-		.num_planes	= 3,
-		.num_comp	= 3,
-		.h_shift	= 1,
-		.v_shift	= 1,
-		.bitperpixel	= {8, 2, 2 },
-		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YVU 4:2:0 contiguous 3-planar, Y/Cb/Cr",
-		.pixelformat	= V4L2_PIX_FMT_YVU420,
-		.num_planes	= 1,
-		.num_comp	= 3,
-		.h_shift	= 1,
-		.v_shift	= 1,
-		.bitperpixel	= { 12 },
-		.color		= SC_COLOR_YUV,
-	}, {
-		.name		= "YVU 4:2:0 non-contiguous 3-planar, Y/Cb/Cr",
-		.pixelformat	= V4L2_PIX_FMT_YVU420M,
-		.num_planes	= 3,
-		.num_comp	= 3,
-		.h_shift	= 1,
-		.v_shift	= 1,
-		.bitperpixel	= {8, 2, 2 },
-		.color		= SC_COLOR_YUV,
 	},
 };
 
 #define SCALE_RATIO(x, y)	((65536 * x) / y)
-
-static struct sc_variant variant_5a = {
-	.limit_input = {
-		.min_w		= 16,
-		.min_h		= 16,
-		.max_w		= 16384,
-		.max_h		= 16384,
-		.align_w	= 0,
-		.align_h	= 0,
-	},
-	.limit_output = {
-		.min_w		= 4,
-		.min_h		= 4,
-		.max_w		= 4096,
-		.max_h		= 4096,
-		.align_w	= 0,
-		.align_h	= 0,
-	},
-	.sc_up_max		= SCALE_RATIO(1, 16),
-	.sc_down_min		= SCALE_RATIO(4, 1),
-	.sc_down_swmin		= SCALE_RATIO(16, 1),
-};
 
 static struct sc_variant variant = {
 	.limit_input = {
@@ -258,14 +244,10 @@ static struct sc_fmt *sc_find_format(struct sc_dev *sc, struct v4l2_format *f)
 	for (i = 0; i < ARRAY_SIZE(sc_formats); ++i) {
 		sc_fmt = &sc_formats[i];
 		if (sc_fmt->pixelformat == f->fmt.pix_mp.pixelformat) {
-			if (sc_ver_is_5a(sc) && (sc_fmt->num_planes == 3 ||
-				sc_fmt->pixelformat == V4L2_PIX_FMT_NV12MT_16X16))
-				return NULL;
 			if (!V4L2_TYPE_IS_OUTPUT(f->type) &&
 				sc_fmt->pixelformat == V4L2_PIX_FMT_NV12MT_16X16)
 				return NULL;
-			if (!sc_ver_is_5a(sc) &&
-				sc_fmt->pixelformat == V4L2_PIX_FMT_RGB32)
+			if (sc_fmt->pixelformat == V4L2_PIX_FMT_RGB32)
 				return NULL;
 			else
 				return &sc_formats[i];
@@ -370,17 +352,10 @@ static int sc_v4l2_try_fmt_mplane(struct file *file, void *fh,
 		return -EINVAL;
 	}
 
-	if (V4L2_TYPE_IS_OUTPUT(f->type)) {
+	if (V4L2_TYPE_IS_OUTPUT(f->type))
 		limit = &ctx->sc_dev->variant->limit_input;
-		/* rotation max source size is 4Kx4K */
-		if (sc_ver_is_5a(ctx->sc_dev) &&
-			(ctx->rotation == 90 || ctx->rotation == 270)) {
-			limit->max_w = 4096;
-			limit->max_h = 4096;
-		}
-	} else {
+	else
 		limit = &ctx->sc_dev->variant->limit_output;
-	}
 
 	/*
 	 * Y_SPAN - should even in interleaved YCbCr422
@@ -531,26 +506,6 @@ static int sc_v4l2_qbuf(struct file *file, void *fh,
 			 struct v4l2_buffer *buf)
 {
 	struct sc_ctx *ctx = fh_to_sc_ctx(fh);
-
-	if (sc_ver_is_5a(ctx->sc_dev)) {
-		/*
-		 * Exynos5410 scaler reads more than source image size
-		 * when rotation and width size not aligned 64 bytes.
-		 * To resolve this, increase plane length.
-		 */
-		if (V4L2_TYPE_IS_OUTPUT(buf->type) &&
-				(ctx->rotation == 90 || ctx->rotation == 270)) {
-			struct sc_frame *frame;
-			frame = ctx_get_frame(ctx, buf->type);
-			if (frame->width % 32) {
-				int i;
-				for (i = 0; i < buf->length; i++)
-					buf->m.planes[i].length += 64;
-				sc_dbg("increase plane length to 0x%x\n",
-						buf->m.planes[0].length);
-			}
-		}
-	}
 
 	return v4l2_m2m_qbuf(file, ctx->m2m_ctx, buf);
 }
@@ -744,23 +699,24 @@ static int sc_ctx_stop_req(struct sc_ctx *ctx)
 static void sc_calc_intbufsize(struct sc_dev *sc, struct sc_int_frame *int_frame)
 {
 	struct sc_frame *frame = &int_frame->frame;
-	unsigned int size;
+	unsigned int pixsize, bytesize;
 
-	size = frame->width * frame->height;
+	pixsize = frame->width * frame->height;
+	bytesize = (pixsize * frame->sc_fmt->bitperpixel[0]) >> 3;
 
 	switch (frame->sc_fmt->num_comp) {
 	case 1:
-		frame->addr.ysize = (size * frame->sc_fmt->bitperpixel[0]) / 8;
+		frame->addr.ysize = bytesize;
 		break;
 	case 2:
 		if (frame->sc_fmt->num_planes == 1) {
-			frame->addr.ysize = size;
-			frame->addr.cbsize = size;
+			frame->addr.ysize = pixsize;
+			frame->addr.cbsize = bytesize - pixsize;
 		} else if (frame->sc_fmt->num_planes == 2) {
 			frame->addr.ysize =
-				(size * frame->sc_fmt->bitperpixel[0]) / 8;
+				(pixsize * frame->sc_fmt->bitperpixel[0]) / 8;
 			frame->addr.cbsize =
-				(size * frame->sc_fmt->bitperpixel[1]) / 8;
+				(pixsize * frame->sc_fmt->bitperpixel[1]) / 8;
 		}
 		break;
 	case 3:
@@ -768,22 +724,21 @@ static void sc_calc_intbufsize(struct sc_dev *sc, struct sc_int_frame *int_frame
 			if (sc_fmt_is_ayv12(frame->sc_fmt->pixelformat)) {
 				unsigned int c_span;
 				c_span = ALIGN(frame->width >> 1, 16);
-				frame->addr.ysize = size;
+				frame->addr.ysize = pixsize;
 				frame->addr.cbsize = c_span * (frame->height >> 1);
 				frame->addr.crsize = frame->addr.cbsize;
 			} else {
-				frame->addr.ysize = size;
-				frame->addr.cbsize =
-				((size * frame->sc_fmt->bitperpixel[0]) / 8 - size) / 2;
+				frame->addr.ysize = pixsize;
+				frame->addr.cbsize = (bytesize - pixsize) / 2;
 				frame->addr.crsize = frame->addr.cbsize;
 			}
 		} else if (frame->sc_fmt->num_planes == 3) {
 			frame->addr.ysize =
-				(size * frame->sc_fmt->bitperpixel[0]) / 8;
+				(pixsize * frame->sc_fmt->bitperpixel[0]) / 8;
 			frame->addr.cbsize =
-				(size * frame->sc_fmt->bitperpixel[1]) / 8;
+				(pixsize * frame->sc_fmt->bitperpixel[1]) / 8;
 			frame->addr.crsize =
-				(size * frame->sc_fmt->bitperpixel[2]) / 8;
+				(pixsize * frame->sc_fmt->bitperpixel[2]) / 8;
 		} else {
 			dev_err(sc->dev, "Please check the num of comp\n");
 		}
@@ -796,18 +751,59 @@ static void sc_calc_intbufsize(struct sc_dev *sc, struct sc_int_frame *int_frame
 	memcpy(&int_frame->src_addr, &frame->addr, sizeof(int_frame->src_addr));
 	memcpy(&int_frame->dst_addr, &frame->addr, sizeof(int_frame->dst_addr));
 }
+
 extern struct ion_device *ion_exynos;
+
+static void free_intermediate_frame(struct sc_ctx *ctx)
+{
+
+	if (ctx->i_frame == NULL)
+		return;
+
+	if (!ctx->i_frame->handle[0])
+		return;
+
+	ion_free(ctx->i_frame->client, ctx->i_frame->handle[0]);
+
+	if (ctx->i_frame->handle[1])
+		ion_free(ctx->i_frame->client, ctx->i_frame->handle[1]);
+	if (ctx->i_frame->handle[2])
+		ion_free(ctx->i_frame->client, ctx->i_frame->handle[2]);
+
+	if (ctx->i_frame->src_addr.y)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.y);
+	if (ctx->i_frame->src_addr.cb)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.cb);
+	if (ctx->i_frame->src_addr.cr)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.cr);
+	if (ctx->i_frame->dst_addr.y)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.y);
+	if (ctx->i_frame->dst_addr.cb)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.cb);
+	if (ctx->i_frame->dst_addr.cr)
+		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.cr);
+
+	memset(&ctx->i_frame->handle, 0, sizeof(struct ion_handle *) * 3);
+	memset(&ctx->i_frame->src_addr, 0, sizeof(ctx->i_frame->src_addr));
+	memset(&ctx->i_frame->dst_addr, 0, sizeof(ctx->i_frame->dst_addr));
+}
+
+static void destroy_intermediate_frame(struct sc_ctx *ctx)
+{
+	if (ctx->i_frame) {
+		free_intermediate_frame(ctx);
+		ion_client_destroy(ctx->i_frame->client);
+		kfree(ctx->i_frame);
+		ctx->i_frame = NULL;
+		clear_bit(CTX_INT_FRAME, &ctx->flags);
+	}
+}
 
 static bool initialize_initermediate_frame(struct sc_ctx *ctx)
 {
-	int i;
 	struct sc_frame *frame;
-	size_t imagesize = 0;
 	struct sc_dev *sc = ctx->sc_dev;
 	struct sg_table *sgt;
-
-	if (ctx->i_frame->cookie != NULL)
-		return true;
 
 	frame = &ctx->i_frame->frame;
 
@@ -815,22 +811,15 @@ static bool initialize_initermediate_frame(struct sc_ctx *ctx)
 	frame->crop.left = 0;
 	frame->width = frame->crop.width;
 	frame->height = frame->crop.height;
-	for (i = 0; i < frame->sc_fmt->num_planes; i++)
-		imagesize += frame->sc_fmt->bitperpixel[i];
 
-	imagesize *= frame->crop.width;
-	imagesize /= 8;
-	imagesize *= frame->crop.height;
-
-	ctx->i_frame->client = ion_client_create(ion_exynos, "scaler-int");
-	if (IS_ERR(ctx->i_frame->client)) {
-		dev_err(sc->dev,
-			"Failed to create ION client for intermediate buffer"
-			"(err %ld)\n",
-			PTR_ERR(ctx->i_frame->client));
-		ctx->i_frame->client = NULL;
-		return false;
-	}
+	/*
+	 * Check if intermeidate frame is already initialized by a previous
+	 * frame. If it is already initialized, intermediate buffer is no longer
+	 * needed to be initialized because image setting is never changed
+	 * while streaming continues.
+	 */
+	if (ctx->i_frame->handle[0])
+		return true;
 
 	sc_calc_intbufsize(sc, ctx->i_frame);
 
@@ -964,8 +953,9 @@ static bool initialize_initermediate_frame(struct sc_ctx *ctx)
 	}
 
 	return true;
+
 err_ion_alloc:
-	/* allocated resources are freed in free_intermediate_frame() */
+	free_intermediate_frame(ctx);
 	return false;
 }
 
@@ -979,43 +969,148 @@ static bool allocate_intermediate_frame(struct sc_ctx *ctx)
 			return false;
 		}
 
-		memcpy(&ctx->i_frame->frame, &ctx->d_frame,
-			sizeof(ctx->d_frame));
+		ctx->i_frame->client = ion_client_create(ion_exynos,
+							"scaler-int");
+		if (IS_ERR(ctx->i_frame->client)) {
+			dev_err(ctx->sc_dev->dev,
+			"Failed to create ION client for int.buf.(err %ld)\n",
+				PTR_ERR(ctx->i_frame->client));
+			ctx->i_frame->client = NULL;
+			kfree(ctx->i_frame);
+			ctx->i_frame = NULL;
+			return false;
+		}
 	}
 
 	return true;
 }
 
-static void free_intermediate_frame(struct sc_ctx *ctx)
+static int sc_find_scaling_ratio(struct sc_ctx *ctx)
 {
-	if (ctx->i_frame == NULL)
-		return;
+	__s32 src_width, src_height;
+	unsigned int h_ratio, v_ratio;
+	struct sc_dev *sc = ctx->sc_dev;
 
-	if (ctx->i_frame->handle[0])
-		ion_free(ctx->i_frame->client, ctx->i_frame->handle[0]);
-	if (ctx->i_frame->handle[1])
-		ion_free(ctx->i_frame->client, ctx->i_frame->handle[1]);
-	if (ctx->i_frame->handle[2])
-		ion_free(ctx->i_frame->client, ctx->i_frame->handle[2]);
+	if ((ctx->s_frame.crop.width == 0) ||
+			(ctx->d_frame.crop.width == 0))
+		return 0; /* s_fmt is not complete */
 
-	if (ctx->i_frame->src_addr.y)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.y);
-	if (ctx->i_frame->src_addr.cb)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.cb);
-	if (ctx->i_frame->src_addr.cr)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->src_addr.cr);
-	if (ctx->i_frame->dst_addr.y)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.y);
-	if (ctx->i_frame->dst_addr.cb)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.cb);
-	if (ctx->i_frame->dst_addr.cr)
-		iovmm_unmap(ctx->sc_dev->dev, ctx->i_frame->dst_addr.cr);
+	src_width = ctx->s_frame.crop.width;
+	src_height = ctx->s_frame.crop.height;
+	if ((ctx->rotation % 180) == 90)
+		swap(src_width, src_height);
 
-	ion_client_destroy(ctx->i_frame->client);
+	h_ratio = SCALE_RATIO(src_width, ctx->d_frame.crop.width);
+	v_ratio = SCALE_RATIO(src_height, ctx->d_frame.crop.height);
 
-	kfree(ctx->i_frame);
-	ctx->i_frame = NULL;
-	clear_bit(CTX_INT_FRAME, &ctx->flags);
+	if ((h_ratio > sc->variant->sc_down_swmin) ||
+			(h_ratio < sc->variant->sc_up_max)) {
+		dev_err(sc->dev, "Width scaling is out of range(%d -> %d)\n",
+			src_width, ctx->d_frame.crop.width);
+		return -EINVAL;
+	}
+
+	if ((v_ratio > sc->variant->sc_down_swmin) ||
+			(v_ratio < sc->variant->sc_up_max)) {
+		dev_err(sc->dev, "Height scaling is out of range(%d -> %d)\n",
+			src_height, ctx->d_frame.crop.height);
+		return -EINVAL;
+	}
+
+	if ((h_ratio > sc->variant->sc_down_min) ||
+				(v_ratio > sc->variant->sc_down_min)) {
+		struct v4l2_rect crop = ctx->d_frame.crop;
+		struct sc_size_limit *limit;
+		unsigned int halign = 0, walign = 0;
+		__u32 pixfmt;
+		struct sc_fmt *target_fmt = ctx->d_frame.sc_fmt;
+
+		if (!allocate_intermediate_frame(ctx))
+			return -ENOMEM;
+
+		limit = &sc->variant->limit_input;
+		if (v_ratio > sc->variant->sc_down_min) {
+			crop.height = ((src_height + 7) / 8) * 2;
+			if (crop.height < limit->min_h) {
+				if (SCALE_RATIO(limit->min_h,
+					ctx->d_frame.crop.height) >
+						sc->variant->sc_down_min) {
+					dev_err(sc->dev,
+					"Failed height scale down %d -> %d\n",
+					src_height,
+					ctx->d_frame.crop.height);
+
+					free_intermediate_frame(ctx);
+					return -EINVAL;
+				}
+
+				crop.height = limit->min_h;
+			}
+		}
+
+		if (h_ratio > sc->variant->sc_down_min) {
+			crop.width = ((src_width + 7) / 8) * 2;
+			if (crop.width < limit->min_w) {
+				if (SCALE_RATIO(limit->min_w,
+					ctx->d_frame.crop.width) >
+						sc->variant->sc_down_min) {
+					dev_err(sc->dev,
+					"Failed width scale down %d -> %d\n",
+					src_width,
+					ctx->d_frame.crop.width);
+
+					free_intermediate_frame(ctx);
+					return -EINVAL;
+				}
+
+				crop.width = limit->min_w;
+			}
+		}
+
+		pixfmt = target_fmt->pixelformat;
+
+		if (sc_fmt_is_yuv422(pixfmt)) {
+			walign = 1;
+		} else if (sc_fmt_is_yuv420(pixfmt)) {
+			walign = 1;
+			halign = 1;
+		}
+
+		limit = &sc->variant->limit_output;
+		v4l_bound_align_image(&crop.width, limit->min_w, limit->max_w,
+				walign, &crop.height, limit->min_h,
+				limit->max_h, halign, 0);
+
+		h_ratio = SCALE_RATIO(src_width, crop.width);
+		v_ratio = SCALE_RATIO(src_height, crop.height);
+
+		limit = &sc->variant->limit_output;
+		v4l_bound_align_image(&crop.width, limit->min_w, limit->max_w,
+				walign, &crop.height, limit->min_h,
+				limit->max_h, halign, 0);
+
+		h_ratio = SCALE_RATIO(src_width, crop.width);
+		v_ratio = SCALE_RATIO(src_height, crop.height);
+
+		if ((ctx->i_frame->frame.sc_fmt != ctx->d_frame.sc_fmt) ||
+		    memcmp(&crop, &ctx->i_frame->frame.crop, sizeof(crop))) {
+			memcpy(&ctx->i_frame->frame, &ctx->d_frame,
+					sizeof(ctx->d_frame));
+			memcpy(&ctx->i_frame->frame.crop, &crop, sizeof(crop));
+			free_intermediate_frame(ctx);
+			if (!initialize_initermediate_frame(ctx)) {
+				free_intermediate_frame(ctx);
+				return -ENOMEM;
+			}
+		}
+	} else {
+		destroy_intermediate_frame(ctx);
+	}
+
+	ctx->h_ratio = h_ratio;
+	ctx->v_ratio = v_ratio;
+
+	return 0;
 }
 
 static int sc_vb2_queue_setup(struct vb2_queue *vq,
@@ -1025,40 +1120,25 @@ static int sc_vb2_queue_setup(struct vb2_queue *vq,
 {
 	struct sc_ctx *ctx = vb2_get_drv_priv(vq);
 	struct sc_frame *frame;
+	int ret;
 	int i;
 
 	frame = ctx_get_frame(ctx, vq->type);
 	if (IS_ERR(frame))
 		return PTR_ERR(frame);
 
-	if (V4L2_TYPE_IS_OUTPUT(vq->type))
-		free_intermediate_frame(ctx);
-
 	/* Get number of planes from format_list in driver */
 	*num_planes = frame->sc_fmt->num_planes;
 	for (i = 0; i < frame->sc_fmt->num_planes; i++) {
 		sizes[i] = frame->bytesused[i];
 		allocators[i] = ctx->sc_dev->alloc_ctx;
-
-		if (sc_ver_is_5a(ctx->sc_dev)) {
-			/*
-			 * Exynos5410 scaler reads more than source image size
-			 * when width size is not aligned 64 bytes and rotation.
-			 * To resolve this, increase plane length.
-			 */
-			if (V4L2_TYPE_IS_OUTPUT(vq->type) &&
-				(ctx->rotation == 90 || ctx->rotation == 270)) {
-				if (frame->width % 32) {
-					sizes[i] += 64;
-					sc_dbg("increase sizes[%d] to 0x%x\n",
-							i, sizes[i]);
-				}
-			}
-		}
 	}
-	vb2_queue_init(vq);
 
-	return 0;
+	ret = sc_find_scaling_ratio(ctx);
+	if (ret)
+		return ret;
+
+	return vb2_queue_init(vq);
 }
 
 static int sc_vb2_buf_prepare(struct vb2_buffer *vb)
@@ -1295,9 +1375,6 @@ static int sc_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_2D_BLEND_OP:
 		ctx->bl_op = ctrl->val;
 		break;
-	case V4L2_CID_2D_COLOR_FILL:
-		ctx->color_fill = ctrl->val;
-		break;
 	case V4L2_CID_2D_FMT_PREMULTI:
 		ctx->pre_multi = ctrl->val;
 		break;
@@ -1336,7 +1413,7 @@ static const struct v4l2_ctrl_config sc_custom_ctrl[] = {
 		.flags = V4L2_CTRL_FLAG_SLIDER,
 		.step = 1,
 		.max = 255,
-		.def = 0,
+		.def = 255,
 	}, {
 		.ops = &sc_ctrl_ops,
 		.id = V4L2_CID_2D_BLEND_OP,
@@ -1345,14 +1422,6 @@ static const struct v4l2_ctrl_config sc_custom_ctrl[] = {
 		.flags = V4L2_CTRL_FLAG_SLIDER,
 		.step = 1,
 		.max = BL_OP_ADD,
-		.def = 0,
-	}, {
-		.ops = &sc_ctrl_ops,
-		.id = V4L2_CID_2D_COLOR_FILL,
-		.name = "set color fill",
-		.type = V4L2_CTRL_TYPE_BITMASK,
-		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.max = 0xffffffff,
 		.def = 0,
 	}, {
 		.ops = &sc_ctrl_ops,
@@ -1423,7 +1492,7 @@ static int sc_open(struct file *file)
 	struct sc_ctx *ctx;
 	int ret;
 
-	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
+	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
 	if (!ctx) {
 		dev_err(sc->dev, "no memory for open context\n");
 		return -ENOMEM;
@@ -1489,6 +1558,7 @@ static int sc_release(struct file *file)
 
 	sc_dbg("refcnt= %d", atomic_read(&sc->m2m.in_use));
 
+	destroy_intermediate_frame(ctx);
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
 	pm_runtime_put(sc->dev);
@@ -1532,22 +1602,39 @@ static const struct v4l2_file_operations sc_v4l2_fops = {
 
 static void sc_clock_gating(struct sc_dev *sc, enum sc_clk_status status)
 {
-	if (status == SC_CLK_ON) {
-		atomic_inc(&sc->clk_cnt);
-		if (sc->init_clocks)
-			sc->init_clocks(sc->clk_private);
-		clk_enable(sc->aclk);
-		if (sc->pclk)
-			clk_enable(sc->pclk);
-	} else if (status == SC_CLK_OFF) {
-		int clk_cnt = atomic_dec_return(&sc->clk_cnt);
-		if (clk_cnt < 0) {
-			dev_err(sc->dev, "scaler clock control is wrong!!\n");
-			atomic_set(&sc->clk_cnt, 0);
-		} else {
-			clk_disable(sc->aclk);
-			if (sc->pclk)
-				clk_disable(sc->pclk);
+	if (SCID_IS_RH(sc->platid)) {
+		int i;
+		if (status == SC_CLK_ON) {
+			for (i = 0; i < sc->clksel_cnt; i++)
+				clk_set_parent(sc->clk_chld[i], sc->clk_parn[i]);
+
+			atomic_inc(&sc->clk_cnt);
+			clk_enable(sc->aclk);
+			dev_dbg(sc->dev, "clock enabled\n");
+		} else if (status == SC_CLK_OFF) {
+			int clk_cnt = atomic_dec_return(&sc->clk_cnt);
+			if (clk_cnt < 0) {
+				dev_err(sc->dev, "scaler clock control is wrong!!\n");
+				atomic_set(&sc->clk_cnt, 0);
+			} else {
+				clk_disable(sc->aclk);
+				dev_dbg(sc->dev, "clock disabled\n");
+			}
+		}
+	} else {
+		if (status == SC_CLK_ON) {
+			atomic_inc(&sc->clk_cnt);
+			if (sc->init_clocks)
+				sc->init_clocks(sc->clk_private);
+			clk_enable(sc->aclk);
+		} else if (status == SC_CLK_OFF) {
+			int clk_cnt = atomic_dec_return(&sc->clk_cnt);
+			if (clk_cnt < 0) {
+				dev_err(sc->dev, "scaler clock control is wrong!!\n");
+				atomic_set(&sc->clk_cnt, 0);
+			} else {
+				clk_disable(sc->aclk);
+			}
 		}
 	}
 }
@@ -1585,7 +1672,6 @@ static void sc_watchdog(unsigned long arg)
 
 	sc_dbg("timeout watchdog\n");
 	if (atomic_read(&sc->wdt.cnt) >= SC_WDT_CNT) {
-		sc_clock_gating(sc, SC_CLK_OFF);
 
 		sc_dbg("wakeup blocked process\n");
 		atomic_set(&sc->wdt.cnt, 0);
@@ -1624,7 +1710,7 @@ static void sc_watchdog(unsigned long arg)
 static void sc_set_sysmmu_pbuf(struct sc_dev *sc,
 			struct sc_frame *s_frame, struct sc_frame *d_frame)
 {
-	struct sysmmu_prefbuf pbuf[3];
+	struct sysmmu_prefbuf pbuf[6];
 	int idx = 0;
 	unsigned long pbufcfg = SYSMMU_PBUFCFG_TLB_UPDATE |
 			SYSMMU_PBUFCFG_ASCENDING | SYSMMU_PBUFCFG_PREFETCH;
@@ -1646,9 +1732,7 @@ static void sc_set_sysmmu_pbuf(struct sc_dev *sc,
 		pbuf[idx].config = pbufcfg | SYSMMU_PBUFCFG_READ;
 		idx++;
 	}
-	exynos_sysmmu_set_pbuf(sc->dev, idx, pbuf);
 
-	idx = 0;
 	pbuf[idx].base = d_frame->addr.y;
 	pbuf[idx].size = d_frame->addr.ysize;
 	pbuf[idx].config = pbufcfg | SYSMMU_PBUFCFG_WRITE;
@@ -1781,6 +1865,7 @@ static bool sc_process_2nd_stage(struct sc_dev *sc, struct sc_ctx *ctx)
 	sc_hwset_start(sc);
 
 	clear_bit(CTX_INT_FRAME, &ctx->flags);
+
 	return true;
 }
 
@@ -1803,15 +1888,12 @@ static irqreturn_t sc_irq_handler(int irq, void *priv)
 
 	ctx = v4l2_m2m_get_curr_priv(sc->m2m.m2m_dev);
 	if (!ctx || !ctx->m2m_ctx) {
-		sc_clock_gating(sc, SC_CLK_OFF);
 		dev_err(sc->dev, "current ctx is NULL\n");
 		goto isr_unlock;
 	}
 
-	if(sc_process_2nd_stage(sc, ctx))
+	if (sc_process_2nd_stage(sc, ctx))
 		goto isr_unlock;
-
-	sc_clock_gating(sc, SC_CLK_OFF);
 
 	clear_bit(CTX_RUN, &ctx->flags);
 
@@ -1852,10 +1934,11 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 		struct sc_frame *frame)
 {
 	int ret;
-	unsigned int size;
+	unsigned int pixsize, bytesize;
 	void *cookie;
 
-	size = frame->width * frame->height;
+	pixsize = frame->width * frame->height;
+	bytesize = (pixsize * frame->sc_fmt->bitperpixel[0]) >> 3;
 
 	cookie = vb2_plane_cookie(vb2buf, 0);
 	if (!cookie)
@@ -1867,17 +1950,18 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 
 	frame->addr.cb = 0;
 	frame->addr.cr = 0;
+	frame->addr.cbsize = 0;
+	frame->addr.crsize = 0;
 
 	switch (frame->sc_fmt->num_comp) {
-	case 1:
-		frame->addr.ysize = size * frame->sc_fmt->bitperpixel[0];
+	case 1: /* rgb, yuyv */
+		frame->addr.ysize = bytesize;
 		break;
 	case 2:
 		if (frame->sc_fmt->num_planes == 1) {
-			frame->addr.cb = frame->addr.y + size;
-			frame->addr.ysize = size;
-			frame->addr.cbsize =
-				size * frame->sc_fmt->bitperpixel[0] - size;
+			frame->addr.cb = frame->addr.y + pixsize;
+			frame->addr.ysize = pixsize;
+			frame->addr.cbsize = bytesize - pixsize;
 		} else if (frame->sc_fmt->num_planes == 2) {
 			cookie = vb2_plane_cookie(vb2buf, 1);
 			if (!cookie)
@@ -1887,9 +1971,9 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 			if (ret != 0)
 				return ret;
 			frame->addr.ysize =
-				size * frame->sc_fmt->bitperpixel[0];
+				pixsize * frame->sc_fmt->bitperpixel[0] >> 3;
 			frame->addr.cbsize =
-				size * frame->sc_fmt->bitperpixel[1];
+				pixsize * frame->sc_fmt->bitperpixel[1] >> 3;
 		}
 		break;
 	case 3:
@@ -1897,18 +1981,17 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 			if (sc_fmt_is_ayv12(frame->sc_fmt->pixelformat)) {
 				unsigned int c_span;
 				c_span = ALIGN(frame->width >> 1, 16);
-				frame->addr.ysize = size;
+				frame->addr.ysize = pixsize;
 				frame->addr.cbsize = c_span * (frame->height >> 1);
 				frame->addr.crsize = frame->addr.cbsize;
-				frame->addr.cb = frame->addr.y + size;
+				frame->addr.cb = frame->addr.y + pixsize;
 				frame->addr.cr = frame->addr.cb + frame->addr.cbsize;
 			} else {
-				frame->addr.cb = frame->addr.y + size;
-				frame->addr.cr = frame->addr.cb + (size >> 2);
-				frame->addr.ysize = size;
-				frame->addr.cbsize =
-				(((size * frame->sc_fmt->bitperpixel[0]) >> 3) - size) / 2;
+				frame->addr.ysize = pixsize;
+				frame->addr.cbsize = (bytesize - pixsize) / 2;
 				frame->addr.crsize = frame->addr.cbsize;
+				frame->addr.cb = frame->addr.y + pixsize;
+				frame->addr.cr = frame->addr.cb + frame->addr.cbsize;
 			}
 		} else if (frame->sc_fmt->num_planes == 3) {
 			cookie = vb2_plane_cookie(vb2buf, 1);
@@ -1924,11 +2007,11 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 			if (ret != 0)
 				return ret;
 			frame->addr.ysize =
-				size * frame->sc_fmt->bitperpixel[0];
+				pixsize * frame->sc_fmt->bitperpixel[0] >> 3;
 			frame->addr.cbsize =
-				size * frame->sc_fmt->bitperpixel[1];
+				pixsize * frame->sc_fmt->bitperpixel[1] >> 3;
 			frame->addr.crsize =
-				size * frame->sc_fmt->bitperpixel[2];
+				pixsize * frame->sc_fmt->bitperpixel[2] >> 3;
 		} else {
 			dev_err(sc->dev, "Please check the num of comp\n");
 		}
@@ -1944,131 +2027,23 @@ static int sc_get_bufaddr(struct sc_dev *sc, struct vb2_buffer *vb2buf,
 		frame->addr.cr = t_cb;
 	}
 
-	sc_dbg("y addr 0x%x Cb 0x%x Cr 0x%x\n",
-			frame->addr.y, frame->addr.cb, frame->addr.cr);
+	sc_dbg("y addr 0x%x y size 0x%x\n", frame->addr.y, frame->addr.ysize);
+	sc_dbg("cb addr 0x%x cb size 0x%x\n", frame->addr.cb, frame->addr.cbsize);
+	sc_dbg("cr addr 0x%x cr size 0x%x\n", frame->addr.cr, frame->addr.crsize);
 
 	return 0;
 }
 
 static void sc_set_dithering(struct sc_ctx *ctx)
 {
-	struct sc_frame *s_frame, *d_frame;
 	struct sc_dev *sc = ctx->sc_dev;
 	unsigned int val = 0;
 
-	if (sc_ver_is_5a(sc)) {
-		s_frame = &ctx->s_frame;
-		d_frame = &ctx->d_frame;
-
-		if (s_frame->sc_fmt->pixelformat != d_frame->sc_fmt->pixelformat
-			&& sc_fmt_is_rgb(d_frame->sc_fmt->color) && ctx->dith) {
-			switch (d_frame->sc_fmt->pixelformat) {
-			case V4L2_PIX_FMT_RGB32:
-			case V4L2_PIX_FMT_BGR32:
-				val = sc_dith_val(SC_DITH_8BIT, SC_DITH_8BIT,
-						SC_DITH_8BIT);
-				break;
-			case V4L2_PIX_FMT_RGB565:
-				val = sc_dith_val(SC_DITH_5BIT, SC_DITH_6BIT,
-						SC_DITH_5BIT);
-				break;
-			case V4L2_PIX_FMT_RGB555X:
-				val = sc_dith_val(SC_DITH_5BIT, SC_DITH_5BIT,
-						SC_DITH_5BIT);
-				break;
-			case V4L2_PIX_FMT_RGB444:
-				val = sc_dith_val(SC_DITH_4BIT, SC_DITH_4BIT,
-						SC_DITH_4BIT);
-				break;
-			default:
-				val = sc_dith_val(SC_DITH_8BIT, SC_DITH_8BIT,
-						SC_DITH_8BIT);
-				break;
-			}
-		}
-	} else {
-		if (ctx->dith)
-			val = sc_dith_val(1, 1, 1);
-	}
+	if (ctx->dith)
+		val = sc_dith_val(1, 1, 1);
 
 	sc_dbg("dither value is 0x%x\n", val);
 	sc_hwset_dith(sc, val);
-}
-
-static bool sc_init_scaling_ratio(struct sc_ctx *ctx)
-{
-	__s32 src_width, src_height;
-	unsigned int h_ratio, v_ratio;
-	struct sc_dev *sc = ctx->sc_dev;
-
-	src_width = ctx->s_frame.crop.width;
-	src_height = ctx->s_frame.crop.height;
-	if ((ctx->rotation % 180) == 90)
-		swap(src_width, src_height);
-
-	h_ratio = SCALE_RATIO(src_width, ctx->d_frame.crop.width);
-	v_ratio = SCALE_RATIO(src_height, ctx->d_frame.crop.height);
-
-	if ((h_ratio > sc->variant->sc_down_swmin) ||
-			(h_ratio < sc->variant->sc_up_max)) {
-		dev_err(sc->dev, "Width scaling is out of range(%d -> %d)\n",
-			src_width, ctx->d_frame.crop.width);
-		return false;
-	}
-
-	if ((v_ratio > sc->variant->sc_down_swmin) ||
-			(v_ratio < sc->variant->sc_up_max)) {
-		dev_err(sc->dev, "Height scaling is out of range(%d -> %d)\n",
-			src_height, ctx->d_frame.crop.height);
-		return false;
-	}
-
-	if ((h_ratio > sc->variant->sc_down_min) ||
-				(v_ratio > sc->variant->sc_down_min)) {
-		struct v4l2_rect *crop;
-		struct sc_size_limit *limit;
-		unsigned int halign = 0, walign = 0;
-		__u32 pixfmt;
-
-		if (!allocate_intermediate_frame(ctx))
-			return false;
-
-		crop = &ctx->i_frame->frame.crop;
-		pixfmt = ctx->i_frame->frame.sc_fmt->pixelformat;
-
-		if (v_ratio > sc->variant->sc_down_min)
-			crop->height = ((src_height + 7) / 8) * 2;
-
-		if (h_ratio > sc->variant->sc_down_min)
-			crop->width = ((src_width + 7) / 8) * 2;
-
-		if (sc_fmt_is_yuv422(pixfmt)) {
-			walign = 1;
-		} else if (sc_fmt_is_yuv420(pixfmt)) {
-			walign = 1;
-			halign = 1;
-		}
-
-		limit = &sc->variant->limit_output;
-		v4l_bound_align_image(&crop->width, limit->min_w, limit->max_w,
-				walign, &crop->height, limit->min_h,
-				limit->max_h, halign, 0);
-
-
-		h_ratio = SCALE_RATIO(src_width, crop->width);
-		v_ratio = SCALE_RATIO(src_height, crop->height);
-
-		if (!initialize_initermediate_frame(ctx)) {
-			free_intermediate_frame(ctx);
-			return false;
-		}
-
-		set_bit(CTX_INT_FRAME, &ctx->flags);
-	}
-
-	sc_set_scale_ratio(sc, h_ratio, v_ratio);
-
-	return true;
 }
 
 static void sc_m2m_device_run(void *priv)
@@ -2100,23 +2075,11 @@ static void sc_m2m_device_run(void *priv)
 	sc_get_bufaddr(sc, v4l2_m2m_next_src_buf(ctx->m2m_ctx), s_frame);
 	sc_get_bufaddr(sc, v4l2_m2m_next_dst_buf(ctx->m2m_ctx), d_frame);
 
-	sc_clock_gating(sc, SC_CLK_ON);
-
 	sc_hwset_soft_reset(sc);
 
-	if (!sc_init_scaling_ratio(ctx)) {
-		/* invalid scaling ratio: aborting the current task */
-		struct vb2_buffer *src_vb, *dst_vb;
-
-		sc_clock_gating(sc, SC_CLK_OFF);
-
-		src_vb = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
-		dst_vb = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
-		v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_ERROR);
-		v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_ERROR);
-		v4l2_m2m_job_finish(sc->m2m.m2m_dev, ctx->m2m_ctx);
-		return;
-	}
+	sc_set_scale_ratio(sc, ctx->h_ratio, ctx->v_ratio);
+	if (ctx->i_frame)
+		set_bit(CTX_INT_FRAME, &ctx->flags);
 
 	if (test_bit(CTX_INT_FRAME, &ctx->flags))
 		d_frame = &ctx->i_frame->frame;
@@ -2141,9 +2104,7 @@ static void sc_m2m_device_run(void *priv)
 	sc_set_dithering(ctx);
 
 	if (ctx->bl_op)
-		sc_hwset_blend(sc, ctx->bl_op, ctx->pre_multi);
-	if (ctx->color_fill)
-		sc_hwset_color_fill(sc, ctx->color_fill);
+		sc_hwset_blend(sc, ctx->bl_op, ctx->pre_multi, ctx->g_alpha);
 
 	sc_hwset_flip_rotation(sc, ctx->flip, ctx->rotation);
 	sc_hwset_int_en(sc, 1);
@@ -2235,6 +2196,7 @@ err_v4l2_dev:
 	return ret;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int sc_suspend(struct device *dev)
 {
 	struct sc_dev *sc = dev_get_drvdata(dev);
@@ -2258,9 +2220,31 @@ static int sc_resume(struct device *dev)
 
 	return 0;
 }
+#endif
+
+#ifdef CONFIG_PM_RUNTIME
+static int sc_runtime_suspend(struct device *dev)
+{
+	struct sc_dev *sc = dev_get_drvdata(dev);
+
+	sc_clock_gating(sc, SC_CLK_OFF);
+
+	return 0;
+}
+
+static int sc_runtime_resume(struct device *dev)
+{
+	struct sc_dev *sc = dev_get_drvdata(dev);
+
+	sc_clock_gating(sc, SC_CLK_ON);
+
+	return 0;
+}
+#endif
 
 static const struct dev_pm_ops sc_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(sc_suspend, sc_resume)
+	SET_RUNTIME_PM_OPS(sc_runtime_suspend, sc_runtime_resume, NULL)
 };
 
 static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
@@ -2310,6 +2294,85 @@ static int sc_sysmmu_fault_handler(struct device *dev, const char *mmuname,
 	return -EFAULT;
 }
 
+static int sc_clk_get(struct sc_dev *sc)
+{
+	struct exynos_scaler_platdata *pdata;
+
+	pdata = (to_platform_device(sc->dev))->dev.platform_data;
+
+	sc->aclk = clk_get(sc->dev, "mscl");
+	if (IS_ERR(sc->aclk)) {
+		dev_err(sc->dev, "failed to get clk for scaler\n");
+		return -ENXIO;
+	}
+
+	sc->setup_clocks = pdata->setup_clocks;
+	sc->init_clocks  = pdata->init_clocks;
+	sc->clean_clocks = pdata->clean_clocks;
+
+	if (sc->setup_clocks) {
+		sc->clk_private = sc->setup_clocks();
+		if (IS_ERR(sc->clk_private)) {
+			clk_put(sc->aclk);
+			dev_err(sc->dev, "Failed to setup clock hierarch\n");
+			return -ENXIO;
+		}
+	}
+	return 0;
+}
+
+static void sc_clk_put(struct sc_dev *sc)
+{
+	clk_put(sc->aclk);
+	if (sc->clean_clocks)
+		sc->clean_clocks(sc->clk_private);
+}
+
+static int sc_clk_get_new(struct sc_dev *sc)
+{
+	int i;
+	struct exynos_scaler_platdata *pdata;
+
+	pdata = to_platform_device(sc->dev)->dev.platform_data;
+
+	sc->aclk = clk_get(sc->dev, pdata->gate_clk);
+	if (IS_ERR(sc->aclk)) {
+		dev_err(sc->dev, "failed to get gate clk\n");
+		return -ENXIO;
+	}
+
+	for (i = 0; i < SC_MAX_CLKSEL; i++) {
+		if (pdata->clk[i] && pdata->clksrc[i]) {
+			sc->clk_chld[i] = clk_get(sc->dev, pdata->clk[i]);
+			if (IS_ERR(sc->clk_chld[i])) {
+				dev_err(sc->dev, "failed to get clk for %s\n",
+						pdata->clk[i]);
+				return -ENXIO;
+			}
+			sc->clk_parn[i] = clk_get(sc->dev, pdata->clksrc[i]);
+			if (IS_ERR(sc->clk_parn[i])) {
+				dev_err(sc->dev, "failed to get clk for %s\n",
+						pdata->clksrc[i]);
+				return -ENXIO;
+			}
+			sc->clksel_cnt++;
+		}
+	}
+
+	return 0;
+}
+
+static void sc_clk_put_new(struct sc_dev *sc)
+{
+	int i;
+
+	clk_put(sc->aclk);
+	for (i = 0; i < sc->clksel_cnt; i++) {
+		clk_put(sc->clk_chld[i]);
+		clk_put(sc->clk_parn[i]);
+	}
+}
+
 static int sc_probe(struct platform_device *pdev)
 {
 	struct exynos_scaler_platdata *pdata;
@@ -2338,6 +2401,7 @@ static int sc_probe(struct platform_device *pdev)
 	sc->dev = &pdev->dev;
 	sc->id = pdev->id;
 	pdata = pdev->dev.platform_data;
+	sc->platid = pdata->platid;
 
 	spin_lock_init(&sc->slock);
 	mutex_init(&sc->lock);
@@ -2371,45 +2435,13 @@ static int sc_probe(struct platform_device *pdev)
 	atomic_set(&sc->wdt.cnt, 0);
 	setup_timer(&sc->wdt.timer, sc_watchdog, (unsigned long)sc);
 
-	if (pdata->use_pclk) {
-		sc->aclk = clk_get(sc->dev, "sc-aclk");
-		if (IS_ERR(sc->aclk)) {
-			dev_err(&pdev->dev, "failed to get aclk for scaler\n");
-			ret = PTR_ERR(sc->aclk);
-			goto err_clk;
-		}
+	if (SCID_IS_RH(sc->platid))
+		ret = sc_clk_get_new(sc);
+	else
+		ret = sc_clk_get(sc);
 
-		sc->pclk = clk_get(sc->dev, "sc-pclk");
-		if (IS_ERR(sc->pclk)) {
-			dev_err(&pdev->dev, "failed to get pclk for scaler\n");
-			clk_put(sc->aclk);
-			ret = PTR_ERR(sc->pclk);
-			goto err_clk;
-		}
-	} else {
-		sc->aclk = clk_get(sc->dev, "mscl");
-		if (IS_ERR(sc->aclk)) {
-			dev_err(&pdev->dev, "failed to get clk for scaler\n");
-			ret = PTR_ERR(sc->aclk);
-			goto err_clk;
-		}
-	}
-
-	sc->setup_clocks = pdata->setup_clocks;
-	sc->init_clocks  = pdata->init_clocks;
-	sc->clean_clocks = pdata->clean_clocks;
-
-	if (sc->setup_clocks) {
-		sc->clk_private = sc->setup_clocks();
-		if (IS_ERR(sc->clk_private)) {
-			clk_put(sc->aclk);
-			if (sc->pclk)
-				clk_put(sc->pclk);
-
-			dev_err(&pdev->dev, "Failed to setup clock hierarch\n");
-			goto err_clk;
-		}
-	}
+	if (ret)
+		return ret;
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 	sc->vb2 = &sc_vb2_cma;
@@ -2429,18 +2461,18 @@ static int sc_probe(struct platform_device *pdev)
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	sc->vb2->resume(sc->alloc_ctx);
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
-
+#else
 	sc_clock_gating(sc, SC_CLK_ON);
+#endif
+
 	pm_runtime_get_sync(sc->dev);
 	sc->ver = sc_hwget_version(sc);
+	dev_info(&pdev->dev, "scaler version is 0x%08x\n", sc->ver);
 	pm_runtime_put_sync(sc->dev);
-	sc_clock_gating(sc, SC_CLK_OFF);
 
-	if (sc_ver_is_5a(sc))
-		sc->variant = &variant_5a;
-	else
-		sc->variant = &variant;
+	sc->variant = &variant;
 
 	ret = sc_register_m2m_device(sc);
 	if (ret) {
@@ -2457,9 +2489,10 @@ static int sc_probe(struct platform_device *pdev)
 	return 0;
 
 err_init:
-	clk_put(sc->aclk);
-	if (sc->pclk)
-		clk_put(sc->pclk);
+	if (SCID_IS_RH(sc->platid))
+		sc_clk_put_new(sc);
+	else
+		sc_clk_put(sc);
 err_clk:
 	devm_free_irq(sc->dev, sc->irq, sc);
 err:
@@ -2478,12 +2511,10 @@ static int sc_remove(struct platform_device *pdev)
 
 	sc->vb2->suspend(sc->alloc_ctx);
 
-	clk_put(sc->aclk);
-	if (sc->pclk)
-		clk_put(sc->pclk);
-
-	if (sc->clean_clocks)
-		sc->clean_clocks(sc->clk_private);
+	if (SCID_IS_RH(sc->platid))
+		sc_clk_put_new(sc);
+	else
+		sc_clk_put(sc);
 
 	if (timer_pending(&sc->wdt.timer))
 		del_timer(&sc->wdt.timer);
