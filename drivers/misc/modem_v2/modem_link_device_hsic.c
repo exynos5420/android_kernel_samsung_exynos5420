@@ -1055,7 +1055,10 @@ static int xmm626x_gpio_usb_resume(struct link_pm_data *pm_data)
 		mdelay(5);
 
 	if (!get_hostwake(pm_data)) /* Hostwakeup timeout */
+	{	
+		set_slavewake(pm_data, 0);
 		return -ETIMEDOUT;
+	}
 exit:
 	return 0;
 }

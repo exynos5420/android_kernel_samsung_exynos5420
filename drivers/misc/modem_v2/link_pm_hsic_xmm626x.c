@@ -237,6 +237,11 @@ static int xmm626x_gpio_l2tol0_resume(struct xmm626x_linkpm_data *pmdata)
 
 	/* CP initiated L2->L0 */
 	if (get_hostwake(pmdata)) {
+		if(!pmdata->usb_ld)
+		{
+			mif_err("link device not found\n");
+			return -ENODEV;
+		}
 		pmdata->usb_ld->resumeby = HSIC_RESUMEBY_CP;
 		mif_debug("CP initiated L2->L0\n");
 		goto exit;
@@ -244,6 +249,11 @@ static int xmm626x_gpio_l2tol0_resume(struct xmm626x_linkpm_data *pmdata)
 
 	/* AP initiated L2->L0 */
 	set_slavewake(pmdata->pdata, 1);
+	if(!pmdata->usb_ld)
+	{
+		mif_err("link device not found\n");
+		return -ENODEV;
+	}
 	pmdata->usb_ld->resumeby = HSIC_RESUMEBY_AP;
 
 	while (spin-- && !get_hostwake(pmdata))
@@ -389,6 +399,9 @@ static int xmm626x_linkpm_usb_notify(struct notifier_block *nfb,
 				dev_get_drvdata(&udev->dev);
 			if(pmdata->usb_ld)
 				mif_info("ld : %s\n", pmdata->usb_ld->ld.name);
+			else
+				mif_err("link device not found\n");
+
 			break;
 		case MIF_BOOT_DEVICE:
 			mif_info("boot dev connected\n");
@@ -595,7 +608,15 @@ static void link_pm_runtime_work(struct work_struct *work)
 	int delay;
 
 	mif_debug("rpm_status(%d)\n", dev->power.runtime_status);
-
+	if(!pmdata->usb_ld)
+	{
+		mif_err("link device not found\n");
+		return;
+	}
+	if (pmdata->usb_ld->ld.mc->phone_state != STATE_ONLINE) {
+		mif_err("modem status is not STATE_ONLINE\n");
+		return;
+	}
 	switch (dev->power.runtime_status) {
 	case RPM_SUSPENDED:
 		if (pmdata->resume_req)
