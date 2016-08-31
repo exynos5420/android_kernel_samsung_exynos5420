@@ -959,6 +959,10 @@ static int gs_write_room(struct tty_struct *tty)
 	unsigned long	flags;
 	int		room = 0;
 
+	if(!port){
+		printk(KERN_ERR "usb: port is NULL !!\n");
+		return 0;
+	}
 	spin_lock_irqsave(&port->port_lock, flags);
 	if (port->port_usb)
 		room = gs_buf_space_avail(&port->port_write_buf);

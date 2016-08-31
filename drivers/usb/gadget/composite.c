@@ -1254,8 +1254,13 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 #ifdef CONFIG_USB_GADGET_SUPERSPEED
 		if(gadget->speed >= USB_SPEED_SUPER) {
 			if(get_host_os_type() == 0) {
+#ifdef CONFIG_V1A
+				pr_err("usb: schedule_work thread\n");
+				schedule_work(&cdev->redriver_work);
+#else
 				usb30_redriver_en(0);
 				pr_err("usb: %s redriver disabled \n",__func__);
+#endif
 			}
 		}
 #endif
@@ -1515,6 +1520,24 @@ static u8 override_id(struct usb_composite_dev *cdev, u8 *desc)
 	return *desc;
 }
 
+#ifdef CONFIG_V1A
+static void composite_redriver_work(struct work_struct *data)
+{
+	struct usb_composite_dev	*cdev =  container_of(data, struct usb_composite_dev, redriver_work);
+	pr_err("usb: %s initiate redriver disable \n",__func__);
+	usb30_redriver_en(0);
+	//
+	// Wait for 300ms for redriver to disable.
+	//
+	msleep(300);
+	pr_err("usb: %s redriver disabled \n",__func__);
+	usb_gadget_vbus_disconnect(cdev->gadget);
+	msleep(300);
+	usb_gadget_vbus_connect(cdev->gadget);
+	pr_err("usb: %s reconnect the driver \n",__func__);
+}
+#endif
+
 static int composite_bind(struct usb_gadget *gadget)
 {
 	struct usb_composite_dev	*cdev;
@@ -1614,6 +1637,9 @@ static int composite_bind(struct usb_gadget *gadget)
 		goto fail;
 
 	INFO(cdev, "%s ready\n", composite->name);
+#ifdef CONFIG_V1A
+	INIT_WORK(&cdev->redriver_work, composite_redriver_work);
+#endif
 	return 0;
 
 fail:
