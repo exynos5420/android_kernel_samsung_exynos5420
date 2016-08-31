@@ -1,7 +1,7 @@
 /*
  * Linux cfg80211 driver
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2015, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfg80211.h 519153 2014-12-05 05:10:07Z $
+ * $Id: wl_cfg80211.h 557250 2015-05-18 08:52:07Z $
  */
 
 #ifndef _wl_cfg80211_h_
@@ -175,6 +175,9 @@ do {									\
 #define WL_CHANNEL_SYNC_RETRY 	5
 #define WL_INVALID 		-1
 
+#ifdef DHD_LOSSLESS_ROAMING
+#define WL_ROAM_TIMEOUT_MS	1000 /* Roam timeout */
+#endif
 /* Bring down SCB Timeout to 20secs from 60secs default */
 #ifndef WL_SCB_TIMEOUT
 #define WL_SCB_TIMEOUT 20
@@ -403,33 +406,42 @@ struct wl_pmk_list {
 };
 
 
-#define ESCAN_BUF_SIZE (64 * 1024)
+#define ESCAN_BUF_SIZE (128 * 1024)
 
 struct escan_info {
 	u32 escan_state;
-#if defined(STATIC_WL_PRIV_STRUCT)
+#ifdef STATIC_WL_PRIV_STRUCT
 #ifndef CONFIG_DHD_USE_STATIC_BUF
 #error STATIC_WL_PRIV_STRUCT should be used with CONFIG_DHD_USE_STATIC_BUF
 #endif /* CONFIG_DHD_USE_STATIC_BUF */
-#if defined(CUSTOMER_HW4) && defined(DUAL_ESCAN_RESULT_BUFFER)
+#ifdef DUAL_ESCAN_RESULT_BUFFER
 	u8 *escan_buf[2];
 #else
 	u8 *escan_buf;
-#endif /* CUSTOMER_HW4 && DUAL_ESCAN_RESULT_BUFFER */
+#endif /* DUAL_ESCAN_RESULT_BUFFER */
 #else
-#if defined(CUSTOMER_HW4) && defined(DUAL_ESCAN_RESULT_BUFFER)
+#ifdef DUAL_ESCAN_RESULT_BUFFER
 	u8 escan_buf[2][ESCAN_BUF_SIZE];
 #else
 	u8 escan_buf[ESCAN_BUF_SIZE];
-#endif /* CUSTOMER_HW4 && DUAL_ESCAN_RESULT_BUFFER */
+#endif /* DUAL_ESCAN_RESULT_BUFFER */
 #endif /* STATIC_WL_PRIV_STRUCT */
-#if defined(CUSTOMER_HW4) && defined(DUAL_ESCAN_RESULT_BUFFER)
+#ifdef DUAL_ESCAN_RESULT_BUFFER
 	u8 cur_sync_id;
 	u8 escan_type[2];
-#endif /* CUSTOMER_HW4 && DUAL_ESCAN_RESULT_BUFFER */
+#endif /* DUAL_ESCAN_RESULT_BUFFER */
 	struct wiphy *wiphy;
 	struct net_device *ndev;
 };
+
+#ifdef ESCAN_BUF_OVERFLOW_MGMT
+#define BUF_OVERFLOW_MGMT_COUNT 3
+typedef struct {
+	int RSSI;
+	int length;
+	struct ether_addr BSSID;
+} removal_element_t;
+#endif /* ESCAN_BUF_OVERFLOW_MGMT */
 
 struct ap_info {
 /* Structure to hold WPS, WPA IEs for a AP */
@@ -595,8 +607,6 @@ struct bcm_cfg80211 {
 	wlc_ssid_t hostapd_ssid;
 #ifdef WL11U
 	bool wl11u;
-	u8 iw_ie[IW_IES_MAX_BUF_LEN];
-	u32 iw_ie_len;
 #endif /* WL11U */
 	bool sched_scan_running;	/* scheduled scan req status */
 #ifdef WL_SCHED_SCAN
@@ -618,13 +628,25 @@ struct bcm_cfg80211 {
 	u32 aibss_txfail_pid;
 	u32 aibss_txfail_seq;
 #endif /* WLAIBSS */
+#ifdef WL_RELMCAST
 	u32 rmc_event_pid;
 	u32 rmc_event_seq;
+#endif /* WL_RELMCAST */
 	bool roam_offload;
 #ifdef WLFBT
 	uint8 fbt_key[FBT_KEYLEN];
 #endif
 	bool need_wait_afrx;
+#if defined(CUSTOMER_HW4) && defined(WL_CFG80211_P2P_DEV_IF)
+	bool down_disc_if;
+#endif /* CUSTOMER_HW4 && WL_CFG80211_P2P_DEV_IF */
+#ifdef QOS_MAP_SET
+	uint8	 *up_table;	/* user priority table, size is UP_TABLE_MAX */
+#endif /* QOS_MAP_SET */
+	struct ether_addr last_roamed_addr;
+#ifdef DHD_LOSSLESS_ROAMING
+	struct timer_list roam_timeout;   /* Timer for catch roam timeout */
+#endif
 };
 
 
@@ -893,6 +915,28 @@ wl_get_netinfo_by_netdev(struct bcm_cfg80211 *cfg, struct net_device *ndev)
 	((wl_cfgp2p_find_wpsie((u8 *)_sme->ie, _sme->ie_len) != NULL) && \
 	 (!_sme->crypto.n_ciphers_pairwise) && \
 	 (!_sme->crypto.cipher_group))
+
+#ifdef WLFBT
+#if defined(WLAN_AKM_SUITE_FT_8021X) && defined(WLAN_AKM_SUITE_FT_PSK)
+#define IS_AKM_SUITE_FT(sec) (sec->wpa_auth == WLAN_AKM_SUITE_FT_8021X || \
+	sec->wpa_auth == WLAN_AKM_SUITE_FT_PSK)
+#elif defined(WLAN_AKM_SUITE_FT_8021X)
+#define IS_AKM_SUITE_FT(sec) (sec->wpa_auth == WLAN_AKM_SUITE_FT_8021X)
+#elif defined(WLAN_AKM_SUITE_FT_PSK)
+#define IS_AKM_SUITE_FT(sec) (sec->wpa_auth == WLAN_AKM_SUITE_FT_PSK)
+#else
+#define IS_AKM_SUITE_FT(sec) false
+#endif /* WLAN_AKM_SUITE_FT_8021X && WLAN_AKM_SUITE_FT_PSK */
+#else
+#define IS_AKM_SUITE_FT(sec) false
+#endif /* WLFBT */
+
+#ifdef BCMCCX
+#define IS_AKM_SUITE_CCKM(sec) (sec->wpa_auth == WLAN_AKM_SUITE_CCKM)
+#else
+#define IS_AKM_SUITE_CCKM(sec) false
+#endif /* BCMCCX */
+
 extern s32 wl_cfg80211_attach(struct net_device *ndev, void *context);
 extern s32 wl_cfg80211_attach_post(struct net_device *ndev);
 extern void wl_cfg80211_detach(void *para);
@@ -960,6 +1004,7 @@ extern s32 wl_cfg80211_apply_eventbuffer(struct net_device *ndev,
 	struct bcm_cfg80211 *cfg, wl_eventmsg_buf_t *ev);
 extern void get_primary_mac(struct bcm_cfg80211 *cfg, struct ether_addr *mac);
 extern void wl_cfg80211_update_power_mode(struct net_device *dev);
+extern void wl_terminate_event_handler(void);
 #define SCAN_BUF_CNT	2
 #define SCAN_BUF_NEXT	1
 #define WL_SCANTYPE_LEGACY	0x1
@@ -1019,7 +1064,9 @@ extern s32 wl_cfg80211_ibss_vsie_delete(struct net_device *dev);
 #ifdef WLAIBSS
 extern void wl_cfg80211_set_txfail_pid(int pid);
 #endif /* WLAIBSS */
+#ifdef WL_RELMCAST
 extern void wl_cfg80211_set_rmc_pid(int pid);
+#endif /* WL_RELMCAST */
 
 #ifdef WLFBT
 extern void wl_cfg80211_get_fbt_key(uint8 *key);
@@ -1036,5 +1083,13 @@ struct net_device *wl_cfg80211_get_remain_on_channel_ndev(struct bcm_cfg80211 *c
 #endif /* WL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST */
 
 extern int wl_cfg80211_get_ioctl_version(void);
+
+#ifdef WL_CFG80211_P2P_DEV_IF
+extern void wl_cfg80211_del_p2p_wdev(void);
+#endif /* WL_CFG80211_P2P_DEV_IF */
+
+#ifdef QOS_MAP_SET
+extern int8 *wl_get_up_table(void);
+#endif /* QOS_MAP_SET */
 
 #endif				/* _wl_cfg80211_h_ */
