@@ -491,6 +491,7 @@ static void bmg160_work_func(struct work_struct *work)
 
 static void bmg160_set_enable(struct bmg160_p *data, int enable)
 {
+	data->old_timestamp = 0LL;
 	if (enable == ON) {
 		hrtimer_start(&data->gyro_timer, data->poll_delay,
 		      HRTIMER_MODE_REL);
@@ -526,7 +527,6 @@ static ssize_t bmg160_enable_store(struct device *dev,
 
 	if (enable) {
 		if (pre_enable == OFF) {
-			data->old_timestamp = 0LL;
 			bmg160_open_calibration(data);
 			bmg160_set_mode(data, BMG160_MODE_NORMAL);
 			usleep_range(30000, 31000);

@@ -34,7 +34,10 @@
 
 /* Rx buffer size. i.e ST,TMPS,H1X,H1Y,H1Z*/
 #define SENSOR_DATA_SIZE		8
-#define AK8963C_DEFAULT_DELAY		200000000LL
+#define AK8963C_DEFAULT_DELAY       200000000LL
+#define AK8963C_MIN_DELAY           10000000LL
+#define BASE_DELAY					40000000LL
+#define MOD_DELAY					1000000LL
 
 #define I2C_M_WR                        0 /* for i2c Write */
 #define I2c_M_RD                        1 /* for i2c Read */
@@ -73,6 +76,7 @@ struct ak8963c_p {
 	int irq;
 	int m_rst_n;
 	int m_sensor_int;
+	u64 old_timestamp;
 };
 
 static int ak8963c_i2c_read(struct i2c_client *client,
@@ -154,6 +158,7 @@ static int ak8963c_ecs_set_mode_power_down(struct ak8963c_p *data)
 	unsigned char reg;
 	int ret;
 
+	data->old_timestamp = 0LL;
 	reg = AK8963C_CNTL1_POWER_DOWN;
 	ret = ak8963c_i2c_write(data->client, AK8963C_REG_CNTL1, reg);
 
@@ -262,17 +267,53 @@ static int ak8963c_read_mag_xyz(struct ak8963c_p *data, struct ak8963c_v *mag)
 
 static void ak8963c_work_func(struct work_struct *work)
 {
+	int ret;
 	struct ak8963c_v mag;
+	struct timespec ts;
+	int time_hi, time_lo;
+	u64 timestamp_new;
 	struct ak8963c_p *data = container_of((struct delayed_work *)work,
 			struct ak8963c_p, work);
 	unsigned long delay = nsecs_to_jiffies(atomic_read(&data->delay));
+	unsigned long pdelay = atomic_read(&data->delay);
 
-	ak8963c_read_mag_xyz(data, &mag);
+	ts = ktime_to_timespec(ktime_get_boottime());
+	timestamp_new = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+
+	ret = ak8963c_read_mag_xyz(data, &mag);
+
+	if(ret >= 0){
+
+	if (data->old_timestamp != 0 &&
+	((timestamp_new - data->old_timestamp)*10 > (pdelay) * 15)) {
+			u64 shift_timestamp = pdelay >> 1;
+			u64 timestamp = 0ULL;
+
+			for (timestamp = data->old_timestamp + pdelay; timestamp < timestamp_new - shift_timestamp; timestamp+=pdelay){
+				time_hi = (int)((timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+				time_lo = (int)(timestamp & TIME_LO_MASK);
+
+				input_report_rel(data->input, REL_X, mag.x);
+				input_report_rel(data->input, REL_Y, mag.y);
+				input_report_rel(data->input, REL_Z, mag.z);
+				input_report_rel(data->input, REL_RX, time_hi);
+				input_report_rel(data->input, REL_RY, time_lo);
+				input_sync(data->input);
+				data->magdata = mag;
+		}
+	}
+	time_hi = (int)((timestamp_new & TIME_HI_MASK) >> TIME_HI_SHIFT);
+	time_lo = (int)(timestamp_new & TIME_LO_MASK);
+
 	input_report_rel(data->input, REL_X, mag.x);
 	input_report_rel(data->input, REL_Y, mag.y);
 	input_report_rel(data->input, REL_Z, mag.z);
+	input_report_rel(data->input, REL_RX, time_hi);
+	input_report_rel(data->input, REL_RY, time_lo);
 	input_sync(data->input);
 	data->magdata = mag;
+	data->old_timestamp = timestamp_new;
+	}
 
 	schedule_delayed_work(&data->work, delay);
 }
@@ -283,6 +324,7 @@ static void ak8963c_set_enable(struct ak8963c_p *data, int enable)
 
 	if (enable) {
 		if (pre_enable == 0) {
+			data->old_timestamp = 0LL;
 			ak8963c_ecs_set_mode(data, AK8963C_CNTL1_SNG_MEASURE);
 			schedule_delayed_work(&data->work,
 				nsecs_to_jiffies(atomic_read(&data->delay)));
@@ -346,6 +388,14 @@ static ssize_t ak8963c_delay_store(struct device *dev,
 		pr_err("[SENSOR]: %s - Invalid Argument\n", __func__);
 		return ret;
 	}
+
+	if (delay > AK8963C_DEFAULT_DELAY)
+		delay = AK8963C_DEFAULT_DELAY;
+	else if(delay < AK8963C_MIN_DELAY)
+		delay = AK8963C_MIN_DELAY;
+
+	if (delay <= BASE_DELAY)
+		delay = delay - MOD_DELAY;
 
 	atomic_set(&data->delay, (int64_t)delay);
 	pr_info("[SENSOR]: %s - poll_delay = %lld\n", __func__, delay);
@@ -814,6 +864,8 @@ static int ak8963c_input_init(struct ak8963c_p *data)
 	input_set_capability(dev, EV_REL, REL_X);
 	input_set_capability(dev, EV_REL, REL_Y);
 	input_set_capability(dev, EV_REL, REL_Z);
+	input_set_capability(dev, EV_REL, REL_RX); /* time_hi */
+	input_set_capability(dev, EV_REL, REL_RY); /* time_lo */
 	input_set_drvdata(dev, data);
 
 	ret = input_register_device(dev);
@@ -983,6 +1035,7 @@ static int __devexit ak8963c_remove(struct i2c_client *client)
 static int ak8963c_suspend(struct device *dev)
 {
 	struct ak8963c_p *data = dev_get_drvdata(dev);
+	data->old_timestamp = 0ULL;
 
 	if (atomic_read(&data->enable) == 1) {
 		ak8963c_ecs_set_mode(data, AK8963C_CNTL1_POWER_DOWN);
