@@ -1020,6 +1020,31 @@ static int sec_chg_set_property(struct power_supply *psy,
 					set_charging_current = SIOP_CHARGING_LIMIT_CURRENT;
 			}
 		}
+
+		if (charger->pdata->full_check_type_2nd == SEC_BATTERY_FULLCHARGED_CHGPSY) {
+			union power_supply_propval chg_mode;
+			psy_do_property("battery", get, POWER_SUPPLY_PROP_CHARGE_NOW, chg_mode);
+
+			if (chg_mode.intval == SEC_BATTERY_CHARGING_2ND) {
+				max77803_set_charger_state(charger, 0);
+				max77803_set_topoff_current(charger,
+							    charger->pdata->charging_current[
+								    charger->cable_type].full_check_current_2nd,
+							    (70 * 60));
+			} else {
+				max77803_set_topoff_current(charger,
+							    charger->pdata->charging_current[
+								    charger->cable_type].full_check_current_1st,
+							    (70 * 60));
+			}
+		} else {
+			max77803_set_topoff_current(charger,
+				charger->pdata->charging_current[
+				val->intval].full_check_current_1st,
+				charger->pdata->charging_current[
+				val->intval].full_check_current_2nd);
+		}
+
 		max77803_set_charger_state(charger, charger->is_charging);
 		/* if battery full, only disable charging  */
 		if ((charger->status == POWER_SUPPLY_STATUS_CHARGING) ||
@@ -1035,11 +1060,6 @@ static int sec_chg_set_property(struct power_supply *psy,
 			else
 				max77803_set_input_current(charger,
 					set_charging_current_max);
-			max77803_set_topoff_current(charger,
-				charger->pdata->charging_current[
-				val->intval].full_check_current_1st,
-				charger->pdata->charging_current[
-				val->intval].full_check_current_2nd);
 		}
 		break;
 	/* val->intval : input charging current */
