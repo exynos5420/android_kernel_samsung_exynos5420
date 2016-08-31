@@ -81,9 +81,11 @@ enum {
 
 enum {
 	ADC_GND			= 0x00,
+	ADC_UNSUPPORTED_CHG	= 0x01,
 	ADC_SEND_END_KEY	= 0x01,
 	ADC_REMOTE_S12		= 0x0d,
 	ADC_SMARTDOCK		= 0x10, /* 0x10000 40.2K ohm */
+	ADC_HMT			= 0x11, /* 0x10001 49.9K ohm */
 	ADC_AUDIODOCK		= 0x12, /* 0x10010 64.9K ohm */
 	ADC_LANHUB		= 0x13, /* 0x10011 80.07K ohm */
 	ADC_PS_CABLE		= 0x14,	/* 0x10100 102K ohm */
@@ -714,6 +716,8 @@ static ssize_t max77803_muic_show_device(struct device *dev,
 		return sprintf(buf, "Smart Dock+USB\n");
 	case CABLE_TYPE_AUDIODOCK_MUIC:
 		return sprintf(buf, "Audio Dock\n");
+	case CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC:
+		return sprintf(buf, "Charging\n");
 	default:
 		break;
 	}
@@ -2340,6 +2344,13 @@ static int max77803_muic_handle_attach(struct max77803_muic_info *info,
 
 		}
 		break;
+	case CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC:
+		/*
+		 * cable_type comes from filter_dev
+		 * We will set "adc" as a specific value for charging
+		 */
+		adc = ADC_UNSUPPORTED_CHG;
+		break;
 	default:
 		break;
 	}
@@ -2580,9 +2591,9 @@ static int max77803_muic_handle_attach(struct max77803_muic_info *info,
 	case (ADC_CEA936ATYPE1_CHG - 1):
 		if (vbvolt) {
 			dev_info(info->dev, "%s LIKE TA\n", __func__);
-			info->cable_type = CABLE_TYPE_TA_MUIC;
-			ret = max77803_muic_set_charging_type(info,
-						false);
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
+
+			ret = max77803_muic_set_charging_type(info, false);
 			if (ret)
 				info->cable_type = CABLE_TYPE_NONE_MUIC;
 
@@ -2634,6 +2645,13 @@ static int max77803_muic_handle_detach(struct max77803_muic_info *info, int irq)
 		dev_info(info->dev, "%s: duplicated(NONE)\n", __func__);
 		return 0;
 	}
+
+#if defined(CONFIG_MUIC_MAX77888_SUPPORT_PS_CABLE)
+	/* Enable Charger Detection */
+	ret = max77888_muic_set_chgdeten(info, true);
+	if (ret)
+		pr_err("%s fail to enable chgdet\n", __func__);
+#endif
 
 #if defined(CONFIG_MUIC_MAX77888_ONESHOT)
 	/* CH will use the oneshot mode */
@@ -2830,9 +2848,6 @@ static int max77803_muic_handle_detach(struct max77803_muic_info *info, int irq)
 		if (ret)
 			pr_err("%s fail to set chg type\n", __func__);
 
-		ret = max77888_muic_set_chgdeten(info, true);
-		if (ret)
-			pr_err("%s fail to enable chgdet\n", __func__);
 		break;
 #endif	/* CONFIG_MUIC_MAX77888_SUPPORT_PS_CABLE */
 	case CABLE_TYPE_MMDOCK_MUIC:
@@ -2851,6 +2866,14 @@ static int max77803_muic_handle_detach(struct max77803_muic_info *info, int irq)
 
 		if (mdata->dock_cb)
 			mdata->dock_cb(MAX77803_MUIC_DOCK_DETACHED);
+		break;
+	case CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC:
+		dev_info(info->dev, "%s: UNSUPPORTED Charging\n", __func__);
+		info->cable_type = CABLE_TYPE_NONE_MUIC;
+
+		ret = max77803_muic_set_charging_type(info, false);
+		if (ret)
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
 		break;
 	case CABLE_TYPE_UNKNOWN_MUIC:
 		dev_info(info->dev, "%s: UNKNOWN\n", __func__);
@@ -2906,26 +2929,46 @@ static int max77803_muic_filter_dev(struct max77803_muic_info *info,
 
 	case ADC_SEND_END_KEY ... ADC_REMOTE_S12:			/* 0x01 ~ 0x0D */
 	/* we will charge the device when vbus is coming */
-		if (vbvolt != 0)
+		if (vbvolt) {
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
 			intr = INT_ATTACH;
+		}
 
 		break;
 
 	case (ADC_REMOTE_S12 + 1) ... (ADC_SMARTDOCK - 1):		/* 0x0E ~ 0x0F */
+		if (vbvolt) {
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
+			intr = INT_ATTACH;
+		}
 		break;
 
 	case ADC_SMARTDOCK:						/* 0x10 */
 #if defined(CONFIG_MUIC_MAX77803_SUPPORT_SMART_DOCK)
 		intr = INT_ATTACH;
+#else
+		if (vbvolt) {
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
+			intr = INT_ATTACH;
+		}
 #endif /* CONFIG_MUIC_MAX77803_SUPPORT_SMART_DOCK */
 		break;
 
-	case (ADC_SMARTDOCK + 1):					/* 0x11 */
+	case ADC_HMT:							/* 0x11 */
+		if (vbvolt) {
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
+			intr = INT_ATTACH;
+		}
 		break;
 
 	case ADC_AUDIODOCK:						/* 0x12 */
 #if defined(CONFIG_MUIC_MAX77803_SUPPORT_OTG_AUDIO_DOCK)
 		intr = INT_ATTACH;
+#else
+		if (vbvolt) {
+			info->cable_type = CABLE_TYPE_UNSUPPORTED_ID_VB_MUIC;
+			intr = INT_ATTACH;
+		}
 #endif /* CONFIG_MUIC_MAX77803_SUPPORT_OTG_AUDIO_DOCK */
 		break;
 

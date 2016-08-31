@@ -161,6 +161,7 @@ struct max77803_muic_info {
 #ifdef CONFIG_EXTCON
 	struct extcon_dev	*edev;
 #endif
+	bool			rustproof_on;
 };
 
 static int if_muic_info;
@@ -178,7 +179,7 @@ static int get_if_pmic_inifo(char *str)
 	get_option(&str, &if_muic_info);
 	switch_sel = if_muic_info & 0x0f;
 	if_pmic_rev = (if_muic_info & 0xf0) >> 4;
-	pr_info("%s %s: switch_sel: %x if_pmic_rev:%x\n",
+	pr_info("%s %s: switch_sel: 0x%03x if_pmic_rev:%x\n",
 		__FILE__, __func__, switch_sel, if_pmic_rev);
 	return if_muic_info;
 }
@@ -386,7 +387,7 @@ static int max77803_muic_set_chgdeten(struct max77803_muic_info *info,
 static int max77803_muic_set_comp2_comn1_pass2
 	(struct max77803_muic_info *info, int type, int path)
 {
-	/* type 0 == usb, type 1 == uart */
+	/* type 0 == usb, type 1 == uart type 10 == OPEN */
 	u8 cntl1_val, cntl1_msk;
 	int ret = 0;
 	int val;
@@ -461,6 +462,9 @@ static int max77803_muic_set_comp2_comn1_pass2
 			return -EINVAL;
 		}
 	}
+	else if (type == 10) {
+		val = MAX77803_MUIC_CTRL1_BIN_0_000;
+	}
 	else {
 		dev_err(info->dev, "func: %s invalid path type(%d)\n"
 			, __func__, type);
@@ -512,8 +516,14 @@ static int max77803_muic_set_uart_path_pass2
 	switch (info->cable_type) {
 	case CABLE_TYPE_JIG_UART_OFF_MUIC:
 	case CABLE_TYPE_JIG_UART_OFF_VB_MUIC:
-		ret = max77803_muic_set_comp2_comn1_pass2
-			(info, 1/*uart*/, path);
+		if (info->rustproof_on) {
+			ret = max77803_muic_set_comp2_comn1_pass2
+						(info, 10/*open*/, path);
+			pr_info("%s: Good bye -R.Proof\n", __func__);
+		} else {
+			ret = max77803_muic_set_comp2_comn1_pass2
+						(info, 1/*uart*/, path);
+		}
 		break;
 	default:
 		pr_info("%s:%s JIG UART OFF isn't connected,"
@@ -697,6 +707,44 @@ static ssize_t max77803_muic_set_manualsw(struct device *dev,
 #endif
 	} else
 		dev_warn(info->dev, "%s: Wrong command\n", __func__);
+
+	return count;
+}
+
+static ssize_t max77803_muic_show_uart_en(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct max77803_muic_info *info = dev_get_drvdata(dev);
+
+	if (!info->rustproof_on) {
+		pr_info("%s: UART ENABLE\n", __func__);
+		return sprintf(buf, "1\n");
+	}
+
+	pr_info("%s: UART DISABLE", __func__);
+	return sprintf(buf, "0\n");
+}
+
+static ssize_t max77803_muic_set_uart_en(struct device *dev,
+					  struct device_attribute *attr,
+					  const char *buf, size_t count)
+{
+	struct max77803_muic_info *info = dev_get_drvdata(dev);
+
+#if defined(CONFIG_MUIC_RUSTPROOF_ON_USER) && !defined(CONFIG_SEC_FACTORY)
+	if (!strncasecmp(buf, "1", 1)) {
+		info->rustproof_on = false;
+	} else if (!strncasecmp(buf, "0", 1)) {
+		info->rustproof_on = true;
+	} else {
+		pr_warn("%s: invalid value\n", __func__);
+	}
+
+	pr_info("%s: uart_en(%d)\n", __func__, !info->rustproof_on);
+#else
+	pr_info("%s: not support this sysfs\n", __func__);
+#endif
 
 	return count;
 }
@@ -1150,6 +1198,9 @@ static DEVICE_ATTR(check_cpboot, 0664,
 		max77803_muic_set_check_cpboot);
 #endif
 
+static DEVICE_ATTR(uart_en, 0660, max77803_muic_show_uart_en,
+				max77803_muic_set_uart_en);
+
 static struct attribute *max77803_muic_attributes[] = {
 	&dev_attr_uart_sel.attr,
 	&dev_attr_usb_state.attr,
@@ -1166,6 +1217,7 @@ static struct attribute *max77803_muic_attributes[] = {
 	&dev_attr_check_cpboot.attr,
 #endif
 	&dev_attr_chg_type.attr,
+	&dev_attr_uart_en.attr,
 	NULL
 };
 
@@ -1634,6 +1686,11 @@ static void max77803_muic_handle_jig_uart(struct max77803_muic_info *info,
 	} else
 		val = MAX77803_MUIC_CTRL1_BIN_3_011;
 
+	if (info->rustproof_on) {
+		pr_info("%s: Good bye -R.Proof\n", __func__);
+		val = MAX77803_MUIC_CTRL1_BIN_0_000;
+	}
+	
 	cntl1_val = (val << COMN1SW_SHIFT) | (val << COMP2SW_SHIFT);
 	cntl1_msk = COMN1SW_MASK | COMP2SW_MASK;
 	ret = max77803_update_reg(info->muic, MAX77803_MUIC_REG_CTRL1,
@@ -3491,6 +3548,19 @@ static int __devinit max77803_muic_probe(struct platform_device *pdev)
 	/* if (max77803->pmic_rev >= MAX77803_REV_PASS2) */
 	{
 		int switch_sel = get_switch_sel();
+
+		info->rustproof_on = false;
+#if defined(CONFIG_MUIC_RUSTPROOF_ON_USER) && !defined(CONFIG_SEC_FACTORY)
+		/* check rustproof data from bootloader */
+		if (switch_sel & 0x8) {
+			pr_info("%s: RUSTPROOF OFF / UART ENABLE\n", __func__);
+			info->rustproof_on = false;
+		} else {
+			pr_info("%s: RUSTPROOF ON / UART DISABLE\n", __func__);
+			info->rustproof_on = true;
+		}
+#endif
+
 #if defined(CONFIG_SWITCH_DUAL_MODEM)
 		switch_sel &= 0xf;
 		if ((switch_sel & MAX77803_SWITCH_SEL_1st_BIT_USB) == 0x1)
