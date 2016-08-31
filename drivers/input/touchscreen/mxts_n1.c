@@ -567,7 +567,17 @@ static void mxt_report_input_data(struct mxt_data *data)
 	int count = 0;
 	int report_count = 0;
 	bool booster_restart = false;
+	u16 sum_size = 0;
+	u16 touchMajor; /* 0309 */
+#if defined(CONFIG_N1A)
+	unsigned char size_offset = 25;
+#endif
+#if TSP_USE_SHAPETOUCH /* 0309 */
+	u16 touchMinor;
 
+	u8 c1;
+	u8 c2;
+#endif
 	for (i = 0; i < MXT_MAX_FINGER; i++) {
 		if (data->fingers[i].state == MXT_STATE_INACTIVE)
 			continue;
@@ -587,13 +597,50 @@ static void mxt_report_input_data(struct mxt_data *data)
 					data->fingers[i].x);
 			input_report_abs(data->input_dev, ABS_MT_POSITION_Y,
 					data->fingers[i].y);
-			input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR,
-					data->fingers[i].w);
-			input_report_abs(data->input_dev, ABS_MT_PRESSURE,
-					 data->fingers[i].z);
+#if TSP_USE_SHAPETOUCH  /* 0309 */
+//for improving palm sweep
+    c1 = data->fingers[i].component >> 4;
+    c2 = data->fingers[i].component & 0x0F;
+    //magnitude = sqrt(c1*c1 + c2*c2);
+
+#if defined(CONFIG_N1A)
+		touchMajor = data->fingers[i].w + size_offset;   //ATML_0911
+        /* to make similar value with logcat data */
+        touchMajor <<=1;                      //ATML_0911
+        /* Put the same value on TouchMajor and TouchMinor to make Eccen = 1 */
+        touchMinor = touchMajor;
+    /* Need 2's complement conversion for the negative value */
+    if(c2 > 7) {
+      c2 ^= 0x0f;
+      c2 += 1;
+    }
+    /* +1 To prevent TouchMajor = 0 after multiplied by C2 */
+    c2 += 1;
+    /* Only '8' is a valid value for the palm sweep by test. */
+    c2 >>=2;
+	c2 +=1;
+    if(c2 > 1) {
+      touchMajor = touchMinor * c2;
+        }
+#else
+	touchMajor = data->fingers[i].w;
+	touchMinor = touchMajor;
+	touchMajor = touchMinor * int_sqrt(c1*c1 + c2*c2);
+
+#endif
+    input_report_abs(data->input_dev, ABS_MT_TOUCH_MINOR,
+        touchMinor);
+#endif
+		input_report_abs(data->input_dev, ABS_MT_TOUCH_MAJOR,
+				touchMajor);
+		input_report_abs(data->input_dev, ABS_MT_PRESSURE,
+				 data->fingers[i].z);
+#if TSP_USE_SHAPETOUCH
+			sum_size = data->sumsize;
 #if TSP_USE_PALM_FLAG
 			input_report_abs(data->input_dev, ABS_MT_PALM,
 					data->palm);
+#endif
 #endif
 
 #if TSP_HOVER_WORKAROUND
@@ -795,17 +842,14 @@ static void mxt_treat_T6_object(struct mxt_data *data,
 #if ENABLE_TOUCH_KEY
 static void mxt_release_all_keys(struct mxt_data *data)
 {
-	int i = 0;
 	if (data->tsp_keystatus != TOUCH_KEY_NULL) {
-
-
+		int i = 0, code = 0;
 		if (data->report_dummy_key) {
 			for (i = 0 ; i < data->pdata->num_touchkey ; i++) {
 				if (data->tsp_keystatus & data->pdata->touchkey[i].value) {
 
 				/* report all touch-key event */
-					input_report_key(data->input_dev,
-						data->pdata->touchkey[i].keycode, KEY_RELEASE);
+					input_report_key(data->input_dev,data->pdata->touchkey[i].keycode, KEY_RELEASE);
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] %s R!\n", data->pdata->touchkey[i].name);
 				}
 			}
@@ -813,25 +857,22 @@ static void mxt_release_all_keys(struct mxt_data *data)
 		} else {
 			/* menu key check*/
 			if (data->tsp_keystatus & TOUCH_KEY_MENU) {
-				if(data->ignore_menu_key) {
+				if(data->ignore_menu_key)
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu R! by dummy key\n");
-				} else if (data->ignore_menu_key_by_back) {
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu R! by back key\n");
-				} else {
-					input_report_key(data->input_dev, KEY_MENU, KEY_RELEASE);
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] menu R!\n");
+				else{
+					code = KEY_MENU;
+					input_report_key(data->input_dev, code, KEY_RELEASE);
+					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] %d R!\n", code);
 				}
 			}
-
 			/* back key check*/
 			if (data->tsp_keystatus & TOUCH_KEY_BACK) {
-				if (data->ignore_back_key) {
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore back R! by dummy key\n");
-				} else if (data->ignore_back_key_by_menu) {
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore back R! by menu key\n");
-				} else {
-					input_report_key(data->input_dev, KEY_BACK, KEY_RELEASE);
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] back R!\n");
+				if (data->ignore_back_key)
+					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] Ignore back R! by dummy key\n");
+				else{
+					code = KEY_BACK;
+					input_report_key(data->input_dev, code, KEY_RELEASE);
+					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d R!\n", code);
 				}
 			}
 		}
@@ -851,28 +892,23 @@ static void mxt_release_all_keys(struct mxt_data *data)
 			data->ignore_back_key = false;
 			tsp_debug_info(true, &data->client->dev, "[TSP_KEY] ignore_back_key Disable!\n");
 		}
-		
-		data->ignore_back_key_by_menu = false;
-		data->ignore_menu_key_by_back = false;
 	}
 }
 
 static void mxt_treat_T15_object(struct mxt_data *data,
 						struct mxt_message *message)
 {
-	struct input_dev *input = data->input_dev;
 	u8 input_status = message->message[MXT_MSG_T15_STATUS] & MXT_MSGB_T15_DETECT;
 	u8 input_message = message->message[MXT_MSG_T15_KEYSTATE];
-	int i;
 	u8 change_state = input_message ^ data->tsp_keystatus;
-	u8 key_state;
+	u8 key_state = 0;
 
 	/* single key configuration*/
 	if (input_status) { /* press */
-
+		int i = 0, code = 0;
 		if (data->report_dummy_key) {
 			for (i = 0 ; i < data->pdata->num_touchkey ; i++) {
-				if (change_state & data->pdata->touchkey[i].value){
+				if (change_state & data->pdata->touchkey[i].value) {
 					key_state = input_message & data->pdata->touchkey[i].value;
 					input_report_key(data->input_dev, data->pdata->touchkey[i].keycode, key_state != 0 ? KEY_PRESS : KEY_RELEASE);
 					input_sync(data->input_dev);
@@ -880,63 +916,34 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 				}
 			}
 			input_sync(data->input_dev);
-
 		} else {
-
 			/* menu key check*/
 			if (change_state & TOUCH_KEY_MENU) {
 				key_state = input_message & TOUCH_KEY_MENU;
 
-				if(data->ignore_menu_key) {
+				if(data->ignore_menu_key)
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu %s by dummy key\n", key_state != 0 ? "P" : "R");
-					if(!(input_message & TOUCH_KEY_D_MENU)){
-						data->ignore_menu_key = false;
-						tsp_debug_info(true, &data->client->dev, "[TSP_KEY] ignore_menu_key Disable!!\n");
-					}
-				} else if (data->ignore_menu_key_by_back) {
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu %s by back key\n", key_state != 0 ? "P" : "R");
-				} else {
-					input_report_key(data->input_dev, KEY_MENU, key_state != 0 ? KEY_PRESS : KEY_RELEASE);
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] menu %s\n", key_state != 0 ? "P" : "R");
-					if (key_state != 0)
-						data->ignore_back_key_by_menu = true;
-					else {
-						if (input_message & TOUCH_KEY_D_MENU && !data->ignore_menu_key) {
-							data->ignore_menu_key = true;
-							tsp_debug_info(true, &data->client->dev, "[TSP_KEY] ignore_menu_key Enable!\n");
-						}
-						data->ignore_back_key_by_menu = false;
-					}
+				else {
+					code = KEY_MENU;
+					input_report_key(data->input_dev, code, !!key_state);
+					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d %s\n", code, !!key_state ? "P" : "R");
+
 #if TOUCHKEY_BOOSTER
 					touchkey_set_dvfs_lock(data, !!key_state);
 #endif
-				}
 			}
+		}
 
 			/* back key check*/
 			if (change_state & TOUCH_KEY_BACK) {
 				key_state = input_message & TOUCH_KEY_BACK;
-
-				if (data->ignore_back_key) {
+				if (data->ignore_back_key)
 					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore back %s by dummy key\n", key_state != 0 ? "P" : "R");
-					if(!(input_message & TOUCH_KEY_D_BACK)){
-						data->ignore_back_key = false;
-						tsp_debug_info(true, &data->client->dev, "[TSP_KEY] ignore_back_key Disable!!\n");
-					}
-				} else if (data->ignore_back_key_by_menu) {
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] Ignore menu %s by menu key\n", key_state != 0 ? "P" : "R");
-				} else {
-					input_report_key(data->input_dev, KEY_BACK, key_state != 0 ? KEY_PRESS : KEY_RELEASE);
-					tsp_debug_info(true, &data->client->dev, "[TSP_KEY] back %s\n" , key_state != 0 ? "P" : "R");
-					if (key_state != 0)
-						data->ignore_menu_key_by_back = true;
-					else {
-						if (input_message & TOUCH_KEY_D_BACK && !data->ignore_back_key) {
-							data->ignore_back_key = true;
-							tsp_debug_info(true, &data->client->dev, "[TSP_KEY] ignore_back_key Enable!\n");
-						}
-						data->ignore_menu_key_by_back = false;
-					}
+				else {
+					code = KEY_BACK;
+					input_report_key(data->input_dev, code, !!key_state);
+					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d %s\n", code, !!key_state ? "P" : "R");
+
 #if TOUCHKEY_BOOSTER
 					touchkey_set_dvfs_lock(data, !!key_state);
 #endif
@@ -969,11 +976,13 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 				}
 			}
 
-			input_sync(data->input_dev);
+			if (code) {
+				input_sync(data->input_dev);
+
+			}
 		}
-	} else {
+	} else
 		mxt_release_all_keys(data);
-	}
 
 	data->tsp_keystatus = input_message;
 
@@ -1011,10 +1020,14 @@ static void mxt_treat_T9_object(struct mxt_data *data,
 		data->fingers[id].x = (msg[1] << 4) | (msg[3] >> 4);
 		data->fingers[id].y = (msg[2] << 4) | (msg[3] & 0xF);
 		if (msg[4] != 0) {
+#if defined(CONFIG_N1A)
+data->fingers[id].w = msg[4];
+#else
 			if (data->charging_mode)
 				data->fingers[id].w = msg[4];
 			else
 				data->fingers[id].w = msg[4] + 4;
+#endif
 		} else
 			data->fingers[id].w = 1;    //Passive stylus
 
@@ -2434,6 +2447,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
 				0, pdata->max_y, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
+				0, MXT_AREA_MAX, 0, 0);
+	input_set_abs_params(input_dev, ABS_MT_TOUCH_MINOR,
 				0, MXT_AREA_MAX, 0, 0);
 	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
 				0, MXT_AMPLITUDE_MAX, 0, 0);
