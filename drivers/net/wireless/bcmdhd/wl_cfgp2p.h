@@ -1,7 +1,7 @@
 /*
  * Linux cfgp2p driver
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2015, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfgp2p.h 519153 2014-12-05 05:10:07Z $
+ * $Id: wl_cfgp2p.h 531050 2015-02-02 07:21:19Z $
  */
 #ifndef _wl_cfgp2p_h_
 #define _wl_cfgp2p_h_
@@ -235,10 +235,8 @@ extern bool
 wl_cfgp2p_is_gas_action(void *frame, u32 frame_len);
 extern bool
 wl_cfgp2p_find_gas_subtype(u8 subtype, u8* data, u32 len);
-#ifdef CUSTOMER_HW4
 extern bool
 wl_cfgp2p_is_p2p_gas_action(void *frame, u32 frame_len);
-#endif /* CUSTOMER_HW4 */
 extern void
 wl_cfgp2p_print_actframe(bool tx, void *frame, u32 frame_len, u32 channel);
 extern s32

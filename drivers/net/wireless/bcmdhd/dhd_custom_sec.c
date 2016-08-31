@@ -1,7 +1,7 @@
 /*
  * Customer HW 4 dependant file
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2015, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -175,10 +175,10 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"IR", "XZ", 11},	/* Universal if Country code is IRAN, (ISLAMIC REPUBLIC OF) */
 	{"SD", "XZ", 11},	/* Universal if Country code is SUDAN */
 	{"SY", "XZ", 11},	/* Universal if Country code is SYRIAN ARAB REPUBLIC */
-	{"GL", "XZ", 11},	/* Universal if Country code is GREENLAND */
 	{"PS", "XZ", 11},	/* Universal if Country code is PALESTINIAN TERRITORY, OCCUPIED */
 	{"TL", "XZ", 11},	/* Universal if Country code is TIMOR-LESTE (EAST TIMOR) */
 	{"MH", "XZ", 11},	/* Universal if Country code is MARSHALL ISLANDS */
+	{"GL", "GP", 2},
 	{"AL", "AL", 2},
 	{"DZ", "GB", 6},
 	{"AS", "AS", 12},
@@ -192,12 +192,12 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"AZ", "AZ", 2},
 	{"BS", "BS", 2},
 	{"BH", "BH", 4},
-	{"BD", "AO", 0},
+	{"BD", "BD", 1},
 	{"BY", "BY", 3},
 	{"BE", "BE", 4},
 	{"BM", "BM", 12},
 	{"BA", "BA", 2},
-	{"BR", "BR", 4},
+	{"BR", "BR", 2},
 	{"VG", "VG", 2},
 	{"BN", "BN", 4},
 	{"BG", "BG", 4},
@@ -220,7 +220,7 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"GR", "GR", 4},
 	{"GD", "GD", 2},
 	{"GP", "GP", 2},
-	{"GU", "GU", 12},
+	{"GU", "GU", 30},
 	{"HK", "HK", 2},
 	{"HU", "HU", 4},
 	{"IS", "IS", 4},
@@ -240,7 +240,7 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"LI", "LI", 4},
 	{"LT", "LT", 4},
 	{"LU", "LU", 3},
-	{"MO", "MO", 2},
+	{"MO", "SG", 0},
 	{"MK", "MK", 2},
 	{"MW", "MW", 1},
 	{"MY", "MY", 3},
@@ -250,12 +250,11 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"MR", "MR", 2},
 	{"MU", "MU", 2},
 	{"YT", "YT", 2},
-	{"MX", "MX", 20},
+	{"MX", "MX", 44},
 	{"MD", "MD", 2},
 	{"MC", "MC", 1},
 	{"ME", "ME", 2},
 	{"MA", "MA", 2},
-	{"NP", "ID", 5},
 	{"NL", "NL", 4},
 	{"AN", "GD", 2},
 	{"NZ", "NZ", 4},
@@ -268,7 +267,7 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"PH", "PH", 5},
 	{"PL", "PL", 4},
 	{"PT", "PT", 4},
-	{"PR", "PR", 20},
+	{"PR", "PR", 38},
 	{"RE", "RE", 2},
 	{"RO", "RO", 4},
 	{"SN", "MA", 2},
@@ -284,27 +283,31 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"TT", "TT", 3},
 	{"TR", "TR", 7},
 	{"AE", "AE", 6},
-	{"UG", "UG", 2},
 	{"GB", "GB", 6},
-	{"UY", "UY", 1},
-	{"VI", "VI", 13},
+	{"UY", "VE", 3},
+	{"VI", "PR", 38},
 	{"VA", "VA", 2},
 	{"VE", "VE", 3},
 	{"VN", "VN", 4},
 	{"ZM", "LA", 2},
 	{"EC", "EC", 21},
 	{"SV", "SV", 25},
-	{"KR", "KR", 48},
+	{"KR", "KR", 70},
 	{"RU", "RU", 13},
 	{"UA", "UA", 8},
 	{"GT", "GT", 1},
-	{"FR", "FR", 5},
 	{"MN", "MN", 1},
 	{"NI", "NI", 2},
 	{"UZ", "MA", 2},
 	{"ZA", "ZA", 6},
 	{"EG", "EG", 13},
 	{"TN", "TN", 1},
+	{"AO", "AD", 0},
+	{"BT", "BJ", 0},
+	{"BW", "BJ", 0},
+	{"LY", "LI", 4},
+	{"BO", "NG", 0},
+	{"UM", "PR", 38},
 #endif /* default ccode/regrev */
 };
 
@@ -893,6 +896,12 @@ typedef struct {
 vid_info_t vid_info[] = {
 	{ 6, { 0x00, 0x20, 0xc7, 0x00, 0x00, }, { "murata" } },
 	{ 2, { 0x99, }, { "semcove" } },
+	{ 0, { 0x00, }, { "samsung" } }
+};
+#elif defined(BCM43430_CHIP)
+vid_info_t vid_info[] = {
+	{ 3, { 0x33, 0x33, }, { "semco" } },
+	{ 3, { 0x00, 0x22, }, { "murata" } },
 	{ 0, { 0x00, }, { "samsung" } }
 };
 #elif defined(BCM4334_CHIP)
@@ -1610,13 +1619,13 @@ uint32 sec_save_wlinfo(char *firm_ver, char *dhd_ver, char *nvram_p)
 		if (strlen(temp_buf)) {
 			nvram_buf = temp_buf;
 			bcmstrtok(&nvram_buf, "\n", 0);
-			DHD_INFO(("[WIFI_SEC] nvram tolkening : %s(%d) \n",
+			DHD_INFO(("[WIFI_SEC] nvram tolkening : %s(%zu) \n",
 				temp_buf, strlen(temp_buf)));
 			snprintf(version_info+str_len, tstr_len(temp_buf, NV_PREFIX),
 				NV_PREFIX " %s\n", temp_buf);
 			str_len = strlen(version_info);
 			DHD_INFO(("[WIFI_SEC] NVRAM version_info : %s\n", version_info));
-			DHD_INFO(("[WIFI_SEC] NVRAM version_info len : %d, nvram len : %d\n",
+			DHD_INFO(("[WIFI_SEC] NVRAM version_info len : %d, nvram len : %zu\n",
 				str_len, strlen(temp_buf)));
 		} else {
 			DHD_ERROR(("[WIFI_SEC] NVRAM info is missing.\n"));
@@ -1625,7 +1634,7 @@ uint32 sec_save_wlinfo(char *firm_ver, char *dhd_ver, char *nvram_p)
 		DHD_ERROR(("[WIFI_SEC] Not exist nvram path\n"));
 	}
 
-	DHD_INFO(("[WIFI_SEC] version_info : %s, strlen : %d\n",
+	DHD_INFO(("[WIFI_SEC] version_info : %s, strlen : %zu\n",
 		version_info, strlen(version_info)));
 
 	fp = filp_open(filepath, O_RDONLY, 0);
