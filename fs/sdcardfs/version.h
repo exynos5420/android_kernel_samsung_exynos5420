@@ -16,6 +16,9 @@
  * 2014.11.25 : Release Version 2.1.3
  *    - Add error handling routine in sdcardfs_d_revalidate 
  *          when dentry is equal to lower_dentry
+ * 2015.03.25 : Release Version 2.1.4
+ *    - Add FMODE_NONMAPPABLE, FMODE_NONCACHEABLE flag to file->f_mode
+ *    - Modify do_mmap_pgoff because of new f_mode flags
  */
 
-#define SDCARDFS_VERSION "2.1.3"
+#define SDCARDFS_VERSION "2.1.4"

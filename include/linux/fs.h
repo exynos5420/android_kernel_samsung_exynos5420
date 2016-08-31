@@ -114,6 +114,12 @@ struct inodes_stat_t {
 /* File is opened with O_PATH; almost nothing can be done with it */
 #define FMODE_PATH		((__force fmode_t)0x4000)
 
+/* File hasn't page cache and can't be mmaped, for stackable filesystem */
+#define FMODE_NONMAPPABLE        ((__force fmode_t)0x400000)            
+   
+/* File page don't need to be cached, for stackable filesystem's lower file */
+#define FMODE_NONCACHEABLE     ((__force fmode_t)0x800000)
+
 #ifdef CONFIG_FADV_NOACTIVE     
 /* Pages in this file cannot be the active page */
 #define FMODE_NOACTIVE          ((__force fmode_t)0x80000)
