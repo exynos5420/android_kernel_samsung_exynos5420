@@ -168,9 +168,22 @@ static int vibe_terminate(void)
 	return 0;
 }
 
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+static bool g_bOutputDataBufferEmpty = 1;
+#endif
+
 static int vibe_setsamples(int index, u16 depth, u16 size, char *buff)
 {
 	int8_t force;
+
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+	if (g_bOutputDataBufferEmpty) {
+		index = 0;
+		depth = 8;
+		size = 1;
+		buff[0] = 0;
+	}
+#endif
 
 	switch (depth) {
 	case 8:
@@ -247,6 +260,13 @@ static int vibe_process(void *data)
 	if (vibe_ddata->stop_requested) {
 		vibe_stop_timer();
 
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+		// stop all actuator
+		for (i = 0; i < vibe_ddata->num_actuators; i++)
+		{
+			vibe_disable(i);
+		}
+#endif
 		vibe_ddata->watchdog_cnt = 0;
 
 		if (VibeSemIsLocked(&sema))
@@ -313,11 +333,22 @@ static ssize_t tspdrv_write(struct file *file, const char *buf, size_t count,
 		return 0;
 	}
 
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+	/* Check buffer size */
+	if ((count < SPI_HEADER_SIZE) || (count > SPI_BUFFER_SIZE)) {
+		printk((KERN_ERR "[VIB] invalid write buffer size.\n"));
+		return 0;
+	}
+	if (count == SPI_HEADER_SIZE)
+		g_bOutputDataBufferEmpty = 1;
+	else
+		g_bOutputDataBufferEmpty = 0;
+#else
 	if ((count <= SPI_HEADER_SIZE) || (count > SPI_BUFFER_SIZE)) {
 		printk(KERN_ERR "[VIB] invalid write buffer size.\n");
 		return 0;
 	}
-
+#endif
 	if (0 != copy_from_user(vibe_ddata->write_buff, buf, count)) {
 		printk(KERN_ERR "[VIB] copy_from_user failed.\n");
 		return 0;
@@ -327,8 +358,11 @@ static ssize_t tspdrv_write(struct file *file, const char *buf, size_t count,
 		struct samples_data* input =
 			(struct samples_data *)(&vibe_ddata->write_buff[i]);
 		int buff = 0;
-
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+		if ((i + SPI_HEADER_SIZE) > count) {
+#else
 		if ((i + SPI_HEADER_SIZE) >= count) {
+#endif
 			printk(KERN_EMERG "[VIB] invalid buffer index.\n");
 			return 0;
 		}
@@ -392,6 +426,9 @@ static long tspdrv_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	case TSPDRV_MAGIC_NUMBER:
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+	case TSPDRV_SET_MAGIC_NUMBER:
+#endif
 		file->private_data = (void *)TSPDRV_MAGIC_NUMBER;
 		break;
 
@@ -401,8 +438,15 @@ static long tspdrv_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	case TSPDRV_DISABLE_AMP:
+#ifdef CONFIG_IMM_DRV_VERSION_3_7
+		vibe_ddata->stop_requested = true;
+		/* Last data processing to disable amp and stop timer */
+		vibe_process(NULL);
+		vibe_ddata->is_playing = false;
+#else	
 		if (!vibe_ddata->stop_requested)
 			vibe_disable(arg);
+#endif
 		wake_unlock(&vibe_ddata->wlock);
 		break;
 
