@@ -23,13 +23,21 @@ unsigned char *fw_data;
 bool ums_binary;
 extern unsigned int system_rev;
 
-#if defined(CONFIG_V1A) || defined(CONFIG_CHAGALL)
+#if defined(CONFIG_CHAGALL)
 const unsigned int fw_size = 0x0000;
 const unsigned char mpu_type = 0x00;
 unsigned int fw_ver_file = 0x0330;
 unsigned char *fw_name = "epen/W9007A_V1.bin";
 
 char fw_chksum[] = { 0x1F, 0x76, 0x7A, 0x49, 0x25, };
+
+#elif defined(CONFIG_V1A)
+const unsigned int fw_size = 0x0000;
+const unsigned char mpu_type = 0x00;
+unsigned int fw_ver_file = 0x0450;
+unsigned char *fw_name = "epen/W9007A_V1_450.bin";
+
+char fw_chksum[] = { 0x1F, 0x3D, 0x6E, 0xFE, 0xF7, };
 
 #elif defined(CONFIG_N1A)
 const unsigned int fw_size = 0x0000;
