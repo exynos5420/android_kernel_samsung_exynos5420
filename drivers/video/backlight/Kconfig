@@ -220,6 +220,14 @@ config LCD_LSL122DL01
 	  If you have an LCD_LSL122DL01, say Y to enable its
 	  LCD control driver.
 
+config LCD_LSL122DL01_BATTERY
+	tristate "For low battery state LCD_LSL122DL01"
+	depends on BACKLIGHT_CLASS_DEVICE
+	default n
+	help
+	  If you have an LCD_LSL122DL01 with 12.2 screen, say Y to enable its
+	  LCD control driver.
+	
 endif # LCD_CLASS_DEVICE
 
 #
