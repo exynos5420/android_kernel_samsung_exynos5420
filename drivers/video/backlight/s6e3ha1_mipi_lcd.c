@@ -27,6 +27,7 @@
 
 #include <video/mipi_display.h>
 #include <plat/dsim.h>
+#include <plat/regs-mipidsim.h>
 #include <plat/mipi_dsi.h>
 #include <plat/gpio-cfg.h>
 #include <asm/system_info.h>
@@ -1196,6 +1197,16 @@ static int s6e3ha1_fb_notifier_callback(struct notifier_block *self,
 		case FB_BLANK_UNBLANK:
 			s6e3ha1_ldi_enable(lcd);
 			lcd->fb_unblank = 1;
+
+#ifdef CONFIG_FB_HW_TRIGGER
+			/* if FullLMain is 1, Mipi cmd cannot be transmitted. */
+			/* PLM : P150407-04942(T705) */
+			if( lcd->dsim && (readl(lcd->dsim->reg_base + S5P_DSIM_FIFOCTRL)&0x200) ) {
+				s5p_mipi_dsi_func_reset(lcd->dsim);
+				dev_err(&lcd->ld->dev, "%s : Main display payload FIFO is full\n", __func__ );
+			}
+#endif
+
 			update_brightness(lcd, 0);
 			break;
 		default:
