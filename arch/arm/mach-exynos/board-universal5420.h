@@ -23,6 +23,9 @@ extern int current_cable_type;
 #endif
 
 extern unsigned int lpcharge;
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+extern int fg_reset;
+#endif
 
 void exynos5_universal5420_pmic_init(void);
 void exynos5_universal5420_power_init(void);

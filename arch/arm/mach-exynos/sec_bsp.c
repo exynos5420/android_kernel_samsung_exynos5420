@@ -49,10 +49,17 @@ enum boot_events_type {
 	PLATFORM_START_PACKAGEMANAGERSERVICE,
 	PLATFORM_END_PACKAGEMANAGERSERVICE,
 	PLATFORM_END_INIT_AND_LOOP,
+	PLATFORM_PERFORMENABLESCREEN,
 	PLATFORM_BOOT_COMPLETE,
 	PLATFORM_ENABLE_SCREEN,
 	PLATFORM_VOICE_SVC,
 	PLATFORM_DATA_SVC,
+	RIL_UNSOL_RIL_CONNECTED,
+	RIL_SETRADIOPOWER_ON,
+	RIL_SETUICCSUBSCRIPTION,
+    RIL_SIM_RECORDSLOADED,
+    RIL_RUIM_RECORDSLOADED,
+	RIL_SETUPDATACALL,
 };
 
 static struct boot_event boot_events[] = {
@@ -68,10 +75,17 @@ static struct boot_event boot_events[] = {
 	{PLATFORM_START_PACKAGEMANAGERSERVICE,"!@Boot: Start PackageManagerService",0},
 	{PLATFORM_END_PACKAGEMANAGERSERVICE,"!@Boot: End PackageManagerService",0},
 	{PLATFORM_END_INIT_AND_LOOP,"!@Boot: Loop forever",0},
+	{PLATFORM_PERFORMENABLESCREEN,"!@Boot: performEnableScreen",0},
 	{PLATFORM_BOOT_COMPLETE,"!@Boot: bootcomplete",0},
 	{PLATFORM_ENABLE_SCREEN,"!@Boot: Enabling Screen!",0},
 	{PLATFORM_VOICE_SVC,"!@Boot: Voice SVC is acquired",0},
 	{PLATFORM_DATA_SVC,"!@Boot: Data SVC is acquired",0},
+	{RIL_UNSOL_RIL_CONNECTED,"!@Boot_SVC : RIL_UNSOL_RIL_CONNECTED",0},
+	{RIL_SETRADIOPOWER_ON,"!@Boot_SVC : setRadioPower on",0},
+	{RIL_SETUICCSUBSCRIPTION,"!@Boot_SVC : setUiccSubscription",0},
+    {RIL_SIM_RECORDSLOADED,"!@Boot_SVC : SIM onAllRecordsLoaded",0},
+    {RIL_RUIM_RECORDSLOADED,"!@Boot_SVC : RUIM onAllRecordsLoaded",0},
+	{RIL_SETUPDATACALL,"!@Boot_SVC : setupDataCall",0},
 	{0,NULL,0},
 };
 

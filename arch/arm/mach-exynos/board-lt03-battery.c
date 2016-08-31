@@ -65,6 +65,31 @@ bool is_ovlo_state = false;
 unsigned int lpcharge;
 EXPORT_SYMBOL(lpcharge);
 
+#if defined(CONFIG_N1A)
+static sec_charging_current_t charging_current_table[] = {
+	{0,	0,	0,	0},
+	{0,	0,	0,	0},
+	{0,	0,	0,	0},
+	{1800,	2200,	250,	170},
+	{475,	480,	250,	170},
+	{1000,	1000,	250,	170},
+	{1000,	1000,	250,	170},
+	{475,	480,	250,	170},
+	{1800,	2200,	250,	170},
+	{0,	0,	0,	0},
+	{650,	720,	250,	170},
+	{1800,	2200,	250,	170},
+	{0,	0,	0,	0},
+	{0,	0,	0,	0},
+	{1000,	1000,	250,	170},/* LAN hub */
+	{460,	460,	250,	170},/*mhl usb*/
+	{0, 0,	0,	0},/*power sharing*/
+	{900,	1200,	250,	170}, /* SMART_OTG */
+	{1500,	1500,	250,	170}, /* SMART_NOTG */
+	{1400,	1400,	250,	170}, /* MDOCK_TA */
+	{450,	450,	250,	170}  /* MDOCK_USB */
+};
+#else
 static sec_charging_current_t charging_current_table[] = {
 	{0,	0,	0,	0},
 	{0,	0,	0,	0},
@@ -88,6 +113,7 @@ static sec_charging_current_t charging_current_table[] = {
 	{1400,	1400,	250,	40*60}, /* MDOCK_TA */
 	{450,	450,	250,	40*60}  /* MDOCK_USB */
 };
+#endif
 
 static bool sec_bat_adc_none_init(
 		struct platform_device *pdev) {return true; }
@@ -165,6 +191,17 @@ static int sec_bat_is_lpm_check(char *str)
 }
 __setup("androidboot.mode=", sec_bat_is_lpm_check);
 
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+int fg_reset;
+EXPORT_SYMBOL(fg_reset);
+static int sec_bat_get_fg_reset(char *val)
+{
+	fg_reset = strncmp(val, "1", 1) ? 0 : 1;
+	pr_info("%s, fg_reset:%d\n", __func__, fg_reset);
+	return 1;
+}
+__setup("fg_reset=", sec_bat_get_fg_reset);
+#endif
 
 static bool sec_bat_is_lpm(void)
 {
@@ -722,12 +759,10 @@ sec_battery_platform_data_t sec_battery_pdata = {
 
 	/* Temperature check */
 	.thermal_source = SEC_BATTERY_THERMAL_SOURCE_FG,
-#if !defined(CONFIG_N1A)
-	/* do not adjust temperature */
+
 	.temp_adc_table = temp_table,
 	.temp_adc_table_size =
 		sizeof(temp_table)/sizeof(sec_bat_adc_table_data_t),
-#endif
 
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
@@ -908,7 +943,11 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 
 	.full_check_type = SEC_BATTERY_FULLCHARGED_CHGPSY,
+#if defined(CONFIG_N1A)
+	.full_check_type_2nd = SEC_BATTERY_FULLCHARGED_CHGPSY,
+#else
 	.full_check_type_2nd = SEC_BATTERY_FULLCHARGED_TIME,
+#endif
 	.full_check_count = 1,
 	.full_check_adc_1st = 265,/*200*/
 	.full_check_adc_2nd = 265,/*200*/
@@ -917,7 +956,11 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
 		SEC_BATTERY_FULL_CONDITION_VCELL,
+#if defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
 	.full_condition_soc = 95,
+	.full_condition_vcell = 4250,
+#endif
+	.full_condition_soc = 97,
 	.full_condition_vcell = 4250,
 
 	.recharge_check_count = 2,
@@ -939,11 +982,21 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.fuel_alert_soc = 1,
 	.repeated_fuelalert = false,
 	.capacity_calculation_type =
-		SEC_FUELGAUGE_CAPACITY_TYPE_RAW |
-		SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
-		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
-		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
+        SEC_FUELGAUGE_CAPACITY_TYPE_RAW |
+        SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+        SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE |
+        SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC |
+        SEC_FUELGAUGE_CAPACITY_TYPE_SKIP_ABNORMAL,
+#else
+        SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
+        /* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
+#endif
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	.capacity_max = 990,
+#else
 	.capacity_max = 1000,
+#endif
 	.capacity_max_margin = 50,
 	.capacity_min = 0,
 

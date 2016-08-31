@@ -2701,10 +2701,6 @@ static struct clk exynos5420_init_clocks_off[] = {
 		.enable		= exynos5_clk_ip_isp0_ctrl,
 		.ctrlbit	= (0x3 << 20),
 	}, {
-		.name		= "bts.gscl0",
-		.enable		= exynos5_clk_ip_gscl0_ctrl,
-		.ctrlbit	= (0x3 << 28),
-	}, {
 		.name		= "ppmu.gscl0",
 		.enable		= exynos5_clk_ip_gscl0_ctrl,
 		.ctrlbit	= (0xF << 19),
@@ -2895,7 +2891,7 @@ static struct clk exynos5420_init_clocks_off[] = {
 #endif
 		.parent		= &exynos5420_aclk_300_gscl.clk,
 		.enable		= exynos5_clk_ip_gscl0_ctrl,
-		.ctrlbit	= ((1 << 28) | (1 << 14) | (1 << 0)),
+		.ctrlbit	= ((1 << 14) | (1 << 0)),
 	}, {
 		.name		= "gscl",
 #ifdef CONFIG_EXYNOS5_DEV_GSC
@@ -2903,7 +2899,7 @@ static struct clk exynos5420_init_clocks_off[] = {
 #endif
 		.parent		= &exynos5420_aclk_300_gscl.clk,
 		.enable		= exynos5_clk_ip_gscl0_ctrl,
-		.ctrlbit	= ((1 << 29) | (1 << 15) | (1 << 1)),
+		.ctrlbit	= ((1 << 15) | (1 << 1)),
 	}, {
 		.name		= "gscl_flite0",
 		.enable		= exynos5_clk_ip_gscl0_ctrl,
