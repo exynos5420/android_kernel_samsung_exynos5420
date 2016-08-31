@@ -187,7 +187,11 @@ ifeq ("$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX)", "y")
 fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_5700.fw
 ifndef CONFIG_TOUCHSCREEN_CHAGALLLTE_USA
 ifndef CONFIG_TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN
+ifndef CONFIG_TOUCHSCREEN_CHAGALLLTE_CAN
 fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_5710.fw
+else
+fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_can_5710.fw
+endif
 else
 fw-shipped-$(CONFIG_CHAGALL) += tsp_synaptics/synaptics_chagall_chn_5710.fw
 endif
