@@ -398,7 +398,10 @@ static void exynos_dwmci2_cfg_gpio(int width)
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		s5p_gpio_set_drvstr(gpio, S5P_GPIO_DRVSTR_LV3);
 	}
-
+	/* Set SD_CLK drv str = X 3 */
+	gpio = EXYNOS5420_GPC2(0);
+	s5p_gpio_set_drvstr(gpio, S5P_GPIO_DRVSTR_LV4);
+	
 	switch (width) {
 	case 4:
 		for (gpio = EXYNOS5420_GPC2(3);
@@ -614,7 +617,7 @@ static struct dw_mci_board universal5420_dwmci2_pdata __initdata = {
 	.clk_tbl		= exynos_dwmci_clk_rates_for_cpll,
 	.__drv_st		= {
 		.pin			= EXYNOS5420_GPC2(0),
-		.val			= S5P_GPIO_DRVSTR_LV3,
+		.val			= S5P_GPIO_DRVSTR_LV4,
 	},
 	.tuning_map_mask	= 0x80,
 #if !defined(CONFIG_SUPPORT_WQXGA)

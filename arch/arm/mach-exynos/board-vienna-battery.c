@@ -83,6 +83,10 @@ static sec_charging_current_t charging_current_table[] = {
 	{1000,	1000,	300,	40*60},/* LAN hub */
 	{460,	460,	300,	40*60},/*mhl usb*/
 	{0, 0,	0,	0},/*power sharing*/
+	{900,	1200,	250,	40*60}, /* SMART_OTG */
+	{1500,	1500,	250,	40*60}, /* SMART_NOTG */
+	{1400,	1400,	250,	40*60}, /* MDOCK_TA */
+	{450,	450,	250,	40*60}  /* MDOCK_USB */
 };
 
 static bool sec_bat_adc_none_init(
