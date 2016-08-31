@@ -62,7 +62,9 @@ struct lsl122dl01 {
 	int dblc_auto_br;
 	int dblc_power_save;
 	int dblc_duty;
-
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	int dblc_battery;
+#endif
 	struct lsl122dl01_platform_data *pdata;
 #ifdef CONFIG_S5P_DP_PSR
 	struct notifier_block notifier;
@@ -252,14 +254,32 @@ static int tcon_set_under_mnbl_duty(struct lsl122dl01 *plcd, unsigned int duty)
 			case TCON_MODE_VIDEO:
 			case TCON_MODE_VIDEO_WARM:
 			case TCON_MODE_VIDEO_COLD:
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+				if(plcd->dblc_battery)
+					tune_value = &TCON_VIDEO_B;
+				else
+					tune_value = &TCON_VIDEO;
+#else
 				tune_value = &TCON_VIDEO;
+#endif
 				break;
 			default:
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+				if(plcd->dblc_battery)
+					tune_value = &TCON_POWER_SAVE_B;
+				else
+					tune_value = &TCON_POWER_SAVE;
+#else
 				tune_value = &TCON_POWER_SAVE;
+#endif
 				break;
 			}
 		} else {
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+			tune_value = tcon_tune_value[plcd->dblc_battery][plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#else
 			tune_value = tcon_tune_value[plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#endif
 		}
 		if (!tune_value) {
 			dev_err(plcd->dev, "%s: tcon value is null\n", __func__);
@@ -291,8 +311,11 @@ static int tcon_tune_read(struct lsl122dl01 *plcd)
 	int ret;
 	u8 data = 0;
 
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+		tune_value = tcon_tune_value[plcd->dblc_battery][plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#else
 	tune_value = tcon_tune_value[plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
-
+#endif
 	dev_info(plcd->dev, "%s: at=%d, lx=%d, md=%d\n", __func__,
 		plcd->dblc_auto_br, plcd->dblc_lux, plcd->dblc_mode);
 
@@ -333,14 +356,32 @@ static int tcon_tune_write(struct lsl122dl01 *plcd, int force)
 		case TCON_MODE_VIDEO:
 		case TCON_MODE_VIDEO_WARM:
 		case TCON_MODE_VIDEO_COLD:
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+			if(plcd->dblc_battery)
+				tune_value = &TCON_VIDEO_B;
+			else
 			tune_value = &TCON_VIDEO;
+#else
+			tune_value = &TCON_VIDEO;
+#endif
 			break;
 		default:
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+			if(plcd->dblc_battery)
+				tune_value = &TCON_POWER_SAVE_B;
+			else
 			tune_value = &TCON_POWER_SAVE;
+#else
+			tune_value = &TCON_POWER_SAVE;
+#endif
 			break;
 		}
 	} else {
-		tune_value = tcon_tune_value[plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+			tune_value = tcon_tune_value[plcd->dblc_battery][plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#else
+			tune_value = tcon_tune_value[plcd->dblc_auto_br][plcd->dblc_lux][plcd->dblc_mode];
+#endif
 	}
 
 	if (!tune_value) {
@@ -585,6 +626,42 @@ static ssize_t tcon_black_test_store(struct device *dev,
 
 	return count;
 }
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+static ssize_t tcon_battery_save_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct lsl122dl01 *plcd = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n", plcd->dblc_power_save);
+}
+
+static ssize_t tcon_battery_save_store(struct device *dev,
+			    struct device_attribute *dev_attr,
+			    const char *buf, size_t count)
+{
+  	struct lsl122dl01 *plcd = dev_get_drvdata(dev);
+	int ret;
+	unsigned int value;
+
+	ret = kstrtouint(buf, 10, &value);
+
+	if (ret)
+		return ret;
+
+	dev_info(plcd->dev, "%s: value = %d\n\n", __func__, value);
+
+	mutex_lock(&plcd->ops_lock);
+
+	plcd->dblc_battery = value;
+
+	ret = tcon_tune_write(plcd, 1);
+	if (ret)
+		dev_err(plcd->dev, "failed to tune tcon\n");
+
+	mutex_unlock(&plcd->ops_lock);
+		return count;
+}
+#endif
 
 #if defined(DDI_VIDEO_ENHANCE_TUNING)
 
@@ -855,6 +932,9 @@ static struct device_attribute tcon_device_attributes[] = {
 #ifdef CONFIG_S5P_DP_PSR
 	__ATTR(psr_hsync, 0664, psr_hfreq_show, psr_hfreq_store),
 #endif
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	__ATTR(battery_save, 0664, tcon_battery_save_show, tcon_battery_save_store),
+#endif
 	__ATTR_NULL,
 };
 
@@ -1087,6 +1167,9 @@ static int lsl122dl01_probe(struct i2c_client *cl,
 	plcd->dev = &cl->dev;
 	plcd->dp = platform_get_drvdata(pdev_dp);
 	plcd->pdata = pdata;
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	plcd->dblc_battery = 1;
+#endif
 
 	plcd->lcd = lcd_device_register(LCD_NAME, &cl->dev,
 					plcd, &lsl122dl01_lcd_ops);

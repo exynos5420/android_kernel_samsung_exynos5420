@@ -176,6 +176,7 @@ struct tcon_reg_info TCON_BLACK_IMAGE_BLU_ENABLE = {
 		},
 };
 
+
 struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MODE_MAX] = {
 		/*
 			UI_APP = 0,
@@ -196,9 +197,9 @@ struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MOD
 		/* Illumiatation Level 1 */
 		{
 			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
 			&TCON_UI,
 			&TCON_UI,
 			&TCON_UI,
@@ -212,9 +213,9 @@ struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MOD
 		/* Illumiatation Level 2 */
 		{
 			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
 			&TCON_UI,
 			&TCON_UI,
 			&TCON_UI,
@@ -228,9 +229,9 @@ struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MOD
 		/* Illumiatation Level 3 */
 		{
 			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
 			&TCON_UI,
 			&TCON_UI,
 			&TCON_UI,
@@ -247,9 +248,9 @@ struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MOD
 		/* Illumiatation Level 1 */
 		{
 			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
 			&TCON_UI,
 			&TCON_UI,
 			&TCON_UI,
@@ -263,9 +264,9 @@ struct tcon_reg_info *tcon_tune_value[TCON_AUTO_BR_MAX][TCON_LEVEL_MAX][TCON_MOD
 		/* Illumiatation Level 2 */
 		{
 			&TCON_POWER_SAVE,
-			&TCON_UI,
-			&TCON_UI,
-			&TCON_UI,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
+			&TCON_VIDEO,
 			&TCON_POWER_SAVE,
 			&TCON_POWER_SAVE,
 			&TCON_POWER_SAVE,

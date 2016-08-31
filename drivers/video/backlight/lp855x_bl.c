@@ -50,6 +50,9 @@ struct lp855x {
 	int uth_brightness;
 	int min_brightness;
 	int pre_duty;
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	unsigned int battery_low;
+#endif	
 };
 
 static int lp855x_read_byte(struct lp855x *lp, u8 reg, u8 *data)
@@ -109,7 +112,12 @@ static int lp855x_init_registers(struct lp855x *lp)
 	ret = lp855x_write_byte(lp, LP855X_DEVICE_CTRL, val);
 	if (ret)
 		return ret;
-
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	if(lp->battery_low)
+		pd->rom_data[1].val = 0x3F;
+	else
+		pd->rom_data[1].val = 0x5F;
+#endif
 	if (pd->load_new_rom_data && pd->size_program) {
 		for (i = 0; i < pd->size_program; i++) {
 			addr = pd->rom_data[i].addr;
@@ -291,12 +299,36 @@ static ssize_t lp855x_get_bl_ctl_mode(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%s\n", strmode);
 }
 
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+static ssize_t lp855x_set_battery_level(struct device *dev,
+			    struct device_attribute *dev_attr,
+			    const char *buf, size_t count)
+{
+	int ret;
+	unsigned int value;
+	struct lp855x *lp = dev_get_drvdata(dev);
+
+	ret = kstrtouint(buf, 10, &value);
+
+	lp->battery_low = value;
+
+	lp855x_init_registers(lp);
+
+	return count;
+}
+
+static DEVICE_ATTR(battery_level, 0664, NULL, lp855x_set_battery_level);
+#endif
+
 static DEVICE_ATTR(chip_id, S_IRUGO, lp855x_get_chip_id, NULL);
 static DEVICE_ATTR(bl_ctl_mode, S_IRUGO, lp855x_get_bl_ctl_mode, NULL);
 
 static struct attribute *lp855x_attributes[] = {
 	&dev_attr_chip_id.attr,
 	&dev_attr_bl_ctl_mode.attr,
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	&dev_attr_battery_level.attr,
+#endif
 	NULL,
 };
 
@@ -350,7 +382,9 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
 	if (pdata->set_power)
 		pdata->set_power(1);
 	lp->power = 1;
-
+#if defined(CONFIG_LCD_LSL122DL01_BATTERY)
+	lp->battery_low = 1;
+#endif
 	ret = lp855x_init_registers(lp);
 	if (ret) {
 		dev_err(lp->dev, "i2c communication err: %d", ret);
