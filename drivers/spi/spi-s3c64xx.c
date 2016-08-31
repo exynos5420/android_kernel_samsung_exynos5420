@@ -854,6 +854,12 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 	}
 
 	sdd = spi_master_get_devdata(spi->master);
+
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
+	if (sdd->pdev->id == CONFIG_SENSORS_FP_SPI_NUMBER)
+		return 0;
+#endif
+
 	sci = sdd->cntrlr_info;
 
 	spin_lock_irqsave(&sdd->lock, flags);
@@ -966,6 +972,11 @@ static void s3c64xx_spi_hwinit(struct s3c64xx_spi_driver_data *sdd, int channel)
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	void __iomem *regs = sdd->regs;
 	unsigned int val;
+
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
+	if (channel == CONFIG_SENSORS_FP_SPI_NUMBER)
+		return;
+#endif
 
 	sdd->cur_speed = 0;
 
@@ -1145,9 +1156,16 @@ static int __init s3c64xx_spi_probe(struct platform_device *pdev)
 		}
 	}
 
-	writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
-	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
-	       sdd->regs + S3C64XX_SPI_INT_EN);
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
+		if (pdev->id != CONFIG_SENSORS_FP_SPI_NUMBER)
+			writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
+			   S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
+			   sdd->regs + S3C64XX_SPI_INT_EN);
+#else
+		writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
+			   S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
+			   sdd->regs + S3C64XX_SPI_INT_EN);
+#endif
 
 	if (spi_register_master(master)) {
 		dev_err(&pdev->dev, "cannot register SPI master\n");
