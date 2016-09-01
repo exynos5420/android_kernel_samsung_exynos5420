@@ -889,11 +889,6 @@ static void read_send_work(struct work_struct *work)
 			break;
 		}
 
-		if (!req) {
-			printk(KERN_ERR "[%s]Alloc has failed\n", __func__);
-			break;
-		}
-
 		if (count > MTPG_BULK_BUFFER_SIZE)
 			xfer = MTPG_BULK_BUFFER_SIZE;
 		else
@@ -1003,8 +998,12 @@ static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
 	case MTP_WRITE_INT_DATA:
 		printk(KERN_INFO "[%s]\t%d MTP intrpt_Write no slep\n",
 						__func__, __LINE__);
-		if (copy_from_user(&event, (void __user *)arg, sizeof(event)))
+		if (copy_from_user(&event, (void __user *)arg, sizeof(event))){
 			status = -EFAULT;
+			printk(KERN_ERR "[%s]\t%d:copyfrmuser fail\n",
+							 __func__, __LINE__);
+			break;
+		}
 		ret_value = interrupt_write(fd, &event, MTP_MAX_PACKET_LEN_FROM_APP);
 		if (ret_value < 0) {
 			printk(KERN_ERR "[%s]\t%d interptFD failed\n",
