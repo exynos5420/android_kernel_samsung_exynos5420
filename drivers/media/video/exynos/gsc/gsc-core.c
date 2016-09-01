@@ -441,8 +441,13 @@ int gsc_try_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 			mod_y = ffs(variant->pix_align->org_h) - 1;
 		else
 			mod_y = ffs(variant->pix_align->org_h) - 2;
-		min_w = variant->pix_min->org_w;
-		min_h = variant->pix_min->org_h;
+		if (is_rgb(fmt->pixelformat)) {
+			min_w = variant->pix_min->org_w / 2;
+			min_h = variant->pix_min->org_h / 2;
+		} else {
+			min_w = variant->pix_min->org_w;
+			min_h = variant->pix_min->org_h;
+		}
 	} else {
 		if (is_yuv420(fmt->pixelformat)) {
 			mod_x = ffs(variant->pix_align->org_w) - 1;

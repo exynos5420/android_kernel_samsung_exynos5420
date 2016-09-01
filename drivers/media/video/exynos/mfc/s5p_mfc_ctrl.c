@@ -382,7 +382,11 @@ int s5p_mfc_init_hw(struct s5p_mfc_dev *dev)
 	/* 0. MFC reset */
 	mfc_info("MFC reset...\n");
 
-	s5p_mfc_clock_on();
+	ret = s5p_mfc_clock_on();
+	if (ret) {
+		mfc_err("Failed to enable clock before reset(%d)\n", ret);
+		return ret;
+	}
 
 	ret = s5p_mfc_reset(dev);
 	if (ret) {
