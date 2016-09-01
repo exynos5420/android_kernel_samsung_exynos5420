@@ -221,7 +221,7 @@ static int min_diff_gray(int in, int *table, int table_cnt)
 			ret = i;
 		}
 
-		if ((in >= table[i-1]) && (in <= table[i]))
+		if (i && (in >= table[i-1]) && (in <= table[i]))
 			break;
 	}
 	return ret;
