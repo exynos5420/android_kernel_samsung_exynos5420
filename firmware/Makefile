@@ -163,7 +163,6 @@ fw-shipped-$(CONFIG_SENSORS_SSP_STM) += ssp_H_3G.fw ssp_H_3G_rev5.fw
 fw-shipped-$(CONFIG_SENSORS_SSP) += ssp_crashed.fw
 
 TSPFIRMWARE_DIRECTORY = firmware/tsp_atmel
-ifeq ($(shell test -d $(TSPFIRMWARE_DIRECTORY) && echo yes),yes)
 fw-shipped-$(CONFIG_TOUCHSCREEN_MXT540E) += tsp_atmel/mXT540E.fw
 fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_MXT540S) += tsp_atmel/mXT540Sg.fw tsp_atmel/mXT540Si.fw
 fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_MXT1664T) += tsp_atmel/mxtt_klimt.fw
@@ -173,10 +172,6 @@ fw-shipped-$(CONFIG_V1A) += tsp_atmel/mXT1664S_v.fw
 fw-shipped-$(CONFIG_V2A) += tsp_atmel/mXT1664S_v.fw
 fw-shipped-$(CONFIG_N1A) += tsp_atmel/mXT1664S_n.fw
 fw-shipped-$(CONFIG_N2A) += tsp_atmel/mXT1664S_n.fw
-endif
-
-else
-$(warning '$(TSPFIRMWARE_DIRECTORY)' directory dose not exist)
 endif
 
 TSPFIRMWARE_DIRECTORY = firmware/tsp_synaptics
