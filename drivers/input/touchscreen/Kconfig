@@ -919,6 +919,12 @@ config TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN
 	help
 	  Say Y here to load firmware for touchscreen.
 
+config TOUCHSCREEN_CHAGALLLTE_CAN
+	tristate "Synaptics DSX i2c touchscreen"
+	default n
+	help
+	  Say Y here to load firmware for touchscreen.
+	  
 source "drivers/input/touchscreen/mxt_t/Kconfig"
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 
