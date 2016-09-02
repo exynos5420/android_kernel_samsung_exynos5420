@@ -33,6 +33,7 @@
 
 #ifdef CONFIG_USB_HOST_NOTIFY
 #include <linux/host_notify.h>
+#include <linux/usb_notify_sysfs.h>
 #endif
 #include <linux/pm_runtime.h>
 #include <linux/usb.h>
@@ -479,8 +480,12 @@ void max77803_muic_usb_cb(u8 usb_mode)
 		pr_info("%s - USB_CABLE_DETACHED\n", __func__);
 	} else if (usb_mode == USB_OTGHOST_ATTACHED) {
 #ifdef CONFIG_USB_HOST_NOTIFY
-		host_noti_pdata->booster(1);
 		host_noti_pdata->ndev.mode = NOTIFY_HOST_MODE;
+		if(host_noti_pdata->block_type==NOTIFY_BLOCK_TYPE_ALL||host_noti_pdata->block_type==NOTIFY_BLOCK_TYPE_HOST){
+			host_state_notify(&host_noti_pdata->ndev, NOTIFY_HOST_BLOCK);
+			return;
+		}
+		host_noti_pdata->booster(1);
 		if (host_noti_pdata->usbhostd_start)
 			host_noti_pdata->usbhostd_start();
 		/* defense code for otg mis-detecing issue */
@@ -499,6 +504,14 @@ void max77803_muic_usb_cb(u8 usb_mode)
 		pr_info("%s - USB_OTGHOST_DETACHED\n", __func__);
 	} else if (usb_mode == USB_POWERED_HOST_ATTACHED) {
 #ifdef CONFIG_USB_HOST_NOTIFY
+		if (cable_type == CABLE_TYPE_LANHUB_MUIC)
+		{
+			host_noti_pdata->ndev.mode = NOTIFY_HOST_MODE;
+		}
+		if(host_noti_pdata->block_type==NOTIFY_BLOCK_TYPE_ALL||host_noti_pdata->block_type==NOTIFY_BLOCK_TYPE_HOST){
+			host_state_notify(&host_noti_pdata->ndev, NOTIFY_HOST_BLOCK);
+			return;
+		}
 		host_noti_pdata->powered_booster(1);
 
 		if (cable_type == CABLE_TYPE_MMDOCK_MUIC) {
@@ -509,7 +522,6 @@ void max77803_muic_usb_cb(u8 usb_mode)
 
 		if (cable_type == CABLE_TYPE_LANHUB_MUIC)
 		{
-			host_noti_pdata->ndev.mode = NOTIFY_HOST_MODE;
 			if (host_noti_pdata->usbhostd_start)
 				host_noti_pdata->usbhostd_start();
 		}
