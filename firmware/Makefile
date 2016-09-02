@@ -169,7 +169,7 @@ fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_MXT1664T) += tsp_atmel/mxtt_klimt.fw
 
 ifeq ("$(CONFIG_TOUCHSCREEN_ATMEL_MXT1664S)", "y")
 fw-shipped-$(CONFIG_V1A) += tsp_atmel/mXT1664S_v.fw
-fw-shipped-$(CONFIG_V2A) += tsp_atmel/mXT1664S_v.fw
+fw-shipped-$(CONFIG_V2A) += tsp_atmel/mXT1664S_v2.fw
 fw-shipped-$(CONFIG_N1A) += tsp_atmel/mXT1664S_n.fw
 fw-shipped-$(CONFIG_N2A) += tsp_atmel/mXT1664S_n.fw
 endif
