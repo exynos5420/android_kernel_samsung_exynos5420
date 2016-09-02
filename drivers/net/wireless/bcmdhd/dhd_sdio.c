@@ -1,7 +1,7 @@
 /*
  * DHD Bus Module for SDIO
  *
- * Copyright (C) 1999-2015, Broadcom Corporation
+ * Copyright (C) 1999-2014, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_sdio.c 557250 2015-05-18 08:52:07Z $
+ * $Id: dhd_sdio.c 510616 2014-10-26 14:18:37Z $
  */
 
 #include <typedefs.h>
@@ -646,9 +646,6 @@ static int dhdsdio_download_code_array(dhd_bus_t *bus);
 static int dhdsdio_bussleep(dhd_bus_t *bus, bool sleep);
 static int dhdsdio_clkctl(dhd_bus_t *bus, uint target, bool pendok);
 static uint8 dhdsdio_sleepcsr_get(dhd_bus_t *bus);
-#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
-int dhd_get_system_rev(void);
-#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
 
 #ifdef WLMEDIA_HTSF
 #include <htsf.h>
@@ -804,7 +801,6 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 		(bus->sih->chip == BCM4339_CHIP_ID) ||
 		(bus->sih->chip == BCM43349_CHIP_ID) ||
 		(bus->sih->chip == BCM4345_CHIP_ID) ||
-		(bus->sih->chip == BCM43454_CHIP_ID) ||
 		(bus->sih->chip == BCM4354_CHIP_ID) ||
 		(bus->sih->chip == BCM4356_CHIP_ID) ||
 		(bus->sih->chip == BCM4350_CHIP_ID)) {
@@ -823,7 +819,6 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 		(bus->sih->chip == BCM4339_CHIP_ID) ||
 		(bus->sih->chip == BCM43349_CHIP_ID) ||
 		(bus->sih->chip == BCM4345_CHIP_ID) ||
-		(bus->sih->chip == BCM43454_CHIP_ID) ||
 		(bus->sih->chip == BCM4354_CHIP_ID) ||
 		(bus->sih->chip == BCM4356_CHIP_ID) ||
 		(bus->sih->chip == BCM4350_CHIP_ID)) {
@@ -835,7 +830,6 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 
 		if ((bus->sih->chip == BCM4350_CHIP_ID) ||
 			(bus->sih->chip == BCM4345_CHIP_ID) ||
-			(bus->sih->chip == BCM43454_CHIP_ID) ||
 			(bus->sih->chip == BCM4356_CHIP_ID) ||
 			(bus->sih->chip == BCM4354_CHIP_ID))
 			enabval &= CC_CHIPCTRL3_SR_ENG_ENABLE;
@@ -2248,9 +2242,6 @@ dhdsdio_sendfromq(dhd_bus_t *bus, uint maxframes)
 
 	osh = dhd->osh;
 	tx_prec_map = ~bus->flowcontrol;
-#ifdef DHD_LOSSLESS_ROAMING
-	tx_prec_map &= dhd->dequeue_prec_map;
-#endif
 	for (cnt = 0; (cnt < maxframes) && DATAOK(bus);) {
 		int i;
 		int num_pkt = 1;
@@ -2264,14 +2255,7 @@ dhdsdio_sendfromq(dhd_bus_t *bus, uint maxframes)
 		}
 		num_pkt = MIN(num_pkt, pktq_mlen(&bus->txq, tx_prec_map));
 		for (i = 0; i < num_pkt; i++) {
-			pkts[i] = pktq_mdeq(&bus->txq, tx_prec_map, &prec_out);
-			if (!pkts[i]) {
-				DHD_ERROR(("%s: pktg_mlen non-zero when no pkt\n",
-					__FUNCTION__));
-				ASSERT(0);
-				break;
-			}
-			PKTORPHAN(pkts[i]);
+			pkts[i] = pktq_mdeq(&bus->txq, ~bus->flowcontrol, &prec_out);
 			datalen += PKTLEN(osh, pkts[i]);
 		}
 		dhd_os_sdunlock_txq(bus->dhd);
@@ -3683,7 +3667,7 @@ dhdsdio_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, const ch
 
 		sd_ptr = (sdreg_t *)params;
 
-		addr = (uint32)((ulong)bus->regs + sd_ptr->offset);
+		addr = (ulong)bus->regs + sd_ptr->offset;
 		size = sd_ptr->func;
 		int_val = (int32)bcmsdh_reg_read(bus->sdh, addr, size);
 		if (bcmsdh_regfail(bus->sdh))
@@ -3699,7 +3683,7 @@ dhdsdio_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, const ch
 
 		sd_ptr = (sdreg_t *)params;
 
-		addr = (uint32)((ulong)bus->regs + sd_ptr->offset);
+		addr = (ulong)bus->regs + sd_ptr->offset;
 		size = sd_ptr->func;
 		bcmsdh_reg_write(bus->sdh, addr, size, sd_ptr->value);
 		if (bcmsdh_regfail(bus->sdh))
@@ -7075,7 +7059,7 @@ dhdsdio_chipmatch(uint16 chipid)
 		return TRUE;
 	if (chipid == BCM43349_CHIP_ID)
 		return TRUE;
-	if (chipid == BCM4345_CHIP_ID || chipid == BCM43454_CHIP_ID)
+	if (chipid == BCM4345_CHIP_ID)
 		return TRUE;
 	if (chipid == BCM4350_CHIP_ID)
 		return TRUE;
@@ -7745,9 +7729,7 @@ dhdsdio_probe_attach(struct dhd_bus *bus, osl_t *osh, void *sdh, void *regsva,
 				bus->dongle_ram_base = CR4_4360_RAM_BASE;
 				break;
 			case BCM4345_CHIP_ID:
-			case BCM43454_CHIP_ID:
-				bus->dongle_ram_base = (bus->sih->chiprev < 6)  /* from 4345C0 */
-					? CR4_4345_LT_C0_RAM_BASE : CR4_4345_GE_C0_RAM_BASE;
+				bus->dongle_ram_base = CR4_4345_RAM_BASE;
 				break;
 			default:
 				bus->dongle_ram_base = 0;
@@ -7832,9 +7814,8 @@ dhdsdio_probe_malloc(dhd_bus_t *bus, osl_t *osh, void *sdh)
 		DHD_ERROR(("%s: MALLOC of %d-byte databuf failed\n",
 			__FUNCTION__, MAX_DATA_BUF));
 		/* release rxbuf which was already located as above */
-		if (bus->rxbuf) {
-			DHD_OS_PREFREE(bus->dhd, DHD_PREALLOC_RXBUF, bus->rxbuf, bus->rxblen);
-		}
+		if (!bus->rxblen)
+			DHD_OS_PREFREE(bus->dhd, bus->rxbuf, bus->rxblen);
 		goto fail;
 	}
 
@@ -9114,31 +9095,6 @@ static int concate_revision_bcm43341(dhd_bus_t *bus,
 	return 0;
 }
 
-static int
-concate_revision_bcm43455(dhd_bus_t *bus,
-        char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
-{
-	char chipver_tag[10] = {0, };
-#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
-	int base_system_rev_for_nv = 0;
-#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
-
-	DHD_TRACE(("%s: BCM43455 Multiple Revision Check\n", __FUNCTION__));
-	if (bus->sih->chip != BCM4345_CHIP_ID) {
-		DHD_ERROR(("%s:Chip is not BCM43455!\n", __FUNCTION__));
-		return -1;
-	}
-#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
-	base_system_rev_for_nv = dhd_get_system_rev();
-	if (base_system_rev_for_nv > 0) {
-		DHD_ERROR(("----- Board Rev  [%d]-----\n", base_system_rev_for_nv));
-		sprintf(chipver_tag, "_r%02d", base_system_rev_for_nv);
-	}
-#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
-	strcat(nv_path, chipver_tag);
-	return 0;
-}
-
 int
 concate_revision(dhd_bus_t *bus, char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
 {
@@ -9189,9 +9145,7 @@ concate_revision(dhd_bus_t *bus, char *fw_path, int fw_path_len, char *nv_path, 
 	case BCM43341_CHIP_ID:
 		res = concate_revision_bcm43341(bus, fw_path, fw_path_len, nv_path, nv_path_len);
 		break;
-	case BCM4345_CHIP_ID:
-		res = concate_revision_bcm43455(bus, fw_path, fw_path_len, nv_path, nv_path_len);
-		break;
+
 
 	default:
 		DHD_ERROR(("REVISION SPECIFIC feature is not required\n"));
