@@ -1,7 +1,7 @@
 /*
  * DHD PROP_TXSTATUS Module.
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2016, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_wlfc.c 487328 2014-06-25 12:24:21Z $
+ * $Id: dhd_wlfc.c 617143 2016-02-04 07:57:06Z $
  *
  */
 
@@ -94,8 +94,8 @@ _dhd_wlfc_prec_enque(struct pktq *pq, int prec, void* p, bool qHead,
 
 
 	ASSERT(prec >= 0 && prec < pq->num_prec);
-	ASSERT(PKTLINK(p) == NULL);         /* queueing chains not allowed */
-
+	/* queueing chains not allowed and no segmented SKB (Kernel-3.18.y) */
+	ASSERT(!((PKTLINK(p) != NULL) && (PKTLINK(p) != p)));
 	ASSERT(!pktq_full(pq));
 	ASSERT(!pktq_pfull(pq, prec));
 
@@ -168,7 +168,7 @@ exit:
 	hang-er: noun, a contrivance on which things are hung, as a hook.
 */
 static void*
-_dhd_wlfc_hanger_create(osl_t *osh, int max_items)
+_dhd_wlfc_hanger_create(dhd_pub_t *dhd, int max_items)
 {
 	int i;
 	wlfc_hanger_t* hanger;
@@ -176,7 +176,8 @@ _dhd_wlfc_hanger_create(osl_t *osh, int max_items)
 	/* allow only up to a specific size for now */
 	ASSERT(max_items == WLFC_HANGER_MAXITEMS);
 
-	if ((hanger = (wlfc_hanger_t*)MALLOC(osh, WLFC_HANGER_SIZE(max_items))) == NULL)
+	if ((hanger = (wlfc_hanger_t*)DHD_OS_PREALLOC(dhd, DHD_PREALLOC_DHD_WLFC_HANGER,
+			WLFC_HANGER_SIZE(max_items))) == NULL)
 		return NULL;
 
 	memset(hanger, 0, WLFC_HANGER_SIZE(max_items));
@@ -189,12 +190,13 @@ _dhd_wlfc_hanger_create(osl_t *osh, int max_items)
 }
 
 static int
-_dhd_wlfc_hanger_delete(osl_t *osh, void* hanger)
+_dhd_wlfc_hanger_delete(dhd_pub_t *dhd, void* hanger)
 {
 	wlfc_hanger_t* h = (wlfc_hanger_t*)hanger;
 
 	if (h) {
-		MFREE(osh, h, WLFC_HANGER_SIZE(h->max_items));
+		DHD_OS_PREFREE(dhd, DHD_PREALLOC_DHD_WLFC_HANGER,
+				h, WLFC_HANGER_SIZE(h->max_items));
 		return BCME_OK;
 	}
 	return BCME_BADARG;
@@ -1874,6 +1876,90 @@ _dhd_wlfc_find_mac_desc_id_from_mac(dhd_pub_t *dhdp, uint8* ea)
 }
 
 static int
+dhd_wlfc_suppressed_acked_update(dhd_pub_t *dhd, uint16 hslot, uint8 prec, uint8 hcnt)
+{
+	athost_wl_status_info_t* ctx;
+	wlfc_mac_descriptor_t* entry = NULL;
+	struct pktq *pq;
+	struct pktq_prec *q;
+	void *p, *b;
+
+	if (!dhd) {
+		DHD_ERROR(("%s: dhd(%p)\n", __FUNCTION__, dhd));
+		return BCME_BADARG;
+	}
+	ctx = (athost_wl_status_info_t*)dhd->wlfc_state;
+	if (!ctx) {
+		DHD_ERROR(("%s: ctx(%p)\n", __FUNCTION__, ctx));
+		return BCME_ERROR;
+	}
+
+	ASSERT(hslot < (WLFC_MAC_DESC_TABLE_SIZE + WLFC_MAX_IFNUM + 1));
+
+	if (hslot < WLFC_MAC_DESC_TABLE_SIZE)
+		entry  = &ctx->destination_entries.nodes[hslot];
+	else if (hslot < (WLFC_MAC_DESC_TABLE_SIZE + WLFC_MAX_IFNUM))
+		entry = &ctx->destination_entries.interfaces[hslot - WLFC_MAC_DESC_TABLE_SIZE];
+	else
+		entry = &ctx->destination_entries.other;
+
+	pq = &entry->psq;
+
+	ASSERT(((prec << 1) + 1) < pq->num_prec);
+
+	q = &pq->q[((prec << 1) + 1)];
+
+	b = NULL;
+	p = q->head;
+
+	while (p && (hcnt != WL_TXSTATUS_GET_FREERUNCTR(DHD_PKTTAG_H2DTAG(PKTTAG(p))))) {
+		b = p;
+		p = PKTLINK(p);
+	}
+
+	if (p == NULL) {
+		/* none is matched */
+		if (b) {
+			DHD_ERROR(("%s: can't find matching seq(%d)\n", __FUNCTION__, hcnt));
+		} else {
+			DHD_ERROR(("%s: queue is empty\n", __FUNCTION__));
+		}
+
+		return BCME_ERROR;
+	}
+
+	if (!b) {
+		/* head packet is matched */
+		if ((q->head = PKTLINK(p)) == NULL) {
+			q->tail = NULL;
+		}
+	} else {
+		/* middle packet is matched */
+		PKTSETLINK(b, PKTLINK(p));
+		if (PKTLINK(p) == NULL) {
+			q->tail = b;
+		}
+	}
+
+	q->len--;
+	pq->len--;
+	ctx->pkt_cnt_in_q[DHD_PKTTAG_IF(PKTTAG(p))][prec]--;
+	ctx->pkt_cnt_per_ac[prec]--;
+
+	PKTSETLINK(p, NULL);
+
+	if (WLFC_GET_AFQ(dhd->wlfc_mode)) {
+		_dhd_wlfc_enque_afq(ctx, p);
+	} else {
+		_dhd_wlfc_hanger_pushpkt(ctx->hanger, p, hslot);
+	}
+
+	entry->transit_count++;
+
+	return BCME_OK;
+}
+
+static int
 _dhd_wlfc_compressed_txstatus_update(dhd_pub_t *dhd, uint8* pkt_info, uint8 len, void** p_mac)
 {
 	uint8 status_flag;
@@ -1924,6 +2010,10 @@ _dhd_wlfc_compressed_txstatus_update(dhd_pub_t *dhd, uint8* pkt_info, uint8 len,
 		wlfc->stats.wlc_tossed_pkts += len;
 	}
 
+	else if (status_flag == WLFC_CTL_PKTFLAG_SUPPRESS_ACKED) {
+		wlfc->stats.pkt_freed += len;
+	}
+
 	if (dhd->proptxstatus_txstatus_ignore) {
 		if (!remove_from_hanger) {
 			DHD_ERROR(("suppress txstatus: %d\n", status_flag));
@@ -1932,6 +2022,9 @@ _dhd_wlfc_compressed_txstatus_update(dhd_pub_t *dhd, uint8* pkt_info, uint8 len,
 	}
 
 	while (count < len) {
+		if (status_flag == WLFC_CTL_PKTFLAG_SUPPRESS_ACKED) {
+			dhd_wlfc_suppressed_acked_update(dhd, hslot, fifo_id, hcnt);
+		}
 		if (WLFC_GET_AFQ(dhd->wlfc_mode)) {
 			ret = _dhd_wlfc_deque_afq(wlfc, hslot, hcnt, fifo_id, &pktbuf);
 		} else {
@@ -2504,7 +2597,9 @@ int dhd_wlfc_enable(dhd_pub_t *dhd)
 	}
 
 	/* allocate space to track txstatus propagated from firmware */
-	dhd->wlfc_state = MALLOC(dhd->osh, sizeof(athost_wl_status_info_t));
+	dhd->wlfc_state = DHD_OS_PREALLOC(dhd, DHD_PREALLOC_DHD_WLFC_INFO,
+			sizeof(athost_wl_status_info_t));
+
 	if (dhd->wlfc_state == NULL) {
 		rc = BCME_NOMEM;
 		goto exit;
@@ -2519,9 +2614,10 @@ int dhd_wlfc_enable(dhd_pub_t *dhd)
 	wlfc->dhdp = dhd;
 
 	if (!WLFC_GET_AFQ(dhd->wlfc_mode)) {
-		wlfc->hanger = _dhd_wlfc_hanger_create(dhd->osh, WLFC_HANGER_MAXITEMS);
+		wlfc->hanger = _dhd_wlfc_hanger_create(dhd, WLFC_HANGER_MAXITEMS);
 		if (wlfc->hanger == NULL) {
-			MFREE(dhd->osh, dhd->wlfc_state, sizeof(athost_wl_status_info_t));
+			DHD_OS_PREFREE(dhd, DHD_PREALLOC_DHD_WLFC_INFO,
+				dhd->wlfc_state, sizeof(athost_wl_status_info_t));
 			dhd->wlfc_state = NULL;
 			rc = BCME_NOMEM;
 			goto exit;
@@ -3330,12 +3426,13 @@ dhd_wlfc_deinit(dhd_pub_t *dhd)
 
 	if (!WLFC_GET_AFQ(dhd->wlfc_mode)) {
 		/* delete hanger */
-		_dhd_wlfc_hanger_delete(dhd->osh, wlfc->hanger);
+		_dhd_wlfc_hanger_delete(dhd, wlfc->hanger);
 	}
 
 
 	/* free top structure */
-	MFREE(dhd->osh, dhd->wlfc_state, sizeof(athost_wl_status_info_t));
+	DHD_OS_PREFREE(dhd, DHD_PREALLOC_DHD_WLFC_INFO,
+		dhd->wlfc_state, sizeof(athost_wl_status_info_t));
 	dhd->wlfc_state = NULL;
 	dhd->proptxstatus_mode = hostreorder ?
 		WLFC_ONLY_AMPDU_HOSTREORDER : WLFC_FCMODE_NONE;
