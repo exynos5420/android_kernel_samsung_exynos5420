@@ -1,31 +1,29 @@
 #
 # MobiCore configuration
 #
-config MOBICORE_DRIVER
-	tristate "MobiCore Driver"
-	depends on ARM_TRUSTZONE
-	---help---
-	  Enable Linux Kernel MobiCore Support
+#if SOC_EXYNOS3470
+#source "drivers/gud/gud-exynos3470/Kconfig"
+#source "drivers/gud/sec-os-ctrl/Kconfig"
+#endif
 
-config MOBICORE_DEBUG
-    bool "MobiCore Module debug mode"
-    depends on MOBICORE_DRIVER
-    ---help---
-      Enable Debug mode in the MobiCore Driver.
-      It enables printing information about mobicore operations
+#if SOC_EXYNOS3472
+#source "drivers/gud/gud-exynos3472/Kconfig"
+#source "drivers/gud/sec-os-ctrl/Kconfig"
+#endif
 
-config MOBICORE_VERBOSE
-    bool "MobiCore Module verbose debug mode"
-    depends on MOBICORE_DEBUG
-    ---help---
-      Enable Verbose Debug mode in the MobiCore Driver.
-      It enables printing extra information about mobicore operations
-      Beware: this is only useful for debuging deep in the driver because
-      it prints too much logs
+#if SOC_EXYNOS5260
+#source "drivers/gud/gud-exynos5260/Kconfig"
+#endif
 
+#if SOC_EXYNOS5410
+#source "drivers/gud/gud-exynos5410/Kconfig"
+#endif
 
-config MOBICORE_API
-    tristate "Linux MobiCore API"
-    depends on MOBICORE_DRIVER
-    ---help---
-      Enable Linux Kernel MobiCore API
+if SOC_EXYNOS5420
+source "drivers/gud/gud-exynos5420/Kconfig"
+endif
+
+#if SOC_EXYNOS4415
+#source "drivers/gud/gud-exynos4415/Kconfig"
+#source "drivers/gud/sec-os-ctrl/Kconfig"
+#endif
