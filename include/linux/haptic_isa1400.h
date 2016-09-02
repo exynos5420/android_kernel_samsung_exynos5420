@@ -125,10 +125,4 @@ struct isa1400_drvdata {
 	int timeout;
 };
 
-#if defined(CONFIG_VIBETONZ)
-extern int isa1400_i2c_write_vibtonz(u8 addr, int length, u8 *data);
-extern void isa1400_clk_config(u8 index, int duty);
-extern void isa1400_chip_enable(bool en);
-#endif
-
 #endif

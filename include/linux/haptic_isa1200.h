@@ -91,11 +91,4 @@ struct isa1200_drvdata {
 	int max_timeout;
 };
 
-#if defined(CONFIG_VIBETONZ)
-extern int vibtonz_i2c_write(u8 addr, int length, u8 *data);
-extern void vibtonz_clk_enable(bool en);
-extern void vibtonz_clk_config(int duty);
-extern void vibtonz_chip_enable(bool en);
-#endif
-
 #endif	/* _ISA1200_H */
