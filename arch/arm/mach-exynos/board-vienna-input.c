@@ -45,6 +45,8 @@
 
 #if defined(CONFIG_N2A)
 #define MXT_FIRMWARE_NAME_REVISION	"mXT1664S_n.fw"
+#elif defined(CONFIG_V2A)
+#define MXT_FIRMWARE_NAME_REVISION	"mXT1664S_v2.fw"
 #else
 #define MXT_FIRMWARE_NAME_REVISION	"mXT1664S_v.fw"
 #endif

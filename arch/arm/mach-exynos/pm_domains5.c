@@ -1128,7 +1128,7 @@ static int exynos5420_pm_domain_init(void)
 	exynos_pm_add_clk(&exynos54xx_pd_mfc, NULL, "mfc");
 #endif
 
-#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04)
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04) || defined(CONFIG_MALI_T6XX_R7P0)
 	exynos_pm_add_platdev(&exynos54xx_pd_g3d, &exynos5_device_g3d);
 	exynos_pm_add_clk(&exynos54xx_pd_g3d, &exynos5_device_g3d.dev, "g3d");
 #else
