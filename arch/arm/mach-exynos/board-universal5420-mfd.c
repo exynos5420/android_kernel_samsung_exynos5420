@@ -129,7 +129,6 @@ static struct max77803_led_platform_data max77803_led_pdata = {
 };
 
 #endif
-#ifdef CONFIG_VIBETONZ
 static struct max77803_haptic_platform_data max77803_haptic_pdata = {
 	.max_timeout = 10000,
 #if defined(CONFIG_N2A) || defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
@@ -150,7 +149,6 @@ static struct max77803_haptic_platform_data max77803_haptic_pdata = {
 	.regulator_name = "vcc_3.0v_motor",
 #endif
 };
-#endif
 
 struct max77803_platform_data exynos4_max77803_info = {
 	.irq_base	= IRQ_BOARD_IFIC_START,
@@ -168,9 +166,7 @@ struct max77803_platform_data exynos4_max77803_info = {
 	.is_default_uart_path_cp =  is_muic_default_uart_path_cp,
 	.regulators = max77803_regulators,
 	.num_regulators = MAX77803_REG_MAX,
-#ifdef CONFIG_VIBETONZ
 	.haptic_data = &max77803_haptic_pdata,
-#endif
 
 #ifdef CONFIG_LEDS_MAX77803
 	.led_data = &max77803_led_pdata,
@@ -292,7 +288,6 @@ static struct max77693_led_platform_data max77693_led_pdata = {
 #endif
 
 #if 0
-#ifdef CONFIG_VIBETONZ
 static struct max77693_haptic_platform_data max77693_haptic_pdata = {
 	.max_timeout = 10000,
 	.duty = 35804,
@@ -303,7 +298,6 @@ static struct max77693_haptic_platform_data max77693_haptic_pdata = {
 	.pwm_id = 0,
 	.regulator_name = "vcc_3.0v_motor",
 };
-#endif
 #endif
 
 struct max77693_platform_data exynos5_max77693_info = {
@@ -317,9 +311,7 @@ struct max77693_platform_data exynos5_max77693_info = {
 	.num_regulators = MAX77693_REG_MAX,
 
 #if 0
-#ifdef CONFIG_VIBETONZ
 	.haptic_data = &max77803_haptic_pdata,
-#endif
 #endif
 
 #ifdef CONFIG_LEDS_MAX77693

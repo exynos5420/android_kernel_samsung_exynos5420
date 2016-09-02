@@ -146,7 +146,7 @@ static struct platform_device *universal5420_devices[] __initdata = {
 	&ramconsole_device,
 	&persistent_trace_device,
 	&persistent_clock,
-#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04)
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04) || defined(CONFIG_MALI_T6XX_R7P0)
 	&exynos5_device_g3d,
 #endif
 	&s3c_device_adc,
