@@ -596,6 +596,7 @@ static struct dw_mci_board universal5420_dwmci2_pdata __initdata = {
 				  MMC_CAP_UHS_SDR50 |
 				  MMC_CAP_UHS_SDR104,
 #endif
+	.caps2			= MMC_CAP2_DETECT_ON_ERR,
 	.fifo_depth		= 0x40,
 	.detect_delay_ms	= 200,
 	.hclk_name		= "dwmci",

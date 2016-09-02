@@ -116,7 +116,7 @@ static struct s3c_watchdog_platdata smdk5420_watchdog_platform_data = {
 static struct platform_device *smdk5420_devices[] __initdata = {
 	&ramconsole_device,
 	&persistent_trace_device,
-#ifdef CONFIG_MALI_T6XX
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_T6XX_R7P0)
 	&exynos5_device_g3d,
 #endif
 	&s3c_device_adc,
