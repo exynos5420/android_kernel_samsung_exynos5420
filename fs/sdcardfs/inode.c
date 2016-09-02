@@ -21,7 +21,7 @@
 #include "sdcardfs.h"
 
 /* Do not directly use this function. Use OVERRIDE_CRED() instead. */
-const struct cred * override_fsids(struct sdcardfs_sb_info* sbi)
+const struct cred * override_fsids(uid_t fsuid, gid_t fsgid)
 {
 	struct cred * cred; 
 	const struct cred * old_cred; 
@@ -30,8 +30,8 @@ const struct cred * override_fsids(struct sdcardfs_sb_info* sbi)
 	if (!cred) 
 		return NULL; 
 
-	cred->fsuid = sbi->options.fs_low_uid;
-	cred->fsgid = sbi->options.fs_low_gid; 
+	cred->fsuid = fsuid;
+	cred->fsgid = fsgid;
 
 	old_cred = override_creds(cred); 
 
@@ -49,17 +49,15 @@ void revert_fsids(const struct cred * old_cred)
 }
 
 static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
-			 umode_t mode, struct nameidata *nd)
+				umode_t mode, struct nameidata *nd)
 {
 	int err = 0;
 	struct dentry *lower_dentry;
 	struct dentry *lower_parent_dentry = NULL;
 	struct path lower_path, saved_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
-	int has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
-	if(!check_caller_access_to_name(dir, dentry->d_name.name, sbi->options.derive, 1, has_rw)) {
+	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
@@ -86,6 +84,7 @@ static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 	err = vfs_create(lower_parent_dentry->d_inode, lower_dentry, mode, nd);
 
 	pathcpy(&nd->path, &saved_path);
+
 	if (err)
 		goto out;
 
@@ -160,11 +159,9 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 	struct inode *lower_dir_inode = sdcardfs_lower_inode(dir);
 	struct dentry *lower_dir_dentry;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
-	int has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
-	if(!check_caller_access_to_name(dir, dentry->d_name.name, sbi->options.derive, 1, has_rw)) {
+	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
@@ -273,7 +270,6 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	struct dentry *lower_dentry;
 	struct dentry *lower_parent_dentry = NULL;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 	struct sdcardfs_inode_info *pi = SDCARDFS_I(dir);
 	char *page_buf;
@@ -282,8 +278,7 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	int fullpath_namelen;
 	int touch_err = 0;
 
-	int has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
-	if(!check_caller_access_to_name(dir, dentry->d_name.name, sbi->options.derive, 1, has_rw)) {
+	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
@@ -323,7 +318,6 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	
 	/* if it is a local obb dentry, setup it with the base obbpath */
 	if(need_graft_path(dentry)) {
-
 		err = setup_obb_dentry(dentry, &lower_path);
 		if(err) {
 			/* if the sbi->obbpath is not available, the lower_path won't be 
@@ -353,8 +347,7 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 
 	unlock_dir(lower_parent_dentry);
 
-	if ((sbi->options.derive == DERIVE_UNIFIED) && (!strcasecmp(dentry->d_name.name, "obb"))
-		&& (pi->perm == PERM_ANDROID) && (pi->userid == 0))
+	if (!strcasecmp(dentry->d_name.name, "obb") && (pi->perm == PERM_ANDROID))
 		make_nomedia_in_obb = 1;
 
 	/* When creating /Android/data and /Android/obb, mark them as .nomedia */
@@ -411,15 +404,13 @@ static int sdcardfs_rmdir(struct inode *dir, struct dentry *dentry)
 	struct dentry *lower_dir_dentry;
 	int err;
 	struct path lower_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 	//char *path_s = NULL;
 
-	int has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
-	if(!check_caller_access_to_name(dir, dentry->d_name.name, sbi->options.derive, 1, has_rw)) {
+	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 						 "  dentry: %s, task:%s\n",
-						  __func__, dentry->d_name.name, current->comm);
+						 __func__, dentry->d_name.name, current->comm);
 		err = -EACCES;
 		goto out_eacces;
 	}
@@ -511,16 +502,12 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct dentry *trap = NULL;
 	struct dentry *new_parent = NULL;
 	struct path lower_old_path, lower_new_path;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(old_dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
-	int has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
-	if(!check_caller_access_to_name(old_dir, old_dentry->d_name.name,
-			sbi->options.derive, 1, has_rw) ||
-		!check_caller_access_to_name(new_dir, new_dentry->d_name.name,
-			sbi->options.derive, 1, has_rw)) {
+	if(!check_caller_access_to_name(old_dir, old_dentry->d_name.name) ||
+		!check_caller_access_to_name(new_dir, new_dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
-						 "  new dentry: %s, task:%s\n",
+						 "  new_dentry: %s, task:%s\n",
 						 __func__, new_dentry->d_name.name, current->comm);
 		err = -EACCES;
 		goto out_eacces;
@@ -712,15 +699,13 @@ static int sdcardfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct dentry *parent;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 
 	parent = dget_parent(dentry);
-	if(!check_caller_access_to_name(parent->d_inode, dentry->d_name.name,
-						sbi->options.derive, 0, 0)) {
-		dput(parent);
+	if(!check_caller_access_to_name(parent->d_inode, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
+		dput(parent);
 		return -EACCES;
 	}
 	dput(parent);
@@ -755,9 +740,7 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct iattr lower_ia;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	struct dentry *parent;
-	int has_rw;
 
 	inode = dentry->d_inode;
 
@@ -771,10 +754,8 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	/* no vfs_XXX operations required, cred overriding will be skipped. wj*/
 	if (!err) {
 		/* check the Android group ID */
-		has_rw = get_caller_has_rw_locked(sbi->pkgl_id, sbi->options.derive);
 		parent = dget_parent(dentry);
-		if(!check_caller_access_to_name(parent->d_inode, dentry->d_name.name,
-						sbi->options.derive, 1, has_rw)) {
+		if(!check_caller_access_to_name(parent->d_inode, dentry->d_name.name)) {
 			printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n" 
 							 "  dentry: %s, task:%s\n",
 							 __func__, dentry->d_name.name, current->comm);
@@ -806,10 +787,19 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	 * the lower level.
 	 */
 	if (ia->ia_valid & ATTR_SIZE) {
+		loff_t oldsize;
 		err = inode_newsize_ok(inode, ia->ia_size);
 		if (err)
 			goto out;
-		truncate_setsize(inode, ia->ia_size);
+		/* This code from truncate_setsize(). We need to add spin_lock
+		 * to avoid race condition with fsstack_copy_inode_size() */
+		oldsize = i_size_read(inode);
+		if (sizeof(ia->ia_size) > sizeof(long))
+			spin_lock(&inode->i_lock);
+		i_size_write(inode, ia->ia_size);
+		if (sizeof(ia->ia_size) > sizeof(long))
+			spin_unlock(&inode->i_lock);
+		truncate_pagecache(inode, oldsize, ia->ia_size);
 	}
 
 	/*
