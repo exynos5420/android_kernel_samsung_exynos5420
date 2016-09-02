@@ -96,7 +96,7 @@ int mc_fastcall_init(struct mc_context *context)
 	if (IS_ERR(fastcall_thread)) {
 		ret = PTR_ERR(fastcall_thread);
 		fastcall_thread = NULL;
-		MCDRV_DBG_ERROR(mcd, "cannot create fastcall wq (%d)\n", ret);
+		MCDRV_DBG_ERROR(mcd, "cannot create fastcall wq (%d)", ret);
 		return ret;
 	}
 
@@ -162,19 +162,20 @@ int mc_info(uint32_t ext_info_id, uint32_t *state, uint32_t *ext_info)
 	int ret = 0;
 	union mc_fc_info fc_info;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter\n");
+	MCDRV_DBG_VERBOSE(mcd, "enter");
 
 	memset(&fc_info, 0, sizeof(fc_info));
 	fc_info.as_in.cmd = MC_FC_INFO;
 	fc_info.as_in.ext_info_id = ext_info_id;
 
-	MCDRV_DBG(mcd, "fc_info <- cmd=0x%08x, ext_info_id=0x%08x\n",
+	MCDRV_DBG(mcd, "fc_info <- cmd=0x%08x, ext_info_id=0x%08x",
 		  fc_info.as_in.cmd, fc_info.as_in.ext_info_id);
 
 	mc_fastcall(&(fc_info.as_generic));
 
 	MCDRV_DBG(mcd,
-		  "fc_info -> r=0x%08x ret=0x%08x state=0x%08x ext_info=0x%08x",
+		  "fc_info -> r=0x%08x ret=0x%08x state=0x%08x "
+		  "ext_info=0x%08x",
 		  fc_info.as_out.resp,
 		  fc_info.as_out.ret,
 		  fc_info.as_out.state,
@@ -185,7 +186,7 @@ int mc_info(uint32_t ext_info_id, uint32_t *state, uint32_t *ext_info)
 	*state  = fc_info.as_out.state;
 	*ext_info = fc_info.as_out.ext_info;
 
-	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X\n", ret, ret);
+	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
 
 	return ret;
 }
@@ -196,7 +197,7 @@ int mc_yield(void)
 	int ret = 0;
 	union fc_generic yield;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter\n");
+	MCDRV_DBG_VERBOSE(mcd, "enter");
 
 	memset(&yield, 0, sizeof(yield));
 	yield.as_in.cmd = MC_SMC_N_YIELD;
@@ -211,7 +212,7 @@ int mc_nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
-	MCDRV_DBG_VERBOSE(mcd, "enter\n");
+	MCDRV_DBG_VERBOSE(mcd, "enter");
 
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;
@@ -226,7 +227,7 @@ int _nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
-	MCDRV_DBG_VERBOSE(mcd, "enter\n");
+	MCDRV_DBG_VERBOSE(mcd, "enter");
 
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;
@@ -243,7 +244,7 @@ int mc_init(uint32_t base, uint32_t nq_offset, uint32_t nq_length,
 	int ret = 0;
 	union mc_fc_init fc_init;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter\n");
+	MCDRV_DBG_VERBOSE(mcd, "enter");
 
 	memset(&fc_init, 0, sizeof(fc_init));
 
@@ -260,18 +261,18 @@ int mc_init(uint32_t base, uint32_t nq_offset, uint32_t nq_length,
 	 * mciInfo was already set up in mmap
 	 */
 	MCDRV_DBG(mcd,
-		  "cmd=0x%08x, base=0x%08x,nq_info=0x%08x, mcp_info=0x%08x\n",
+		  "cmd=0x%08x, base=0x%08x,nq_info=0x%08x, mcp_info=0x%08x",
 		  fc_init.as_in.cmd, fc_init.as_in.base, fc_init.as_in.nq_info,
 		  fc_init.as_in.mcp_info);
 
 	mc_fastcall(&fc_init.as_generic);
 
-	MCDRV_DBG(mcd, "out cmd=0x%08x, ret=0x%08x\n", fc_init.as_out.resp,
+	MCDRV_DBG(mcd, "out cmd=0x%08x, ret=0x%08x", fc_init.as_out.resp,
 		  fc_init.as_out.ret);
 
 	ret = convert_fc_ret(fc_init.as_out.ret);
 
-	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X\n", ret, ret);
+	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
 
 	return ret;
 }
@@ -279,7 +280,7 @@ int mc_init(uint32_t base, uint32_t nq_offset, uint32_t nq_length,
 /* Return MobiCore driver version */
 uint32_t mc_get_version(void)
 {
-	MCDRV_DBG(mcd, "MobiCore driver version is %i.%i\n",
+	MCDRV_DBG(mcd, "MobiCore driver version is %i.%i",
 		  MCDRVMODULEAPI_VERSION_MAJOR,
 		  MCDRVMODULEAPI_VERSION_MINOR);
 

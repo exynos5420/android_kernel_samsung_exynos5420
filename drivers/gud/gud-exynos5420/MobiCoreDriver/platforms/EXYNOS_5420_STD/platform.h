@@ -17,14 +17,14 @@
 #include <mach/irqs.h>
 
 /* MobiCore Interrupt. */
-#define MC_INTR_SSIQ IRQ_SPI(223)
+#define MC_INTR_SSIQ                          IRQ_SPI(223)
 
 /* Enable mobicore mem traces */
 #define MC_MEM_TRACES
 
 /* Enable Runtime Power Management */
 #ifdef CONFIG_PM_RUNTIME
-#define MC_PM_RUNTIME
+ #define MC_PM_RUNTIME
 #endif
 
 /* Enabel BL switcher notifier */
