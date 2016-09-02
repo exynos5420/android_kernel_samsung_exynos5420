@@ -32,9 +32,6 @@
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
-#if defined(CONFIG_HAPTIC)
-#include "haptic.h"
-#endif
 
 static int isa1400_i2c_write(struct i2c_client *client,
 					u8 addr, u8 val)
@@ -157,80 +154,11 @@ static void isa1400_enable(struct timed_output_dev *_dev, int value)
 	spin_unlock_irqrestore(&data->lock, flags);
 }
 
-#if defined(CONFIG_HAPTIC)
-static struct isa1400_drvdata	*isa1400_ddata;
-void isa1400_set_force(u8 index, int duty)
-{
-	int motor_index = 0;
-#if defined(ISA1400_DEBUG_LOG)
-	static u8 pre_index;
-	static int pre_duty;
-#endif
-
-	if (NULL == isa1400_ddata) {
-		printk(KERN_ERR "[VIB] driver is not ready\n");
-		return ;
-	}
-
-	if (index >= isa1400_ddata->pdata->actuactor_num) {
-		printk(KERN_ERR "[VIB] index is wrong : %d\n", index);
-		return ;
-	}
-
-#if defined(ISA1400_DEBUG_LOG)
-	if ((index != pre_index) || (duty != pre_duty)) {
-		pre_index = index;
-		pre_duty = duty;
-		printk(KERN_DEBUG "[VIB] index[%d] : %d\n", index, duty);
-	}
-#endif
-
-	motor_index = isa1400_ddata->pdata->actuator[index];
-
-	/* for the internal pwm */
-	/* if the isa1400 is used by external clock,
-	 * this function should be fixed. */
-	duty = (duty > 0) ? duty : (abs(duty) |0x80);
-
-	isa1400_i2c_write(isa1400_ddata->client,
-		ISA1400_REG_GAIN + motor_index,
-		duty);
-	isa1400_i2c_write(isa1400_ddata->client,
-		ISA1400_REG_HPTEN,
-		(0x01 << motor_index));
-}
-
-void isa1400_chip_enable(bool en)
-{
-	if (NULL == isa1400_ddata) {
-		printk(KERN_ERR "[VIB] driver is not ready\n");
-		return ;
-	}
-
-	if (isa1400_ddata->power_en == en)
-		return ;
-
-#if defined(ISA1400_DEBUG_LOG)
-	printk(KERN_DEBUG "[VIB] %s : %s\n", __func__, en ? "on" : "off");
-#endif
-
-	isa1400_ddata->power_en = en;
-
-	if (en)
-		isa1400_hw_init(isa1400_ddata);
-	else
-		isa1400_on(isa1400_ddata);
-}
-#endif	/* CONFIG_HAPTIC */
-
 static int __devinit isa1400_i2c_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
 	struct isa1400_pdata *pdata = client->dev.platform_data;
 	struct isa1400_drvdata *ddata;
-#if defined(CONFIG_HAPTIC)
-	struct vibe_drvdata *vibe;
-#endif
 	int ret = 0;
 
 	ddata = kzalloc(sizeof(struct isa1400_drvdata), GFP_KERNEL);
@@ -265,18 +193,6 @@ static int __devinit isa1400_i2c_probe(struct i2c_client *client,
 		printk(KERN_ERR "[VIB] Failed to register timed_output : -%d\n", ret);
 		goto err_to_dev_reg;
 	}
-
-#if defined(CONFIG_HAPTIC)
-	vibe = kzalloc(sizeof(struct vibe_drvdata), GFP_KERNEL);
-	if (vibe) {
-		isa1400_ddata = ddata;
-		vibe->set_force = isa1400_set_force;
-		vibe->chip_en = isa1400_chip_enable;
-		vibe->num_actuators = 2;
-		tspdrv_init(vibe);
-	} else
-		printk(KERN_ERR "[VIB] Failed to alloc vibe memory.\n");
-#endif
 
 	return 0;
 
@@ -332,7 +248,6 @@ static void __exit isa1400_exit(void)
 module_init(isa1400_init);
 module_exit(isa1400_exit);
 
-MODULE_AUTHOR("Junki Min <Junki671.min@samsung.com>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("haptic driver for the isa1400 ic");
 
