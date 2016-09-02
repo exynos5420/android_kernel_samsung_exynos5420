@@ -34,9 +34,6 @@
 #include <linux/haptic_isa1200.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>
-#if defined(CONFIG_HAPTIC)
-#include "haptic.h"
-#endif
 
 int isa1200_i2c_write(struct i2c_client *client,
 					u8 addr, u8 val)
@@ -150,41 +147,11 @@ static void isa1200_enable(struct timed_output_dev *_dev, int value)
 	spin_unlock_irqrestore(&data->lock, flags);
 }
 
-#if defined(CONFIG_HAPTIC)
-static struct isa1200_drvdata *isa1200_ddata;
-void isa1200_set_force(u8 index, int duty)
-{
-	if (NULL == isa1200_ddata) {
-		printk(KERN_ERR "[VIB] driver is not ready\n");
-		return ;
-	}
-
-	/* for the external pwm */
-	/* if the isa1200 is used by internal clock,
-	 * this function should be fixed. */
-	isa1200_ddata->pdata->pwm_cfg(duty);
-}
-
-void isa1200_chip_enable(bool en)
-{
-	if (NULL == isa1200_ddata) {
-		printk(KERN_ERR "[VIB] driver is not ready\n");
-		return ;
-	}
-	isa1200_ddata->pdata->pwm_en(en);
-	isa1200_on(isa1200_ddata, en);
-}
-#endif	/* CONFIG_HAPTIC */
-
-
 static int __devinit isa1200_i2c_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
 	struct isa1200_pdata *pdata = client->dev.platform_data;
 	struct isa1200_drvdata *ddata;
-#if defined(CONFIG_HAPTIC)
-	struct vibe_drvdata *vibe;
-#endif
 	int ret = 0;
 
 	ddata = kzalloc(sizeof(struct isa1200_drvdata), GFP_KERNEL);
@@ -222,18 +189,6 @@ static int __devinit isa1200_i2c_probe(struct i2c_client *client,
 		printk(KERN_ERR "[VIB] Failed to register timed_output : -%d\n", ret);
 		goto err_to_dev_reg;
 	}
-
-#if defined(CONFIG_HAPTIC)
-	vibe = kzalloc(sizeof(struct vibe_drvdata), GFP_KERNEL);
-	if (vibe) {
-		isa1200_ddata = ddata;
-		vibe->set_force = isa1200_set_force;
-		vibe->chip_en = isa1200_chip_enable;
-		vibe->num_actuators = 1;
-		tspdrv_init(vibe);
-	} else
-		printk(KERN_ERR "[VIB] Failed to alloc vibe memory.\n");
-#endif
 
 	return 0;
 
@@ -291,6 +246,5 @@ static void __exit isa1200_exit(void)
 module_init(isa1200_init);
 module_exit(isa1200_exit);
 
-MODULE_AUTHOR("junki671.min@samsung.com");
 MODULE_DESCRIPTION("isa1200 driver for haptic solution");
 MODULE_LICENSE("GPL");
