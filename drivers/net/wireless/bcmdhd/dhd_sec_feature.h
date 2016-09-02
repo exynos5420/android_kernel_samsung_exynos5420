@@ -79,7 +79,7 @@
 
 /* PROJECTS START */
 
-#if defined(CONFIG_MACH_VIENNA) || defined(CONFIG_MACH_V2) || defined(CONFIG_CHAGALL) || defined(CONFIG_V1A) || defined(CONFIG_V1A_WIFI) || defined(CONFIG_V2A) || defined(CONFIG_V2A_WIFI)
+#if defined(CONFIG_MACH_VIENNA) || defined(CONFIG_MACH_V2) || defined(CONFIG_CHAGALL)
 #define SUPPORT_MULTIPLE_CHIPS
 
 #undef USE_CID_CHECK
