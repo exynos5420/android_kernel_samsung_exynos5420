@@ -659,14 +659,11 @@ static void mxt_report_input_data(struct mxt_data *data)
 		report_count++;
 
 		if (data->fingers[i].state == MXT_STATE_PRESS) {
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 			tsp_debug_info(true, &data->client->dev, "[P][%d]: T[%d][%d] X[%d],Y[%d],W[%d],Z[%d],COMP[%d],SUM[%d],P[%d]\n",
 				i, data->fingers[i].type,
 				data->fingers[i].event,
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 				data->fingers[i].x, data->fingers[i].y,
-#else
-				0,0,
-#endif
 				data->fingers[i].w, data->fingers[i].z, 
 #if TSP_USE_SHAPETOUCH
 				data->fingers[i].component,
@@ -685,16 +682,14 @@ static void mxt_report_input_data(struct mxt_data *data)
 #if TSP_BOOSTER
 			booster_restart = true;
 #endif
+#endif /*CONFIG_SAMSUNG_PRODUCT_SHIP*/
 		}
-		else if (data->fingers[i].state == MXT_STATE_RELEASE)
+		else if (data->fingers[i].state == MXT_STATE_RELEASE) {
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 			tsp_debug_info(true, &data->client->dev, "[R][%d]: T[%d][%d] X[%d],Y[%d],W[%d],Z[%d],COMP[%d],SUM[%d],P[%d],M[%d]\n",
 				i, data->fingers[i].type,
 				data->fingers[i].event,
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 				data->fingers[i].x, data->fingers[i].y,
-#else
-				0,0,
-#endif
 				data->fingers[i].w, data->fingers[i].z, 
 #if TSP_USE_SHAPETOUCH
 				data->fingers[i].component,
@@ -709,6 +704,8 @@ static void mxt_report_input_data(struct mxt_data *data)
 				0,0,0
 #endif /*TSP_USE_SHAPETOUCH*/
 			, data->fingers[i].mcount);
+#endif /*CONFIG_SAMSUNG_PRODUCT_SHIP*/
+		}
 
 
 		if (data->fingers[i].state == MXT_STATE_RELEASE) {
