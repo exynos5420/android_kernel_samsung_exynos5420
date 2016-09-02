@@ -155,6 +155,4 @@ source "drivers/battery/Kconfig"
 source "drivers/gud/Kconfig"
 
 source "drivers/ice4_fpga/Kconfig"
-
-source "drivers/secfilter/Kconfig"
 endmenu
