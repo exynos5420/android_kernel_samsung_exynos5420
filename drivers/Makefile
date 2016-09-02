@@ -145,7 +145,6 @@ obj-$(CONFIG_SENSORS)		+= sensors/
 
 obj-y				+= gud/
 obj-$(CONFIG_ICE4_FPGA)		+= ice4_fpga/
-obj-$(CONFIG_SEC_NET_FILTER)	+= secfilter/
 
 ifeq (1, $(shell if [ -d ./drivers/exfat ] ; then echo 1 ; fi))
 obj-y				+= exfat/
