@@ -1,7 +1,7 @@
 /*
  * DHD Bus Module for SDIO
  *
- * Copyright (C) 1999-2014, Broadcom Corporation
+ * Copyright (C) 1999-2016, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_sdio.c 510616 2014-10-26 14:18:37Z $
+ * $Id: dhd_sdio.c 637878 2016-05-16 04:44:38Z $
  */
 
 #include <typedefs.h>
@@ -173,6 +173,10 @@ DHD_SPINWAIT_SLEEP_INIT(sdioh_spinwait_sleep);
 DEFINE_MUTEX(_dhd_sdio_mutex_lock_);
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)) */
 #endif 
+
+#if defined(SUPPORT_MULTIPLE_BOARD_REV_FROM_HW)
+extern unsigned int system_hw_rev;
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_HW */
 
 #ifdef DHD_DEBUG
 /* Device console log buffer state */
@@ -646,6 +650,9 @@ static int dhdsdio_download_code_array(dhd_bus_t *bus);
 static int dhdsdio_bussleep(dhd_bus_t *bus, bool sleep);
 static int dhdsdio_clkctl(dhd_bus_t *bus, uint target, bool pendok);
 static uint8 dhdsdio_sleepcsr_get(dhd_bus_t *bus);
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
+int dhd_get_system_rev(void);
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
 
 #ifdef WLMEDIA_HTSF
 #include <htsf.h>
@@ -801,6 +808,7 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 		(bus->sih->chip == BCM4339_CHIP_ID) ||
 		(bus->sih->chip == BCM43349_CHIP_ID) ||
 		(bus->sih->chip == BCM4345_CHIP_ID) ||
+		(bus->sih->chip == BCM43454_CHIP_ID) ||
 		(bus->sih->chip == BCM4354_CHIP_ID) ||
 		(bus->sih->chip == BCM4356_CHIP_ID) ||
 		(bus->sih->chip == BCM4350_CHIP_ID)) {
@@ -819,6 +827,7 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 		(bus->sih->chip == BCM4339_CHIP_ID) ||
 		(bus->sih->chip == BCM43349_CHIP_ID) ||
 		(bus->sih->chip == BCM4345_CHIP_ID) ||
+		(bus->sih->chip == BCM43454_CHIP_ID) ||
 		(bus->sih->chip == BCM4354_CHIP_ID) ||
 		(bus->sih->chip == BCM4356_CHIP_ID) ||
 		(bus->sih->chip == BCM4350_CHIP_ID)) {
@@ -830,6 +839,7 @@ dhdsdio_sr_cap(dhd_bus_t *bus)
 
 		if ((bus->sih->chip == BCM4350_CHIP_ID) ||
 			(bus->sih->chip == BCM4345_CHIP_ID) ||
+			(bus->sih->chip == BCM43454_CHIP_ID) ||
 			(bus->sih->chip == BCM4356_CHIP_ID) ||
 			(bus->sih->chip == BCM4354_CHIP_ID))
 			enabval &= CC_CHIPCTRL3_SR_ENG_ENABLE;
@@ -1239,6 +1249,7 @@ dhdsdio_htclk(dhd_bus_t *bus, bool on, bool pendok)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
 			else if (ht_avail_error == HT_AVAIL_ERROR_MAX) {
+				bus->dhd->hang_reason = HANG_REASON_HT_AVAIL_ERROR;
 				dhd_os_send_hang_message(bus->dhd);
 			}
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27) */
@@ -1688,10 +1699,9 @@ dhd_bus_txdata(struct dhd_bus *bus, void *pkt)
 	int ret = BCME_ERROR;
 	osl_t *osh;
 	uint datalen, prec;
-#if defined(DHD_TX_DUMP) || defined(DHD_8021X_DUMP)
+#if defined(DHD_TX_DUMP)
 	uint8 *dump_data;
-	uint16 protocol;
-#endif /* DHD_TX_DUMP || DHD_8021X_DUMP */
+#endif /* DHD_TX_DUMP */
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
@@ -1714,18 +1724,9 @@ dhd_bus_txdata(struct dhd_bus *bus, void *pkt)
 	BCM_REFERENCE(datalen);
 #endif /* SDTEST */
 
-#if defined(DHD_TX_DUMP) || defined(DHD_8021X_DUMP)
+#if defined(DHD_TX_DUMP) && defined(DHD_TX_FULL_DUMP)
 	dump_data = PKTDATA(osh, pkt);
 	dump_data += 4; /* skip 4 bytes header */
-	protocol = (dump_data[12] << 8) | dump_data[13];
-
-	if (protocol == ETHER_TYPE_802_1X) {
-		DHD_ERROR(("ETHER_TYPE_802_1X [TX]: ver %d, type %d, replay %d\n",
-			dump_data[14], dump_data[15], dump_data[30]));
-	}
-#endif /* DHD_TX_DUMP || DHD_8021X_DUMP */
-
-#if defined(DHD_TX_DUMP) && defined(DHD_TX_FULL_DUMP)
 	{
 		int i;
 		DHD_ERROR(("TX DUMP\n"));
@@ -2232,6 +2233,10 @@ dhdsdio_sendfromq(dhd_bus_t *bus, uint maxframes)
 	uint datalen = 0;
 	dhd_pub_t *dhd = bus->dhd;
 	sdpcmd_regs_t *regs = bus->regs;
+#ifdef DHD_LOSSLESS_ROAMING
+	uint8 *pktdata;
+	struct ether_header *eh;
+#endif /* DHD_LOSSLESS_ROAMING */
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
@@ -2242,6 +2247,9 @@ dhdsdio_sendfromq(dhd_bus_t *bus, uint maxframes)
 
 	osh = dhd->osh;
 	tx_prec_map = ~bus->flowcontrol;
+#ifdef DHD_LOSSLESS_ROAMING
+	tx_prec_map &= dhd->dequeue_prec_map;
+#endif /* DHD_LOSSLESS_ROAMING */
 	for (cnt = 0; (cnt < maxframes) && DATAOK(bus);) {
 		int i;
 		int num_pkt = 1;
@@ -2255,7 +2263,27 @@ dhdsdio_sendfromq(dhd_bus_t *bus, uint maxframes)
 		}
 		num_pkt = MIN(num_pkt, pktq_mlen(&bus->txq, tx_prec_map));
 		for (i = 0; i < num_pkt; i++) {
-			pkts[i] = pktq_mdeq(&bus->txq, ~bus->flowcontrol, &prec_out);
+			pkts[i] = pktq_mdeq(&bus->txq, tx_prec_map, &prec_out);
+			if (!pkts[i]) {
+				DHD_ERROR(("%s: pktg_mlen non-zero when no pkt\n",
+					__FUNCTION__));
+				ASSERT(0);
+				break;
+			}
+#ifdef DHD_LOSSLESS_ROAMING
+			pktdata = (uint8 *)PKTDATA(osh, pkts[i]);
+			eh = (struct ether_header *)pktdata;
+
+			if (eh->ether_type == hton16(ETHER_TYPE_802_1X)) {
+                                uint8 prio = (uint8)PKTPRIO(pkts[i]);
+
+                                /* Restore to original priority for 802.1X packet */
+                                if (prio == PRIO_8021D_NC) {
+					PKTSETPRIO(pkts[i], dhd->prio_8021x);
+				}
+			}
+#endif /* DHD_LOSSLESS_ROAMING */
+			PKTORPHAN(pkts[i]);
 			datalen += PKTLEN(osh, pkts[i]);
 		}
 		dhd_os_sdunlock_txq(bus->dhd);
@@ -3256,6 +3284,10 @@ int
 dhdsdio_downloadvars(dhd_bus_t *bus, void *arg, int len)
 {
 	int bcmerror = BCME_OK;
+#if defined(KEEP_KR_REGREV) || defined(KEEP_JP_REGREV)
+	char *tmpbuf;
+	uint tmpidx;
+#endif /* KEEP_KR_REGREV || KEEP_JP_REGREV */
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
@@ -3282,6 +3314,32 @@ dhdsdio_downloadvars(dhd_bus_t *bus, void *arg, int len)
 
 	/* Copy the passed variables, which should include the terminating double-null */
 	bcopy(arg, bus->vars, bus->varsz);
+
+#if defined(KEEP_KR_REGREV) || defined(KEEP_JP_REGREV)
+	if (bus->vars != NULL && bus->varsz > 0) {
+		char *pos = NULL;
+		tmpbuf = MALLOCZ(bus->dhd->osh, bus->varsz + 1);
+		if (tmpbuf == NULL) {
+			goto err;
+		}
+		memcpy(tmpbuf, bus->vars, bus->varsz);
+		for (tmpidx = 0; tmpidx < bus->varsz; tmpidx++) {
+			if (tmpbuf[tmpidx] == 0) {
+				tmpbuf[tmpidx] = '\n';
+			}
+		}
+		bus->dhd->vars_ccode[0] = 0;
+		bus->dhd->vars_regrev = 0;
+		if ((pos = strstr(tmpbuf, "ccode"))) {
+			sscanf(pos, "ccode=%s\n", bus->dhd->vars_ccode);
+		}
+		if ((pos = strstr(tmpbuf, "regrev"))) {
+			sscanf(pos, "regrev=%u\n", &(bus->dhd->vars_regrev));
+		}
+		MFREE(bus->dhd->osh, tmpbuf, bus->varsz + 1);
+	}
+#endif /* KEEP_KR_REGREV || KEEP_JP_REGREV */
+
 err:
 	return bcmerror;
 }
@@ -3667,7 +3725,7 @@ dhdsdio_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, const ch
 
 		sd_ptr = (sdreg_t *)params;
 
-		addr = (ulong)bus->regs + sd_ptr->offset;
+		addr = (uint32)((ulong)bus->regs + sd_ptr->offset);
 		size = sd_ptr->func;
 		int_val = (int32)bcmsdh_reg_read(bus->sdh, addr, size);
 		if (bcmsdh_regfail(bus->sdh))
@@ -3683,7 +3741,7 @@ dhdsdio_doiovar(dhd_bus_t *bus, const bcm_iovar_t *vi, uint32 actionid, const ch
 
 		sd_ptr = (sdreg_t *)params;
 
-		addr = (ulong)bus->regs + sd_ptr->offset;
+		addr = (uint32)((ulong)bus->regs + sd_ptr->offset);
 		size = sd_ptr->func;
 		bcmsdh_reg_write(bus->sdh, addr, size, sd_ptr->value);
 		if (bcmsdh_regfail(bus->sdh))
@@ -7059,7 +7117,7 @@ dhdsdio_chipmatch(uint16 chipid)
 		return TRUE;
 	if (chipid == BCM43349_CHIP_ID)
 		return TRUE;
-	if (chipid == BCM4345_CHIP_ID)
+	if (chipid == BCM4345_CHIP_ID || chipid == BCM43454_CHIP_ID)
 		return TRUE;
 	if (chipid == BCM4350_CHIP_ID)
 		return TRUE;
@@ -7729,7 +7787,9 @@ dhdsdio_probe_attach(struct dhd_bus *bus, osl_t *osh, void *sdh, void *regsva,
 				bus->dongle_ram_base = CR4_4360_RAM_BASE;
 				break;
 			case BCM4345_CHIP_ID:
-				bus->dongle_ram_base = CR4_4345_RAM_BASE;
+			case BCM43454_CHIP_ID:
+				bus->dongle_ram_base = (bus->sih->chiprev < 6)  /* from 4345C0 */
+					? CR4_4345_LT_C0_RAM_BASE : CR4_4345_GE_C0_RAM_BASE;
 				break;
 			default:
 				bus->dongle_ram_base = 0;
@@ -7814,8 +7874,9 @@ dhdsdio_probe_malloc(dhd_bus_t *bus, osl_t *osh, void *sdh)
 		DHD_ERROR(("%s: MALLOC of %d-byte databuf failed\n",
 			__FUNCTION__, MAX_DATA_BUF));
 		/* release rxbuf which was already located as above */
-		if (!bus->rxblen)
-			DHD_OS_PREFREE(bus->dhd, bus->rxbuf, bus->rxblen);
+		if (bus->rxbuf) {
+			DHD_OS_PREFREE(bus->dhd, DHD_PREALLOC_RXBUF, bus->rxbuf, bus->rxblen);
+		}
 		goto fail;
 	}
 
@@ -9095,6 +9156,90 @@ static int concate_revision_bcm43341(dhd_bus_t *bus,
 	return 0;
 }
 
+#if !defined(MULTIPLE_CHIP_4345X)
+static int
+concate_revision_bcm43454(dhd_bus_t *bus,
+	char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
+{
+	char chipver_tag[10] = {0, };
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
+	int base_system_rev_for_nv = 0;
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
+
+	DHD_TRACE(("%s: BCM43454 Multiple Revision Check\n", __FUNCTION__));
+	if (bus->sih->chip != BCM43454_CHIP_ID) {
+		DHD_ERROR(("%s:Chip is not BCM43454!\n", __FUNCTION__));
+		return -1;
+	}
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
+	base_system_rev_for_nv = dhd_get_system_rev();
+	if (base_system_rev_for_nv > 0) {
+		DHD_ERROR(("----- Board Rev  [%d] -----\n", base_system_rev_for_nv));
+		sprintf(chipver_tag, "_r%02d", base_system_rev_for_nv);
+	}
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_HW
+	DHD_ERROR(("----- Rev [%d] Fot MULTIPLE Board. -----\n", system_hw_rev));
+	if ((system_hw_rev >= 8) && (system_hw_rev <= 11)) {
+		DHD_ERROR(("This HW is Rev 08 ~ 11. this is For FD-HW\n"));
+		strcat(chipver_tag, "_FD");
+	}
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_HW */
+
+	strcat(nv_path, chipver_tag);
+	return 0;
+}
+
+static int
+concate_revision_bcm43455(dhd_bus_t *bus,
+        char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
+{
+	char chipver_tag[10] = {0, };
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
+	int base_system_rev_for_nv = 0;
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
+
+	DHD_TRACE(("%s: BCM43455 Multiple Revision Check\n", __FUNCTION__));
+	if (bus->sih->chip != BCM4345_CHIP_ID) {
+		DHD_ERROR(("%s:Chip is not BCM43455!\n", __FUNCTION__));
+		return -1;
+	}
+#ifdef SUPPORT_MULTIPLE_BOARD_REV_FROM_DT
+	base_system_rev_for_nv = dhd_get_system_rev();
+	if (base_system_rev_for_nv > 0) {
+		DHD_ERROR(("----- Board Rev  [%d]-----\n", base_system_rev_for_nv));
+		sprintf(chipver_tag, "_r%02d", base_system_rev_for_nv);
+	}
+#endif /* SUPPORT_MULTIPLE_BOARD_REV_FROM_DT */
+	strcat(nv_path, chipver_tag);
+	return 0;
+}
+#endif /* !defined(MULTIPLE_CHIP_4345X) */
+
+#if defined(MULTIPLE_CHIP_4345X)
+static int
+concate_revision_bcm4345x(dhd_bus_t *bus,
+        char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
+{
+	uint32 chip_id;
+	char chipver_tag[10] = "_43454";
+
+	chip_id = bus->sih->chip;
+
+	if (chip_id == BCM43454_CHIP_ID) {
+		DHD_ERROR(("----- CHIP 43454 -----\n"));
+		strcat(fw_path, chipver_tag);
+		strcat(nv_path, chipver_tag);
+	} else if (chip_id == BCM4345_CHIP_ID) {
+		DHD_ERROR(("----- CHIP 43455  -----\n"));
+	} else {
+		DHD_ERROR(("----- Unknown chip , id r=%x -----\n", chip_id));
+	}
+
+	return 0;
+}
+#endif /* MULTIPLE_CHIP_4345X */
+
 int
 concate_revision(dhd_bus_t *bus, char *fw_path, int fw_path_len, char *nv_path, int nv_path_len)
 {
@@ -9145,7 +9290,19 @@ concate_revision(dhd_bus_t *bus, char *fw_path, int fw_path_len, char *nv_path, 
 	case BCM43341_CHIP_ID:
 		res = concate_revision_bcm43341(bus, fw_path, fw_path_len, nv_path, nv_path_len);
 		break;
-
+#if defined(MULTIPLE_CHIP_4345X)
+	case BCM43454_CHIP_ID:
+	case BCM4345_CHIP_ID:
+		res = concate_revision_bcm4345x(bus, fw_path, fw_path_len, nv_path, nv_path_len);
+		break;
+#else /* MULTIPLE_CHIP_4345X */
+	case BCM43454_CHIP_ID:
+		res = concate_revision_bcm43454(bus, fw_path, fw_path_len, nv_path, nv_path_len);
+		break;
+	case BCM4345_CHIP_ID:
+		res = concate_revision_bcm43455(bus, fw_path, fw_path_len, nv_path, nv_path_len);
+		break;
+#endif /* MULTIPLE_CHIP_4345X */
 
 	default:
 		DHD_ERROR(("REVISION SPECIFIC feature is not required\n"));
