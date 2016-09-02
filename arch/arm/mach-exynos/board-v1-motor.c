@@ -19,7 +19,6 @@
 #include <linux/i2c-gpio.h>
 #include <linux/notifier.h>
 #include <linux/haptic_isa1200.h>
-#include <linux/haptic_isa1400.h>
 
 #include <plat/iic.h>
 #include <plat/devs.h>
