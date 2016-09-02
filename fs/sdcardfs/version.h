@@ -21,4 +21,16 @@
  *    - Modify do_mmap_pgoff because of new f_mode flags
  */
 
-#define SDCARDFS_VERSION "2.1.4"
+ * 2015.07.   : Release Version 3.0.0
+ * 2015.11.24 : Release Version 3.1.0
+ *    - Add unlink_callback(), get_lower_inode()
+ *    - Add mount option type, label
+ * 2016.02.   : Release Version 3.2.0
+ *    - remove get_lower_inode(), make sdcardfs use only unlink_callback()
+ *    - modify name hash creation because it's different with vfat's
+ *    - obb will be used only multi_user option is enabled
+ *    - modify sdcardfs_setattr because it changes i_size without spinlock
+ *      it can make race condition with fsstack_copy_inode_size()
+ */
+
+#define SDCARDFS_VERSION "3.2.0"
