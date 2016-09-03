@@ -52,6 +52,8 @@ static u8 debug_arch;
 /* Maximum supported watchpoint length. */
 static u8 max_watchpoint_len;
 
+#define CS_LAR_KEY 0xC5ACCE55
+
 #define READ_WB_REG_CASE(OP2, M, VAL)		\
 	case ((OP2 << 4) + M):			\
 		ARM_DBG_READ(c ## M, OP2, VAL); \
@@ -921,6 +923,8 @@ static void reset_ctrl_regs(void *unused)
 		/* ARMv6 cores just need to reset the registers. */
 		goto reset_regs;
 	case ARM_DEBUG_ARCH_V7_ECP14:
+		asm volatile("mcr p14, 0, %0, c1, c0, 4" : : "r" (CS_LAR_KEY));
+		isb();
 		/*
 		 * Ensure sticky power-down is clear (i.e. debug logic is
 		 * powered up).
@@ -930,6 +934,8 @@ static void reset_ctrl_regs(void *unused)
 			err = -EPERM;
 		break;
 	case ARM_DEBUG_ARCH_V7_1:
+		asm volatile("mcr p14, 0, %0, c1, c0, 4" : : "r" (CS_LAR_KEY));
+		isb();
 		/*
 		 * Ensure the OS double lock is clear.
 		 */
@@ -944,13 +950,6 @@ static void reset_ctrl_regs(void *unused)
 		cpumask_or(&debug_err_mask, &debug_err_mask, cpumask_of(cpu));
 		return;
 	}
-
-	/*
-	 * Unconditionally clear the lock by writing a value
-	 * other than 0xC5ACCE55 to the access register.
-	 */
-	asm volatile("mcr p14, 0, %0, c1, c0, 4" : : "r" (0));
-	isb();
 
 	/*
 	 * Clear any configured vector-catch events before
