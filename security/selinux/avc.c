@@ -76,6 +76,16 @@ struct avc_cache {
 	u32			latest_notif;	/* latest revocation notification */
 };
 
+struct avc_operation_decision_node {
+	struct operation_decision od;
+	struct list_head od_list;
+};
+
+struct avc_operation_node {
+	struct operation ops;
+	struct list_head od_head; /* list of operation_decision_node */
+};
+
 struct avc_callback_node {
 	int (*callback) (u32 event, u32 ssid, u32 tsid,
 			 u16 tclass, u32 perms,

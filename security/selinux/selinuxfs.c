@@ -41,6 +41,10 @@
 #include "objsec.h"
 #include "conditional.h"
 
+#if defined(CONFIG_TZ_ICCC)
+#include <linux/security/Iccc_Interface.h>
+#endif
+
 /* Policy capability filenames */
 static char *policycap_names[] = {
 	"network_peer_controls",
@@ -199,6 +203,7 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 	}
 #endif
 	length = count;
+	
 out:
 	free_page((unsigned long) page);
 	return length;
