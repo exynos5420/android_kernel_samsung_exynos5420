@@ -91,8 +91,11 @@ int fimc_is_sec_get_camid_from_hal(char *fw_name, char *setf_name)
 	char buf[1];
 	loff_t pos = 0;
 	int pixelSize;
-
+#if defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
 	read_data_from_file("/data/misc/media/CameraID.txt", buf, 1, &pos);
+#else
+	read_data_from_file("/data/camera/camid", buf, 1, &pos);
+#endif
 	if (buf[0] == '0')
 		cam_id = CAMERA_SINGLE_REAR;
 	else if (buf[0] == '1')
