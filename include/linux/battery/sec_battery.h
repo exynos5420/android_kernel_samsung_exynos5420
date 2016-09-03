@@ -41,6 +41,14 @@ extern void kernel_power_off(void);
 #define ADC_CH_COUNT		10
 #define ADC_SAMPLE_COUNT	10
 
+#if defined(CONFIG_CHARGING_VZWCONCEPT)
+#define STORE_MODE_CHARGING_MAX 35
+#define STORE_MODE_CHARGING_MIN 30
+#else
+#define STORE_MODE_CHARGING_MAX 70
+#define STORE_MODE_CHARGING_MIN 60
+#endif
+
 struct adc_sample_info {
 	unsigned int cnt;
 	int total_adc;
@@ -147,7 +155,19 @@ struct sec_battery_info {
 	/* test mode */
 	int test_activated;
 	bool factory_mode;
+	bool store_mode;
 	bool slate_mode;
+	bool charging_block;
+#if defined(CONFIG_BATTERY_SWELLING)
+	bool swelling_mode;
+	unsigned long swelling_block_start;
+	unsigned long swelling_block_passed;
+	int swelling_full_check_cnt;
+#endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	struct wake_lock self_discharging_wake_lock;
+	bool sw_self_discharging;
+#endif
 
 #ifdef CONFIG_FAST_BOOT
 	struct notifier_block fsd_notifier_block;
@@ -220,6 +240,7 @@ enum {
 	WC_STATUS,
 	WC_ENABLE,
 	FACTORY_MODE,
+	STORE_MODE,
 	UPDATE,
 	TEST_MODE,
 
@@ -247,6 +268,9 @@ enum {
 #endif
 #if defined(CONFIG_PREVENT_SOC_JUMP)
     BATT_CAPACITY_MAX,
+#endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	BATT_SW_SELF_DISCHARGING,
 #endif
 	BATT_INBAT_VOLTAGE,
 	BATT_HIGH_CURRENT_USB,
