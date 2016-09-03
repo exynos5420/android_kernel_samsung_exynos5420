@@ -41,6 +41,10 @@
 #define OFF_CURR	0	/* charger off current */
 #define KEEP_CURR	-1	/* keep previous current */
 
+/* MAX77803 CHG_CNFG_04 register */
+#define CHG_CNFG_04_CHG_CV_PRM_SHIFT            0
+#define CHG_CNFG_04_CHG_CV_PRM_MASK             (0x1f << CHG_CNFG_04_CHG_CV_PRM_SHIFT)
+
 /* MAX77803_CHG_REG_CHG_INT */
 #define MAX77803_BYP_I                  (1 << 0)
 #define MAX77803_BATP_I			(1 << 2)
@@ -100,6 +104,7 @@
 #define MAX77803_MODE_CHGR      0x01
 #define MAX77803_MODE_OTG       0x02
 #define MAX77803_MODE_BUCK      0x04
+#define MAX77803_WDTEN			0x10
 
 /* MAX77803_CHG_REG_CHG_CNFG_02 */
 #define MAX77803_CHG_CC         0x3F
@@ -112,6 +117,9 @@
 #define MAX77803_CHG_MINVSYS_SHIFT      5
 #define MAX77803_CHG_PRM_MASK           0x1F
 #define MAX77803_CHG_PRM_SHIFT          0
+
+/* MAX77803_CHG_REG_CHG_CNFG_06 */
+#define MAX77803_WDTCLR			0x01
 
 /* MAX77803_CHG_REG_CHG_CNFG_09 */
 #define MAX77803_CHG_CHGIN_LIM  0x7F
