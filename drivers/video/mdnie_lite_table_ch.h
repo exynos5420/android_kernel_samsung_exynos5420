@@ -1,7 +1,7 @@
 #ifndef __MDNIE_TABLE_H__
 #define __MDNIE_TABLE_H__
 
-/* 2015.02.27 */
+/* 2016.04.18 */
 
 #define MDNIE_USE_SET_ADDR			1
 #define MDNIE_SEQUENCE_OFFSET_1		0x0982
@@ -39,6 +39,298 @@ static unsigned char coordinate_data[][3] = {
 	{0xfc, 0xff, 0xfa}, /* Tune_7 */
 	{0xfb, 0xff, 0xfb}, /* Tune_8 */
 	{0xfb, 0xff, 0xff}, /* Tune_9 */
+};
+
+static unsigned char GRAYSCALE_1[] = {
+	/* start */
+	0xBA, // Start offset 0x0982, base B1h
+	0x00, // data_width 00  lce_module 0  lcd_bypass 0  lcd_roi 00  algo_module 0  algo_bypass 0
+	0x30, // algo_roi 00  ascr_module 1  ascr_bypass 1  ascr_roi 00  roi_type 00
+	0x00, // roi0_x_start 00000000
+	0x00, // roi0_x_start 0000  roi0_x_end 0000
+	0x00, // roi0_x_end 00000000
+	0x00, // roi0_y_start 00000000
+	0x00, // roi0_y_start 0000  roi0_y_end 0000
+	0x00, // roi0_y_end 00000000
+	0x00, // roi1_x_start 00000000
+	0x00, // roi1_x_start 0000  roi1_x_end 0000
+	0x00, // roi1_x_end 00000000
+	0x00, // roi1_y_start 00000000
+	0x00, // roi1_y_start 0000  roi1_y_end 0000
+	0x00, // roi1_y_end 00000000
+	0xa0, // hsize 10100000
+	0x06, // hsize 0000  vsize 0110
+	0x40, // vsize 01000000
+	0x62, // gain 110000 cgain 10
+	0x48, // cgain 0100  scene_on 1  scene_tran 000
+	0x14, // scene_tran 0  min_diff 0010100
+	0xb3, // illum_gain 10110011
+	0x87, // ref_offset 10000111
+	0x40, // ref_offset 0  ref_gain 1000000
+	0x36, // ref_gain 00  hbsize 110  vbsize 110
+	0xfa, // bth 11111010
+	0x5a, // bin_size_ratio 0101101  dth 0
+	0xe5, // dth 11  min_ref_offset 100101
+	0x83, // min_ref_offset 10  gamma 0  cs 0 sharpen 0 nr 0 mask_th 11
+	0xfc, // mask_th 111111  sharpen_weight 00
+	0x00, // sharpen_weight 00000000
+	0xff, // max_plus 11111111
+	0xff, // max_plus 111  max_minus 11111
+	0xfd, // max_minus 111111  cs_gain 01
+	0x00, // cs_gain 00000000
+	0x00, // curve_1_b
+	0x20, // curve_1_a
+	0x00, // curve_2_b
+	0x20, // curve_2_a
+	0x00, // curve_3_b
+	0x20, // curve_3_a
+	0x00, // curve_4_b
+	0x20, // curve_4_a
+	0x00, // curve_5_b
+	0x20, // curve_5_a
+	0x00, // curve_6_b
+	0x20, // curve_6_a
+	0x00, // curve_7_b
+	0x20, // curve_7_a
+	0x00, // curve_8_b
+	0x20, // curve_8_a
+	0x00, // curve_9_b
+	0x20, // curve_9_a
+	0x00, // curve_10_b
+	0x20, // curve_10_a
+	0x00, // curve_11_b
+	0x20, // curve_11_a
+	0x00, // curve_12_b
+	0x20, // curve_12_a
+	0x00, // curve_13_b
+	0x20, // curve_13_a
+	0x00, // curve_14_b
+	0x20, // curve_14_a
+	0x00, // curve_15_b
+	0x20, // curve_15_a
+	0x00, // curve_16_b
+	0x20, // curve_16_a
+	0x00, // curve_17_b
+	0x20, // curve_17_a
+	0x00, // curve_18_b
+	0x20, // curve_18_a
+	0x00, // curve_19_b
+	0x20, // curve_19_a
+	0x00, // curve_20_b
+	0x20, // curve_20_a
+	0x00, // curve_21_b
+	0x20, // curve_21_a
+	0x00, // curve_22_b
+	0x20, // curve_22_a
+	0x00, // curve_23_b
+	0x20, // curve_23_a
+	0x00, // curve_24_b
+	0xff, // curve_24_a
+};
+
+static unsigned char GRAYSCALE_2[] = {
+	0xBA, // Start offset 0x09D4, base B1h
+	0x05, // ascr_strength 00000  ascr_on 1  skin_cb 01
+	0x9e, // skin_cb 100111  skin_cr 10
+	0xa4, // skin_cr 101001  up_distance 00
+	0x30, // up_distance 001100  down_distance 00
+	0x30, // down_distance 001100  right_distance 00
+	0x30, // right_distance 001100  left_distance 00
+	0x30, // left_distance 001100  up_divided_distance 00
+	0x2a, // up_divided_distance 00101010
+	0xaa, // up_divided_distance 10101010
+	0xc2, // up_divided_distance 11  down_divided_distance 000010
+	0xaa, // down_divided_distance 10101010
+	0xac, // down_divided_distance 101011 right_divided_distance 00
+	0x2a, // right_divided_distance 00101010
+	0xaa, // right_divided_distance 10101010
+	0xc2, // right_divided_distance 11  left_divided_distance 000010
+	0xaa, // left_divided_distance 10101010
+	0xaf, // left_divided_distance 101011  ascr_skin_Rr 11
+	0xfc, // ascr_skin_Rr 111111  ascr_skin_Rg 00
+	0x00, // ascr_skin_Rg 000000  ascr_skin_Rb 00
+	0x03, // ascr_skin_Rb 000000  ascr_skin_Yr 11
+	0xff, // ascr_skin_Yr 111111  ascr_skin_Yg 11
+	0xfc, // ascr_skin_Yg 111111  ascr_skin_Yb 00
+	0x03, // ascr_skin_Yb 000000  ascr_skin_Mr 11
+	0xfc, // ascr_skin_Mr 111111  ascr_skin_Mg 00
+	0x03, // ascr_skin_Mg 000000  ascr_skin_Mb 11
+	0xff, // ascr_skin_Mb 111111  ascr_skin_Wr 11
+	0xff, // ascr_skin_Wr 111111  ascr_skin_Wg 11
+	0xff, // ascr_skin_Wg 111111  ascr_skin_Wb 11
+	0xfe, // ascr_skin_Wb 111111  ascr_Cr 10
+	0xcd, // ascr_Cr 110011  ascr_Rr 01
+	0x32, // ascr_Rr 001100  ascr_Cg 10
+	0xcd, // ascr_Cg 110011  ascr_Rg 01
+	0x32, // ascr_Rg 001100  ascr_Cb 10
+	0xcd, // ascr_Cb 110011  ascr_Rb 01
+	0x31, // ascr_Rb 001100  ascr_Mr 01
+	0xa6, // ascr_Mr 101001  ascr_Gr 10
+	0x59, // ascr_Gr 010110  ascr_Mg 01
+	0xa6, // ascr_Mg 101001  ascr_Gg 10
+	0x59, // ascr_Gg 010110  ascr_Mb 01
+	0xa6, // ascr_Mb 101001  ascr_Gb 10
+	0x5b, // ascr_Gb 010110  ascr_Yr 11
+	0x88, // ascr_Yr 100010  ascr_Br 00
+	0x77, // ascr_Br 011101  ascr_Yg 11
+	0x88, // ascr_Yg 100010  ascr_Bg 00
+	0x77, // ascr_Bg 011101  ascr_Yb 11
+	0x88, // ascr_Yb 100010  ascr_Bb 00
+	0x77, // ascr_Bb 011101  ascr_Wr 11
+	0xfc, // ascr_Wr 111111  ascr_Kr 00
+	0x03, // ascr_Kr 000000  ascr_Wg 11
+	0xfc, // ascr_Wg 111111  ascr_Kg 00
+	0x03, // ascr_Kg 000000  ascr_Wb 11
+	0xfc, // ascr_Wb 111111  ascr_Kb 00
+	0x00, // ascr_Kb 000000  reserved 00
+	0x0f, // reserved 0000  vsync_mask 1111
+	/* end */
+};
+
+static unsigned char GRAYSCALE_NEGATIVE_1[] = {
+	/* start */
+	0xBA, // Start offset 0x0982, base B1h
+	0x00, // data_width 00  lce_module 0  lcd_bypass 0  lcd_roi 00  algo_module 0  algo_bypass 0
+	0x30, // algo_roi 00  ascr_module 1  ascr_bypass 1  ascr_roi 00  roi_type 00
+	0x00, // roi0_x_start 00000000
+	0x00, // roi0_x_start 0000  roi0_x_end 0000
+	0x00, // roi0_x_end 00000000
+	0x00, // roi0_y_start 00000000
+	0x00, // roi0_y_start 0000  roi0_y_end 0000
+	0x00, // roi0_y_end 00000000
+	0x00, // roi1_x_start 00000000
+	0x00, // roi1_x_start 0000  roi1_x_end 0000
+	0x00, // roi1_x_end 00000000
+	0x00, // roi1_y_start 00000000
+	0x00, // roi1_y_start 0000  roi1_y_end 0000
+	0x00, // roi1_y_end 00000000
+	0xa0, // hsize 10100000
+	0x06, // hsize 0000  vsize 0110
+	0x40, // vsize 01000000
+	0x62, // gain 110000 cgain 10
+	0x48, // cgain 0100  scene_on 1  scene_tran 000
+	0x14, // scene_tran 0  min_diff 0010100
+	0xb3, // illum_gain 10110011
+	0x87, // ref_offset 10000111
+	0x40, // ref_offset 0  ref_gain 1000000
+	0x36, // ref_gain 00  hbsize 110  vbsize 110
+	0xfa, // bth 11111010
+	0x5a, // bin_size_ratio 0101101  dth 0
+	0xe5, // dth 11  min_ref_offset 100101
+	0x83, // min_ref_offset 10  gamma 0  cs 0 sharpen 0 nr 0 mask_th 11
+	0xfc, // mask_th 111111  sharpen_weight 00
+	0x00, // sharpen_weight 00000000
+	0xff, // max_plus 11111111
+	0xff, // max_plus 111  max_minus 11111
+	0xfd, // max_minus 111111  cs_gain 01
+	0x00, // cs_gain 00000000
+	0x00, // curve_1_b
+	0x20, // curve_1_a
+	0x00, // curve_2_b
+	0x20, // curve_2_a
+	0x00, // curve_3_b
+	0x20, // curve_3_a
+	0x00, // curve_4_b
+	0x20, // curve_4_a
+	0x00, // curve_5_b
+	0x20, // curve_5_a
+	0x00, // curve_6_b
+	0x20, // curve_6_a
+	0x00, // curve_7_b
+	0x20, // curve_7_a
+	0x00, // curve_8_b
+	0x20, // curve_8_a
+	0x00, // curve_9_b
+	0x20, // curve_9_a
+	0x00, // curve_10_b
+	0x20, // curve_10_a
+	0x00, // curve_11_b
+	0x20, // curve_11_a
+	0x00, // curve_12_b
+	0x20, // curve_12_a
+	0x00, // curve_13_b
+	0x20, // curve_13_a
+	0x00, // curve_14_b
+	0x20, // curve_14_a
+	0x00, // curve_15_b
+	0x20, // curve_15_a
+	0x00, // curve_16_b
+	0x20, // curve_16_a
+	0x00, // curve_17_b
+	0x20, // curve_17_a
+	0x00, // curve_18_b
+	0x20, // curve_18_a
+	0x00, // curve_19_b
+	0x20, // curve_19_a
+	0x00, // curve_20_b
+	0x20, // curve_20_a
+	0x00, // curve_21_b
+	0x20, // curve_21_a
+	0x00, // curve_22_b
+	0x20, // curve_22_a
+	0x00, // curve_23_b
+	0x20, // curve_23_a
+	0x00, // curve_24_b
+	0xff, // curve_24_a
+};
+
+static unsigned char GRAYSCALE_NEGATIVE_2[] = {
+	0xBA, // Start offset 0x09D4, base B1h
+	0x05, // ascr_strength 00000  ascr_on 1  skin_cb 01
+	0x9e, // skin_cb 100111  skin_cr 10
+	0xa4, // skin_cr 101001  up_distance 00
+	0x30, // up_distance 001100  down_distance 00
+	0x30, // down_distance 001100  right_distance 00
+	0x30, // right_distance 001100  left_distance 00
+	0x30, // left_distance 001100  up_divided_distance 00
+	0x2a, // up_divided_distance 00101010
+	0xaa, // up_divided_distance 10101010
+	0xc2, // up_divided_distance 11  down_divided_distance 000010
+	0xaa, // down_divided_distance 10101010
+	0xac, // down_divided_distance 101011 right_divided_distance 00
+	0x2a, // right_divided_distance 00101010
+	0xaa, // right_divided_distance 10101010
+	0xc2, // right_divided_distance 11  left_divided_distance 000010
+	0xaa, // left_divided_distance 10101010
+	0xaf, // left_divided_distance 101011  ascr_skin_Rr 11
+	0xfc, // ascr_skin_Rr 111111  ascr_skin_Rg 00
+	0x00, // ascr_skin_Rg 000000  ascr_skin_Rb 00
+	0x03, // ascr_skin_Rb 000000  ascr_skin_Yr 11
+	0xff, // ascr_skin_Yr 111111  ascr_skin_Yg 11
+	0xfc, // ascr_skin_Yg 111111  ascr_skin_Yb 00
+	0x03, // ascr_skin_Yb 000000  ascr_skin_Mr 11
+	0xfc, // ascr_skin_Mr 111111  ascr_skin_Mg 00
+	0x03, // ascr_skin_Mg 000000  ascr_skin_Mb 11
+	0xff, // ascr_skin_Mb 111111  ascr_skin_Wr 11
+	0xff, // ascr_skin_Wr 111111  ascr_skin_Wg 11
+	0xff, // ascr_skin_Wg 111111  ascr_skin_Wb 11
+	0xfd, // ascr_skin_Wb 111111  ascr_Cr 01
+	0x32, // ascr_Cr 001100  ascr_Rr 10
+	0xcd, // ascr_Rr 110011  ascr_Cg 01
+	0x32, // ascr_Cg 001100  ascr_Rg 10
+	0xcd, // ascr_Rg 110011  ascr_Cb 01
+	0x32, // ascr_Cb 001100  ascr_Rb 10
+	0xce, // ascr_Rb 110011  ascr_Mr 10
+	0x59, // ascr_Mr 010110  ascr_Gr 01
+	0xa6, // ascr_Gr 101001  ascr_Mg 10
+	0x59, // ascr_Mg 010110  ascr_Gg 01
+	0xa6, // ascr_Gg 101001  ascr_Mb 10
+	0x59, // ascr_Mb 010110  ascr_Gb 01
+	0xa4, // ascr_Gb 101001  ascr_Yr 00
+	0x77, // ascr_Yr 011101  ascr_Br 11
+	0x88, // ascr_Br 100010  ascr_Yg 00
+	0x77, // ascr_Yg 011101  ascr_Bg 11
+	0x88, // ascr_Bg 100010  ascr_Yb 00
+	0x77, // ascr_Yb 011101  ascr_Bb 11
+	0x88, // ascr_Bb 100010  ascr_Wr 00
+	0x03, // ascr_Wr 000000  ascr_Kr 11
+	0xfc, // ascr_Kr 111111  ascr_Wg 00
+	0x03, // ascr_Wg 000000  ascr_Kg 11
+	0xfc, // ascr_Kg 111111  ascr_Wb 00
+	0x03, // ascr_Wb 000000  ascr_Kb 11
+	0xfc, // ascr_Kb 111111  reserved 00
+	0x0f, // reserved 0000  vsync_mask 1111
+	/* end */
 };
 
 ////////////////// UI /// /////////////////////
@@ -5755,7 +6047,9 @@ struct mdnie_table bypass_table[BYPASS_MAX] = {
 struct mdnie_table accessibility_table[ACCESSIBILITY_MAX] = {
 	[NEGATIVE] = MDNIE_SET(NEGATIVE),
 	MDNIE_SET(COLOR_BLIND),
-	MDNIE_SET(SCREEN_CURTAIN)
+	MDNIE_SET(SCREEN_CURTAIN),
+	MDNIE_SET(GRAYSCALE),
+	MDNIE_SET(GRAYSCALE_NEGATIVE)
 };
 
 struct mdnie_table hbm_table[HBM_MAX] = {
