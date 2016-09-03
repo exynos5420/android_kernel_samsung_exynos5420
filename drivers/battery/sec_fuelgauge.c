@@ -264,13 +264,12 @@ static int sec_fg_set_property(struct power_supply *psy,
 			sec_hal_fg_full_charged(fuelgauge->client);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-		if (val->intval == POWER_SUPPLY_TYPE_BATTERY) {
-			if (fuelgauge->pdata->capacity_calculation_type &
-				SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE)
+		if (fuelgauge->pdata->capacity_calculation_type &
+			SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE) {
 #if defined(CONFIG_PREVENT_SOC_JUMP)
-                sec_fg_calculate_dynamic_scale(fuelgauge, val->intval);
+			sec_fg_calculate_dynamic_scale(fuelgauge, val->intval);
 #else
-                sec_fg_calculate_dynamic_scale(fuelgauge);
+			sec_fg_calculate_dynamic_scale(fuelgauge);
 #endif
 		}
 		break;
@@ -282,6 +281,7 @@ static int sec_fg_set_property(struct power_supply *psy,
 			fuelgauge->is_charging = true;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		if (val->intval == SEC_FUELGAUGE_CAPACITY_TYPE_RESET) {
+			fuelgauge->initial_update_of_soc = true;
 			if (!sec_hal_fg_reset(fuelgauge->client))
 				return -EINVAL;
 			else
@@ -292,6 +292,13 @@ static int sec_fg_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
 		if (!sec_hal_fg_set_property(fuelgauge->client, psp, val))
 			return -EINVAL;
+		break;
+	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
+		dev_info(&fuelgauge->client->dev,
+			"%s: capacity_max changed: %d -> %d\n",
+			__func__, fuelgauge->capacity_max, val->intval);
+		fuelgauge->capacity_max = val->intval;
+		fuelgauge->initial_update_of_soc = true;
 		break;
 	default:
 		return -EINVAL;

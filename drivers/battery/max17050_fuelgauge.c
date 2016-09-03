@@ -682,7 +682,7 @@ static void fg_periodic_read(struct i2c_client *client)
 	str = kzalloc(sizeof(char)*1024, GFP_KERNEL);
 	if (!str)
 		return;
-#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL) || defined(CONFIG_N1A)
 	if((fg_read_register(client, 0x12) != fuelgauge->pdata->QRTable00)) {
 		if (fg_write_register(client, 0x12, (u16)fuelgauge->pdata->QRTable00) < 0) {
 			dev_err(&client->dev, "%s: Failed to write QRtable0 \n",

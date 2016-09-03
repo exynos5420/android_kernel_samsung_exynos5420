@@ -44,6 +44,7 @@ static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(wc_status),
 	SEC_BATTERY_ATTR(wc_enable),
 	SEC_BATTERY_ATTR(factory_mode),
+	SEC_BATTERY_ATTR(store_mode),
 	SEC_BATTERY_ATTR(update),
 	SEC_BATTERY_ATTR(test_mode),
 
@@ -72,6 +73,9 @@ static struct device_attribute sec_battery_attrs[] = {
 #if defined(CONFIG_PREVENT_SOC_JUMP)
     SEC_BATTERY_ATTR(batt_capacity_max),
 #endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	SEC_BATTERY_ATTR(batt_sw_self_discharging),
+#endif
 	SEC_BATTERY_ATTR(batt_inbat_voltage),
 	SEC_BATTERY_ATTR(batt_high_current_usb),
 };
@@ -91,6 +95,9 @@ static enum power_supply_property sec_battery_props[] = {
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_TEMP_AMBIENT,
+#if defined(CONFIG_BATTERY_SWELLING)
+	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+#endif
 };
 
 static enum power_supply_property sec_power_props[] = {
@@ -171,6 +178,8 @@ static int sec_bat_set_charge(
 		battery->charging_fullcharged_time = 0;
 		battery->full_check_cnt = 0;
 	}
+
+	battery->charging_block = !enable;
 
 	battery->temp_high_cnt = 0;
 	battery->temp_low_cnt = 0;
@@ -481,11 +490,11 @@ static void sec_bat_set_charging_status(struct sec_battery_info *battery,
 			if((battery->status == POWER_SUPPLY_STATUS_FULL) ||
 					(battery->capacity == 100)){
 				value.intval = battery->capacity;
-				psy_do_property(battery->pdata->fuelgauge_name, set,
+				psy_do_property("sec-fuelgauge", set,
 						POWER_SUPPLY_PROP_CHARGE_FULL, value);
 				/* To get SOC value (NOT raw SOC), need to reset value */
 				value.intval = 0;
-				psy_do_property(battery->pdata->fuelgauge_name, get,
+				psy_do_property("sec-fuelgauge", get,
 						POWER_SUPPLY_PROP_CAPACITY, value);
 				battery->capacity = value.intval;
 			}
@@ -528,8 +537,12 @@ static bool sec_bat_battery_cable_check(struct sec_battery_info *battery)
 
 		if (battery->status == POWER_SUPPLY_STATUS_NOT_CHARGING) {
 			battery->status = POWER_SUPPLY_STATUS_CHARGING;
-
+#if defined(CONFIG_BATTERY_SWELLING)
+			if (!battery->swelling_mode)
+				sec_bat_set_charge(battery, true);
+#else
 			sec_bat_set_charge(battery, true);
+#endif
 		}
 	}
 
@@ -585,6 +598,13 @@ static bool sec_bat_ovp_uvlo_result(
 			dev_info(battery->dev, "%s: Safe voltage\n", __func__);
 			battery->status =
 				POWER_SUPPLY_STATUS_CHARGING;
+			battery->charging_mode = SEC_BATTERY_CHARGING_1ST;
+#if defined(CONFIG_BATTERY_SWELLING)
+			if (!battery->swelling_mode)
+				sec_bat_set_charge(battery, true);
+#else
+				sec_bat_set_charge(battery, true);
+#endif
 			break;
 		case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
 		case POWER_SUPPLY_HEALTH_UNDERVOLTAGE:
@@ -644,6 +664,13 @@ static bool sec_bat_ovp_uvlo(struct sec_battery_info *battery)
 
 static bool sec_bat_check_recharge(struct sec_battery_info *battery)
 {
+#if defined(CONFIG_BATTERY_SWELLING)
+	if (battery->swelling_mode) {
+		pr_info("%s: Skip normal recharge check routine for swelling mode\n",
+			__func__);
+		return false;
+	}
+#endif
 	if ((battery->status == POWER_SUPPLY_STATUS_FULL ||
 		(battery->status == POWER_SUPPLY_STATUS_CHARGING &&
 		(battery->pdata->full_condition_type &
@@ -701,8 +728,10 @@ check_recharge_check_count:
 
 static bool sec_bat_voltage_check(struct sec_battery_info *battery)
 {
-	if ((battery->status == POWER_SUPPLY_STATUS_DISCHARGING) ||
-		(battery->cable_type == POWER_SUPPLY_TYPE_BATTERY)) {
+	union power_supply_propval value;
+	int recharge_condition_vcell = battery->pdata->recharge_condition_vcell;
+
+	if (battery->status == POWER_SUPPLY_STATUS_DISCHARGING) {
 		dev_dbg(battery->dev,
 			"%s: Charging Disabled\n", __func__);
 		return true;
@@ -714,6 +743,34 @@ static bool sec_bat_voltage_check(struct sec_battery_info *battery)
 		return false;
 	}
 
+	if ((battery->status == POWER_SUPPLY_STATUS_FULL) &&
+			(battery->charging_mode == SEC_BATTERY_CHARGING_2ND ||
+			 battery->is_recharging)) {
+
+		value.intval = 0;
+		psy_do_property("sec-fuelgauge", get,
+			POWER_SUPPLY_PROP_CAPACITY, value);
+#if defined(CONFIG_BATTERY_SWELLING)
+		if(battery->swelling_mode) {
+			if (battery->temperature <= battery->pdata->swelling_low_temp_recov)
+				recharge_condition_vcell = battery->pdata->swelling_low_rechg_voltage;
+			else
+				recharge_condition_vcell = battery->pdata->swelling_high_rechg_voltage;
+		}
+#endif
+		if (value.intval <
+			battery->pdata->full_condition_soc &&
+				battery->voltage_now < (recharge_condition_vcell - 50)) {
+			battery->status = POWER_SUPPLY_STATUS_CHARGING;
+			battery->voltage_now = 1080;
+			battery->voltage_avg = 1080;
+			power_supply_changed(&battery->psy_bat);
+			dev_info(battery->dev,
+				"%s: battery status full -> charging, RepSOC(%d)\n", __func__, value.intval);
+			return false;
+		}
+	}
+
 	/* Re-Charging check */
 	if (sec_bat_check_recharge(battery)) {
 		if (battery->pdata->full_check_type !=
@@ -722,7 +779,12 @@ static bool sec_bat_voltage_check(struct sec_battery_info *battery)
 		else
 			battery->charging_mode = SEC_BATTERY_CHARGING_2ND;
 		battery->is_recharging = true;
+#if defined(CONFIG_BATTERY_SWELLING)
+		if (!battery->swelling_mode)
+			sec_bat_set_charge(battery, true);
+#else
 		sec_bat_set_charge(battery, true);
+#endif
 		return false;
 	}
 
@@ -817,6 +879,85 @@ temp_by_adc_goto:
 
 	return true;
 }
+
+
+#if defined(CONFIG_BATTERY_SWELLING)
+static void sec_bat_swelling_check(struct sec_battery_info *battery, int temperature)
+{
+	union power_supply_propval val;
+	int swelling_rechg_voltage;
+
+	psy_do_property(battery->pdata->charger_name, get,
+			POWER_SUPPLY_PROP_VOLTAGE_MAX, val);
+
+	pr_info("%s: status(%d), swell_mode(%d:%d), cv(0x%02x), temp(%d)\n",
+		__func__, battery->status, battery->swelling_mode,
+		battery->charging_block, val.intval, temperature);
+
+	/* swelling_mode
+		under voltage over voltage, battery missing */
+	if ((battery->status == POWER_SUPPLY_STATUS_DISCHARGING) ||\
+		(battery->status == POWER_SUPPLY_STATUS_NOT_CHARGING)) {
+		pr_info("%s: DISCHARGING or NOT-CHARGING. stop swelling mode\n", __func__);
+		battery->swelling_mode = false;
+		goto skip_swelling_chek;
+	}
+
+	if (!battery->swelling_mode) {
+		if (((temperature >= battery->pdata->swelling_high_temp_block) ||
+			(temperature <= battery->pdata->swelling_low_temp_block)) &&
+			battery->pdata->temp_check_type) {
+
+			pr_info("%s: swelling mode start. stop charging\n", __func__);
+			battery->swelling_mode = true;
+			battery->swelling_full_check_cnt = 0;
+			sec_bat_set_charge(battery, false);
+		}
+	}
+
+	if (!battery->voltage_now)
+		return;
+
+	if (battery->swelling_mode) {
+		if (temperature <= battery->pdata->swelling_low_temp_recov)
+			swelling_rechg_voltage = battery->pdata->swelling_low_rechg_voltage;
+		else
+			swelling_rechg_voltage = battery->pdata->swelling_high_rechg_voltage;
+
+		if ((temperature <= battery->pdata->swelling_high_temp_recov) &&
+		    (temperature >= battery->pdata->swelling_low_temp_recov)) {
+			pr_info("%s: swelling mode end. restart charging\n", __func__);
+			battery->swelling_mode = false;
+			battery->charging_mode = SEC_BATTERY_CHARGING_1ST;
+			sec_bat_set_charge(battery, true);
+			/* restore 4.4V float voltage */
+			val.intval = battery->pdata->swelling_normal_float_voltage;
+			psy_do_property(battery->pdata->charger_name, set,
+					POWER_SUPPLY_PROP_VOLTAGE_MAX, val);
+		} else if (battery->voltage_now < swelling_rechg_voltage &&
+			   battery->charging_block) {
+			pr_info("%s: swelling mode recharging start. Vbatt(%d)\n",
+				__func__, battery->voltage_now);
+			battery->charging_mode = SEC_BATTERY_CHARGING_1ST;
+			sec_bat_set_charge(battery, true);
+			/* change 4.20V float voltage */
+			val.intval = battery->pdata->swelling_drop_float_voltage;
+			psy_do_property(battery->pdata->charger_name, set,
+					POWER_SUPPLY_PROP_VOLTAGE_MAX, val);
+			if (temperature <= battery->pdata->swelling_low_temp_block &&
+				battery->pdata->swelling_chg_current) {
+				pr_info("%s: swelling mode reduce charging current(temp:%d)\n",
+					__func__, temperature);
+				val.intval = battery->pdata->swelling_chg_current;
+				psy_do_property(battery->pdata->charger_name, set,
+						POWER_SUPPLY_PROP_CURRENT_AVG, val);
+			}
+		}
+	}
+skip_swelling_chek:
+	dev_dbg(battery->dev, "%s end\n", __func__);
+}
+#endif
 
 static bool sec_bat_temperature(
 				struct sec_battery_info *battery)
@@ -943,14 +1084,34 @@ static bool sec_bat_temperature_check(
 		battery->pdata->temp_check_count)
 		battery->health = POWER_SUPPLY_HEALTH_COLD;
 	else if (battery->temp_recover_cnt >=
-		battery->pdata->temp_check_count)
+		battery->pdata->temp_check_count) {
+#if defined(CONFIG_BATTERY_SWELLING_SELF_DISCHARGING) || defined(CONFIG_SW_SELF_DISCHARGING)
+		union power_supply_propval value;
+
+		psy_do_property(battery->pdata->charger_name, get,
+				POWER_SUPPLY_PROP_VOLTAGE_MAX, value);
+		if (value.intval <= battery->pdata->swelling_normal_float_voltage) {
+			value.intval = battery->pdata->swelling_normal_float_voltage;
+			psy_do_property(battery->pdata->charger_name, set,
+					POWER_SUPPLY_PROP_VOLTAGE_MAX, value);
+		}
+#endif
 		battery->health = POWER_SUPPLY_HEALTH_GOOD;
-	else
+	} else
 		health_changed = false;
 
 	if (health_changed) {
 		if ((battery->health == POWER_SUPPLY_HEALTH_OVERHEAT) ||
 			(battery->health == POWER_SUPPLY_HEALTH_COLD)) {
+#if defined(CONFIG_BATTERY_SWELLING_SELF_DISCHARGING) || defined(CONFIG_SW_SELF_DISCHARGING)
+			if (battery->health == POWER_SUPPLY_HEALTH_OVERHEAT) {
+				union power_supply_propval val;
+				/* change 4.20V float voltage */
+				val.intval = battery->pdata->swelling_drop_float_voltage;
+				psy_do_property(battery->pdata->charger_name, set,
+						POWER_SUPPLY_PROP_VOLTAGE_MAX, val);
+			}
+#endif
 			dev_info(battery->dev,
 				"%s: Unsafe Temperature\n", __func__);
 			battery->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
@@ -969,8 +1130,21 @@ static bool sec_bat_temperature_check(
 				else	/* Normal Charging */
 					battery->status =
 						POWER_SUPPLY_STATUS_CHARGING;
+#if defined(CONFIG_BATTERY_SWELLING)
+			if ((temp_value >= battery->pdata->swelling_high_temp_block) ||
+				(temp_value <= battery->pdata->swelling_low_temp_block)) {
+				pr_info("%s: swelling mode start. stop charging\n", __func__);
+				battery->swelling_mode = true;
+				battery->swelling_full_check_cnt = 0;
+				sec_bat_set_charge(battery, false);
+			} else {
 				/* turn on charger by cable type */
 				sec_bat_set_charge(battery, true);
+			}
+#else
+				/* turn on charger by cable type */
+				sec_bat_set_charge(battery, true);
+#endif
 			}
 		}
 		return false;
@@ -1133,7 +1307,7 @@ static bool sec_bat_check_fullcharged_condition(
 	else
 		full_check_type = battery->pdata->full_check_type_2nd;
 
-	switch (full_check_type) {	
+	switch (full_check_type) {
 	case SEC_BATTERY_FULLCHARGED_CHGINT:
 		return false;
 	case SEC_BATTERY_FULLCHARGED_ADC:
@@ -1343,12 +1517,23 @@ static bool sec_bat_time_management(
 				dev_dbg(battery->dev,
 					"%s: Reset charging current\n",
 					__func__);
+#if defined(CONFIG_BATTERY_SWELLING)
+				if (!battery->swelling_mode) {
+					if (sec_bat_set_charge(battery, true)) {
+						dev_err(battery->dev,
+							"%s: Fail to Set Charger\n",
+							__func__);
+						return true;
+					}
+				}
+#else
 				if (sec_bat_set_charge(battery, true)) {
 					dev_err(battery->dev,
 						"%s: Fail to Set Charger\n",
 						__func__);
 					return true;
 				}
+#endif
 			}
 		}
 		break;
@@ -1422,7 +1607,7 @@ static bool sec_bat_check_fullcharged(
 			battery->pdata->charging_current[
 			battery->cable_type].full_check_current_2nd))) {
 				battery->full_check_cnt++;
-				dev_dbg(battery->dev,
+				dev_info(battery->dev,
 				"%s: Full Check Current (%d)\n",
 				__func__,
 				battery->full_check_cnt);
@@ -1535,12 +1720,13 @@ static void sec_bat_do_fullcharged(
 	 */
 	battery->status = POWER_SUPPLY_STATUS_FULL;
 
-	if (battery->charging_mode == SEC_BATTERY_CHARGING_1ST) {
+	if (battery->charging_mode == SEC_BATTERY_CHARGING_1ST &&
+			battery->pdata->full_check_type_2nd != SEC_BATTERY_FULLCHARGED_NONE) {
 		battery->charging_mode = SEC_BATTERY_CHARGING_2ND;
 		battery->charging_fullcharged_time =
 			battery->charging_passed_time;
 		sec_bat_set_charge(battery, true);
-	} else {
+	} else if (battery->capacity == 100) {
 		battery->charging_mode = SEC_BATTERY_CHARGING_NONE;
 		battery->is_recharging = false;
 		sec_bat_set_charge(battery, false);
@@ -1548,6 +1734,8 @@ static void sec_bat_do_fullcharged(
 		value.intval = POWER_SUPPLY_STATUS_FULL;
 		psy_do_property("sec-fuelgauge", set,
 			POWER_SUPPLY_PROP_STATUS, value);
+	} else {
+		battery->full_check_cnt = battery->pdata->full_check_count; 
 	}
 
 #if !defined(CONFIG_DISABLE_SAVE_CAPACITY_MAX)
@@ -1556,7 +1744,7 @@ static void sec_bat_do_fullcharged(
 #else
 	value.intval = POWER_SUPPLY_TYPE_BATTERY;
 #endif
-	psy_do_property(battery->pdata->fuelgauge_name, set,
+	psy_do_property("sec-fuelgauge", set,
 			POWER_SUPPLY_PROP_CHARGE_FULL, value);
 #endif
 
@@ -1696,6 +1884,19 @@ static void sec_bat_get_battery_info(
 		break;
 	}
 
+#if defined(CONFIG_SW_SELF_DISCHARGING) && !defined(CONFIG_SEC_FACTORY)
+	if (battery->temperature >= battery->pdata->self_discharging_temp_block &&
+			battery->voltage_now >= battery->pdata->self_discharging_volt_block) {
+		battery->sw_self_discharging = true;
+		wake_lock(&battery->self_discharging_wake_lock);
+	} else if (battery->temperature <= battery->pdata->self_discharging_temp_recov ||
+			battery->voltage_now <= battery->pdata->swelling_drop_float_voltage) {
+		battery->sw_self_discharging = false;
+		wake_unlock(&battery->self_discharging_wake_lock);
+	}
+	pr_info("%s : sw_self_discharging (%d)\n",__func__, battery->sw_self_discharging);
+#endif
+
 	dev_info(battery->dev,
 		"%s:Vnow(%dmV),Inow(%dmA),Imax(%dmA),SOC(%d%%),Tbat(%d),is_hc_usb(%d)\n",
 		__func__,
@@ -1759,11 +1960,19 @@ static unsigned int sec_bat_get_polling_time(
 			battery->polling_short = false;
 		break;
 	case POWER_SUPPLY_STATUS_DISCHARGING:
-		if (battery->polling_in_sleep && (battery->ps_enable != true))
+		if (battery->polling_in_sleep && (battery->ps_enable != true)) {
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+			if (battery->voltage_now > battery->pdata->self_discharging_volt_block) {
+				if(battery->temperature > battery->pdata->self_discharging_temp_pollingtime)
+					battery->polling_time = 300;
+				else
+					battery->polling_time = 600;
+			} else
+#endif
 			battery->polling_time =
 				battery->pdata->polling_time[
 				SEC_BATTERY_POLLING_TIME_SLEEP];
-		else
+		} else
 			battery->polling_time =
 				battery->pdata->polling_time[
 				battery->status];
@@ -1774,10 +1983,19 @@ static unsigned int sec_bat_get_polling_time(
 			SEC_BATTERY_FULL_CONDITION_SLEEPINFULL) &&
 			battery->polling_in_sleep) {
 			if (battery->charging_mode ==
-				SEC_BATTERY_CHARGING_NONE)
+				SEC_BATTERY_CHARGING_NONE) {
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+				if (battery->voltage_now > battery->pdata->self_discharging_volt_block) {
+					if(battery->temperature > battery->pdata->self_discharging_temp_pollingtime)
+						battery->polling_time = 300;
+					else
+						battery->polling_time = 600;
+				} else
+#endif
 				battery->polling_time =
 					battery->pdata->polling_time[
 					SEC_BATTERY_POLLING_TIME_SLEEP];
+			}
 			battery->polling_short = false;
 		} else {
 			if (battery->charging_mode ==
@@ -1892,6 +2110,50 @@ static void sec_bat_set_polling(
 	dev_dbg(battery->dev, "%s: End\n", __func__);
 }
 
+#if defined(CONFIG_BATTERY_SWELLING)
+static void sec_bat_swelling_fullcharged_check(struct sec_battery_info *battery)
+{
+	union power_supply_propval value;
+
+	if(battery->pdata->full_check_type == SEC_BATTERY_FULLCHARGED_FG_CURRENT ){
+		if ((battery->current_now > 0 && battery->current_now <
+			battery->pdata->charging_current[
+			battery->cable_type].full_check_current_1st) &&
+			(battery->current_avg > 0 && battery->current_avg <
+			(battery->charging_mode ==
+			SEC_BATTERY_CHARGING_1ST ?
+			battery->pdata->charging_current[
+			battery->cable_type].full_check_current_1st :
+			battery->pdata->charging_current[
+			battery->cable_type].full_check_current_2nd))) {
+				battery->swelling_full_check_cnt++;
+				dev_info(battery->dev,
+				"%s: Swelling Full Check Current (%d)\n",
+				__func__,
+				battery->swelling_full_check_cnt);
+		} else
+			battery->swelling_full_check_cnt = 0;
+	}
+	else{
+		psy_do_property(battery->pdata->charger_name, get,
+			POWER_SUPPLY_PROP_STATUS, value);
+		if (value.intval == POWER_SUPPLY_STATUS_FULL) {
+			battery->swelling_full_check_cnt++;
+			pr_info("%s: Swelling mode full-charged check (%d)\n",
+				__func__, battery->swelling_full_check_cnt);
+		} else
+			battery->swelling_full_check_cnt = 0;
+	}
+	if (battery->swelling_full_check_cnt >=
+		battery->pdata->full_check_count) {
+		battery->swelling_full_check_cnt = 0;
+		battery->charging_mode = SEC_BATTERY_CHARGING_NONE;
+		battery->is_recharging = false;
+		sec_bat_set_charge(battery, false);
+	}
+}
+#endif
+
 static void sec_bat_monitor_work(
 				struct work_struct *work)
 {
@@ -1943,8 +2205,17 @@ static void sec_bat_monitor_work(
 	if (!sec_bat_temperature_check(battery))
 		goto continue_monitor;
 
+#if defined(CONFIG_BATTERY_SWELLING)
+	sec_bat_swelling_check(battery, battery->temperature);
+
+	if (battery->swelling_mode && !battery->charging_block)
+		sec_bat_swelling_fullcharged_check(battery);
+	else
+		sec_bat_fullcharged_check(battery);
+#else
 	/* 5. full charging check */
 	sec_bat_fullcharged_check(battery);
+#endif
 
 continue_monitor:
 	dev_info(battery->dev,
@@ -1954,6 +2225,23 @@ continue_monitor:
 		sec_bat_charging_mode_str[battery->charging_mode],
 		sec_bat_health_str[battery->health],
 		battery->cable_type, battery->pdata->vendor, battery->siop_level);
+
+	if (battery->store_mode && !battery->pdata->is_lpm() && (battery->cable_type != POWER_SUPPLY_TYPE_BATTERY)) {
+		dev_info(battery->dev,
+			"%s: @battery->capacity = (%d), battery->status= (%d), battery->store_mode=(%d)\n",
+			__func__, battery->capacity, battery->status, battery->store_mode);
+
+		if ((battery->capacity >= STORE_MODE_CHARGING_MAX) && (battery->status == POWER_SUPPLY_STATUS_CHARGING)) {
+			battery->status = POWER_SUPPLY_STATUS_DISCHARGING;
+			sec_bat_set_charge(battery, false);
+		}
+		if ((battery->capacity <= STORE_MODE_CHARGING_MIN) && (battery->status == POWER_SUPPLY_STATUS_DISCHARGING)) {
+			battery->status = POWER_SUPPLY_STATUS_CHARGING;
+			battery->charging_mode = SEC_BATTERY_CHARGING_1ST;
+			sec_bat_set_charge(battery, true);
+		}
+	}
+	power_supply_changed(&battery->psy_bat);
 
 #ifdef CONFIG_FAST_BOOT
 	dev_info(battery->dev, "%s: status=%d, soc=%d, fake_shut_down=%d\n", __func__,
@@ -2030,6 +2318,15 @@ static void sec_bat_cable_work(struct work_struct *work)
 	union power_supply_propval val;
 
 	dev_dbg(battery->dev, "%s: Start\n", __func__);
+
+#if defined(CONFIG_BATTERY_SWELLING)
+	battery->swelling_mode = false;
+	/* restore 4.4V float voltage */
+	val.intval = battery->pdata->swelling_normal_float_voltage;
+	psy_do_property(battery->pdata->charger_name, set,
+		POWER_SUPPLY_PROP_VOLTAGE_MAX, val);
+#endif
+
 	/* platform can NOT get information of cable connection
 	 * because wakeup time is too short to check uevent
 	 * To make sure that target is wakeup
@@ -2045,7 +2342,7 @@ static void sec_bat_cable_work(struct work_struct *work)
 		if (battery->status == POWER_SUPPLY_STATUS_FULL) {
 #if defined(CONFIG_PREVENT_SOC_JUMP)
 			val.intval = battery->capacity;
-			psy_do_property(battery->pdata->fuelgauge_name, set,
+			psy_do_property("sec-fuelgauge", set,
 					POWER_SUPPLY_PROP_CHARGE_FULL, val);
 #else
 			val.intval = POWER_SUPPLY_TYPE_BATTERY;
@@ -2281,6 +2578,10 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			battery->factory_mode);
 		break;
+	case STORE_MODE:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+			battery->store_mode);
+		break;
 	case UPDATE:
 		break;
 	case TEST_MODE:
@@ -2384,12 +2685,18 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 	case BATT_CAPACITY_MAX:
         {
             union power_supply_propval value;
-            psy_do_property(battery->pdata->fuelgauge_name, get,
+            psy_do_property("sec-fuelgauge", get,
                 POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, value);
             i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", value.intval);
         }
 		break;
 #endif
+#endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	case BATT_SW_SELF_DISCHARGING:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+			       battery->sw_self_discharging);
+		break;
 #endif
 	case BATT_INBAT_VOLTAGE:
 		ret = sec_bat_get_inbat_vol_by_adc(battery);
@@ -2593,6 +2900,12 @@ ssize_t sec_bat_store_attrs(
 			ret = count;
 		}
 		break;
+	case STORE_MODE:
+		if (sscanf(buf, "%d\n", &x) == 1) {
+			battery->store_mode = x ? true : false;
+			ret = count;
+		}
+		break;
 	case UPDATE:
 		if (sscanf(buf, "%d\n", &x) == 1) {
 			/* update battery info */
@@ -2761,13 +3074,17 @@ ssize_t sec_bat_store_attrs(
 				__func__,  x, fg_reset);
 			if ((x  > 800 && x < 1200) && !fg_reset) {
 				value.intval = x;
-				psy_do_property(battery->pdata->fuelgauge_name, set,
+				psy_do_property("sec-fuelgauge", set,
 					POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, value);
 			}
 			ret = count;
 		}
 		break;
 #endif
+#endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	case BATT_SW_SELF_DISCHARGING:
+		break;
 #endif
 	case BATT_HIGH_CURRENT_USB:
 		if (sscanf(buf, "%d\n", &x) == 1) {
@@ -2917,6 +3234,10 @@ static int sec_bat_set_property(struct power_supply *psy,
 #endif
 		power_supply_changed(&battery->psy_bat);
 		break;
+#if defined(CONFIG_BATTERY_SWELLING)
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -3034,6 +3355,19 @@ static int sec_bat_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
 		val->intval = battery->temper_amb;
 		break;
+#if defined(CONFIG_BATTERY_SWELLING)
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
+		if (battery->swelling_mode)
+			val->intval = 1;
+		else
+			val->intval = 0;
+		break;
+#endif
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	case POWER_SUPPLY_PROP_POWER_AVG:
+		val->intval = battery->sw_self_discharging;
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -3300,6 +3634,10 @@ static int __devinit sec_battery_probe(struct platform_device *pdev)
 		       "sec-battery-cable");
 	wake_lock_init(&battery->vbus_wake_lock, WAKE_LOCK_SUSPEND,
 		       "sec-battery-vbus");
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	wake_lock_init(&battery->self_discharging_wake_lock, WAKE_LOCK_SUSPEND,
+			   "sec-battery-self-discharging");
+#endif
 
 	/* initialization of battery info */
 #if defined(CONFIG_PREVENT_SOC_JUMP)
@@ -3328,7 +3666,9 @@ static int __devinit sec_battery_probe(struct platform_device *pdev)
 	battery->wc_enable = 1;
 	battery->ps_status = 0;
 	battery->ps_changed = 0;
-
+#if defined(CONFIG_BATTERY_SWELLING)
+	battery->swelling_mode = false;
+#endif
 	if (battery->pdata->check_batt_id)
 		battery->pdata->check_batt_id();
 
@@ -3358,7 +3698,12 @@ static int __devinit sec_battery_probe(struct platform_device *pdev)
 	battery->cable_type = POWER_SUPPLY_TYPE_BATTERY;
 	battery->test_activated = 0;
 	battery->factory_mode = false;
+	battery->store_mode = false;
 	battery->slate_mode = false;
+
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	battery->sw_self_discharging = false;
+#endif
 
 	battery->psy_bat.name = "battery";
 	battery->psy_bat.type = POWER_SUPPLY_TYPE_BATTERY;
@@ -3525,6 +3870,9 @@ err_wake_lock:
 	wake_lock_destroy(&battery->monitor_wake_lock);
 	wake_lock_destroy(&battery->cable_wake_lock);
 	wake_lock_destroy(&battery->vbus_wake_lock);
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	wake_lock_destroy(&battery->self_discharging_wake_lock);
+#endif
 	mutex_destroy(&battery->adclock);
 	kfree(battery);
 
@@ -3559,6 +3907,9 @@ static int __devexit sec_battery_remove(struct platform_device *pdev)
 	wake_lock_destroy(&battery->monitor_wake_lock);
 	wake_lock_destroy(&battery->cable_wake_lock);
 	wake_lock_destroy(&battery->vbus_wake_lock);
+#if defined(CONFIG_SW_SELF_DISCHARGING)
+	wake_lock_destroy(&battery->self_discharging_wake_lock);
+#endif
 
 	mutex_destroy(&battery->adclock);
 	for (i = 0; i < SEC_BAT_ADC_CHANNEL_FULL_CHECK; i++)
