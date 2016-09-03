@@ -26,13 +26,14 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/wakelock.h>
+#include <linux/syscalls.h>
 #include "sx9500_reg.h"
 #include "sensors_core.h"
 
 #define VENDOR_NAME              "SEMTECH"
 #define MODEL_NAME               "SX9500"
 #define MODULE_NAME              "grip_sensor"
-#define CALIBRATION_FILE_PATH    "/efs/grip_cal_data"
+#define CALIBRATION_FILE_PATH    (!sys_access("/efs/grip_cal_data",4))?"/efs/grip_cal_data":"/efs/FactoryApp/grip_cal_data"
 
 #define I2C_M_WR                 0 /* for i2c Write */
 #define I2c_M_RD                 1 /* for i2c Read */
@@ -412,6 +413,8 @@ static void sx9500_open_caldata(struct sx9500_p *data)
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
 
+	pr_info("[SX9500]: %s - CAL_FILE_PATH: %s\n", __func__, CALIBRATION_FILE_PATH);
+
 	cal_filp = filp_open(CALIBRATION_FILE_PATH, O_RDONLY,
 			S_IRUGO | S_IWUSR | S_IWGRP);
 	if (IS_ERR(cal_filp)) {
@@ -698,6 +701,8 @@ static ssize_t sx9500_raw_data_show(struct device *dev,
 	s16 useful;
 	u16 offset;
 	s32 capMain;
+	s16 avg;
+	s16 proxdiff;
 	struct sx9500_p *data = dev_get_drvdata(dev);
 
 	if (atomic_read(&data->enable) == OFF)
@@ -712,9 +717,11 @@ static ssize_t sx9500_raw_data_show(struct device *dev,
 
 	sx9500_i2c_read(data, SX9500_REGOFFSETMSB, &msb);
 	sx9500_i2c_read(data, SX9500_REGOFFSETLSB, &lsb);
+	avg = (s16)((msb << 8) | lsb);
+	proxdiff = (useful - avg) >> 4;
 	offset = (u16)((msb << 8) | lsb);
 
-	return snprintf(buf, PAGE_SIZE, "%d,%d,%u\n", capMain, useful, offset);
+	return snprintf(buf, PAGE_SIZE, "%d,%d,%u,%d\n", capMain, useful, offset, proxdiff);
 }
 
 static ssize_t sx9500_threshold_show(struct device *dev,
@@ -728,6 +735,61 @@ static ssize_t sx9500_threshold_show(struct device *dev,
 }
 
 static ssize_t sx9500_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long val;
+	struct sx9500_p *data = dev_get_drvdata(dev);
+
+	/* It's for init touch */
+	if (kstrtoul(buf, 10, &val)) {
+		pr_err("[SX9500]: %s - Invalid Argument\n", __func__);
+		return -EINVAL;
+	}
+
+	pr_info("[SX9500]: %s - init threshold %lu\n", __func__, val);
+	data->initTh = (u8)val;
+
+	return count;
+}
+
+static ssize_t sx9500_normal_threshold_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+    struct sx9500_p *data = dev_get_drvdata(dev);
+	u16 thresh_temp = 0, hysteresis = 0;
+	u16 thresh_table[32] = {0, 20, 40, 60, 80, 100, 120, 140, 160, 180,
+				200, 220, 240, 260, 280, 300, 350, 400, 450,
+				500, 600, 700, 800, 900, 1000, 1100, 1200, 1300,
+				1400, 1500, 1600, 1700};
+
+	thresh_temp = data->touchTh & 0x1f;
+	thresh_temp = thresh_table[thresh_temp];
+
+	/* CTRL7 */
+	hysteresis = (setup_reg[7].val >> 4) & 0x3;
+
+	switch (hysteresis) {
+	case 0x00:
+		hysteresis = 32;
+		break;
+	case 0x01:
+		hysteresis = 64;
+		break;
+	case 0x02:
+		hysteresis = 128;
+		break;
+	case 0x03:
+		hysteresis = 256;
+		break;
+	default:
+		break;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d,%d\n", thresh_temp + hysteresis,
+			thresh_temp - hysteresis);
+}
+
+static ssize_t sx9500_normal_threshold_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	unsigned long val;
@@ -857,6 +919,8 @@ static DEVICE_ATTR(onoff, S_IRUGO | S_IWUSR | S_IWGRP,
 		sx9500_onoff_show, sx9500_onoff_store);
 static DEVICE_ATTR(threshold, S_IRUGO | S_IWUSR | S_IWGRP,
 		sx9500_threshold_show, sx9500_threshold_store);
+static DEVICE_ATTR(normal_threshold, S_IRUGO | S_IWUSR | S_IWGRP,
+		sx9500_normal_threshold_show, sx9500_normal_threshold_store);
 
 static struct device_attribute *sensor_attrs[] = {
 	&dev_attr_menual_calibrate,
@@ -869,6 +933,7 @@ static struct device_attribute *sensor_attrs[] = {
 	&dev_attr_mode,
 	&dev_attr_raw_data,
 	&dev_attr_threshold,
+	&dev_attr_normal_threshold,
 	&dev_attr_onoff,
 	&dev_attr_calibration,
 	NULL,
