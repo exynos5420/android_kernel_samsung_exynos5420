@@ -393,6 +393,8 @@ bool sec_hal_fg_get_property(struct i2c_client *client,
 			     enum power_supply_property psp,
 			     union power_supply_propval *val)
 {
+	union power_supply_propval value_bat;
+
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
 		val->intval = 0;
@@ -414,7 +416,12 @@ bool sec_hal_fg_get_property(struct i2c_client *client,
 		break;
 		/* Current (mA) */
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		val->intval = max17048_get_current(client);
+		psy_do_property("battery", get,
+			POWER_SUPPLY_PROP_STATUS, value_bat);
+		if(value_bat.intval == POWER_SUPPLY_STATUS_DISCHARGING)
+			val->intval = -max17048_get_current(client);
+		else
+			val->intval = max17048_get_current(client);
 		break;
 		/* Average Current (mA) */
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
