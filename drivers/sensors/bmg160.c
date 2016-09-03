@@ -39,13 +39,12 @@
 #define I2c_M_RD                           1 /* for i2c Read */
 #define READ_DATA_LENTH                    6
 
-#define CALIBRATION_FILE_PATH              "/efs/gyro_calibration_data"
+#define CALIBRATION_FILE_PATH              "/efs/FactoryApp/gyro_calibration_data"
 #define CALIBRATION_DATA_AMOUNT            20
 #define SELFTEST_DATA_AMOUNT               64
 #define SELFTEST_LIMITATION_OF_ERROR       5250
 
 #define BMG160_DEFAULT_DELAY               200000000LL
-#define BMG160_MIN_DELAY                   5000000LL
 
 #define	BMG160_CHIP_ID                     0x0F
 
@@ -455,6 +454,11 @@ static void bmg160_work_func(struct work_struct *work)
 	if (ret < 0)
 		return;
 
+	data->gyrodata = gyro;
+	gyro.x = gyro.x - data->caldata.x;
+	gyro.y = gyro.y - data->caldata.y;
+	gyro.z = gyro.z - data->caldata.z;
+
 	if (data->old_timestamp != 0 &&
 	   ((data->timestamp - data->old_timestamp) > ktime_to_ms(data->poll_delay) * 1800000LL)) {
 
@@ -466,26 +470,24 @@ static void bmg160_work_func(struct work_struct *work)
 				time_hi = (int)((timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
 				time_lo = (int)(timestamp & TIME_LO_MASK);
 
-				input_report_rel(data->input, REL_RX, gyro.x - data->caldata.x);
-				input_report_rel(data->input, REL_RY, gyro.y - data->caldata.y);
-				input_report_rel(data->input, REL_RZ, gyro.z - data->caldata.z);
+				input_report_rel(data->input, REL_RX, gyro.x);
+				input_report_rel(data->input, REL_RY, gyro.y);
+				input_report_rel(data->input, REL_RZ, gyro.z);
 				input_report_rel(data->input, REL_X, time_hi);
 				input_report_rel(data->input, REL_Y, time_lo);
 				input_sync(data->input);
-				data->gyrodata = gyro;
 		}
 	}
 
 	time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
 	time_lo = (int)(data->timestamp & TIME_LO_MASK);
 
-	input_report_rel(data->input, REL_RX, gyro.x - data->caldata.x);
-	input_report_rel(data->input, REL_RY, gyro.y - data->caldata.y);
-	input_report_rel(data->input, REL_RZ, gyro.z - data->caldata.z);
+	input_report_rel(data->input, REL_RX, gyro.x);
+	input_report_rel(data->input, REL_RY, gyro.y);
+	input_report_rel(data->input, REL_RZ, gyro.z);
 	input_report_rel(data->input, REL_X, time_hi);
 	input_report_rel(data->input, REL_Y, time_lo);
 	input_sync(data->input);
-	data->gyrodata = gyro;
 	data->old_timestamp = data->timestamp;
 }
 
@@ -529,7 +531,7 @@ static ssize_t bmg160_enable_store(struct device *dev,
 		if (pre_enable == OFF) {
 			bmg160_open_calibration(data);
 			bmg160_set_mode(data, BMG160_MODE_NORMAL);
-			usleep_range(30000, 31000);
+			msleep(60);
 			atomic_set(&data->enable, ON);
 			bmg160_set_enable(data, ON);
 		}
@@ -567,11 +569,6 @@ static ssize_t bmg160_delay_store(struct device *dev,
 	} else if (ktime_to_ns(data->poll_delay) == delay) {
 		goto exit;
 	}
-
-	if(delay > BMG160_DEFAULT_DELAY)
-		delay = BMG160_DEFAULT_DELAY;
-	else if(delay < BMG160_MIN_DELAY)
-		delay = BMG160_MIN_DELAY;
 
 	if (delay <= 5000000LL)
 		bmg160_set_bw(data, BMG160_BW_116Hz);
@@ -782,7 +779,7 @@ static ssize_t bmg160_raw_data_show(struct device *dev,
 
 	if (atomic_read(&data->enable) == OFF) {
 		bmg160_set_mode(data, BMG160_MODE_NORMAL);
-		msleep(30);
+		msleep(60);
 		bmg160_read_gyro_xyz(data, &data->gyrodata);
 		bmg160_set_mode(data, BMG160_MODE_SUSPEND);
 	}

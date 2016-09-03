@@ -378,6 +378,7 @@ exit:
 
 static void bma280_set_enable(struct bma280_p *data, int enable)
 {
+	data->old_timestamp = 0LL;
 	if (enable == ON) {
 		hrtimer_start(&data->accel_timer, data->poll_delay,
 		      HRTIMER_MODE_REL);
@@ -413,7 +414,6 @@ static ssize_t bma280_enable_store(struct device *dev,
 
 	if (enable) {
 		if (pre_enable == OFF) {
-			data->old_timestamp = 0LL;
 			bma280_open_calibration(data);
 			bma280_set_mode(data, BMA280_MODE_NORMAL);
 			atomic_set(&data->enable, ON);

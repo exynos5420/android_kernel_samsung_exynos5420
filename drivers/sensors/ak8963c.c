@@ -36,8 +36,6 @@
 #define SENSOR_DATA_SIZE		8
 #define AK8963C_DEFAULT_DELAY       200000000LL
 #define AK8963C_MIN_DELAY           10000000LL
-#define BASE_DELAY					40000000LL
-#define MOD_DELAY					1000000LL
 
 #define I2C_M_WR                        0 /* for i2c Write */
 #define I2c_M_RD                        1 /* for i2c Read */
@@ -285,7 +283,7 @@ static void ak8963c_work_func(struct work_struct *work)
 	if(ret >= 0){
 
 	if (data->old_timestamp != 0 &&
-	((timestamp_new - data->old_timestamp)*10 > (pdelay) * 15)) {
+	((timestamp_new - data->old_timestamp)*10 > (pdelay) * 18)) {
 			u64 shift_timestamp = pdelay >> 1;
 			u64 timestamp = 0ULL;
 
@@ -393,9 +391,6 @@ static ssize_t ak8963c_delay_store(struct device *dev,
 		delay = AK8963C_DEFAULT_DELAY;
 	else if(delay < AK8963C_MIN_DELAY)
 		delay = AK8963C_MIN_DELAY;
-
-	if (delay <= BASE_DELAY)
-		delay = delay - MOD_DELAY;
 
 	atomic_set(&data->delay, (int64_t)delay);
 	pr_info("[SENSOR]: %s - poll_delay = %lld\n", __func__, delay);
@@ -1035,7 +1030,6 @@ static int __devexit ak8963c_remove(struct i2c_client *client)
 static int ak8963c_suspend(struct device *dev)
 {
 	struct ak8963c_p *data = dev_get_drvdata(dev);
-	data->old_timestamp = 0ULL;
 
 	if (atomic_read(&data->enable) == 1) {
 		ak8963c_ecs_set_mode(data, AK8963C_CNTL1_POWER_DOWN);
