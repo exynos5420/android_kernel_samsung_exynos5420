@@ -114,10 +114,11 @@ static void traverse_receive_queue(struct sock *sk)
 static void recv_queue_timer_callback(unsigned long data)
 {
   struct sock *sk = (struct sock *)data;
+  unsigned long flags;
 
-  spin_lock(&pppox_sk(sk)->recv_queue_lock);
+  spin_lock_irqsave(&pppox_sk(sk)->recv_queue_lock, flags);
   traverse_receive_queue(sk);
-  spin_unlock(&pppox_sk(sk)->recv_queue_lock);
+  spin_unlock_irqrestore(&pppox_sk(sk)->recv_queue_lock, flags);
 }
 
 /******************************************************************************/
@@ -177,6 +178,11 @@ static int pppopns_recv_core(struct sock *sk_raw, struct sk_buff *skb)
 	/* Perform reordering if sequencing is enabled. */
 	if (hdr->bits & PPTP_GRE_SEQ_BIT) {
 		struct sk_buff *skb1;
+
+		if (timer_pending(&pppox_sk(sk)->recv_queue_timer)) {
+			del_timer_sync(&pppox_sk(sk)->recv_queue_timer);
+		}
+
 		spin_lock_irqsave(&pppox_sk(sk)->recv_queue_lock, flags);
 
 		/* Insert the packet into receive queue in order. */
@@ -200,9 +206,6 @@ static int pppopns_recv_core(struct sock *sk_raw, struct sk_buff *skb)
 			skb_queue_tail(&sk->sk_receive_queue, skb);
 		}
 		
-		if (timer_pending(&pppox_sk(sk)->recv_queue_timer)) {
-			del_timer_sync(&pppox_sk(sk)->recv_queue_timer);
-		}
 		traverse_receive_queue(sk);
 		spin_unlock_irqrestore(&pppox_sk(sk)->recv_queue_lock, flags);
 		return NET_RX_SUCCESS;

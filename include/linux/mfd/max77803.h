@@ -40,8 +40,8 @@ enum {
 	MAX77803_MUIC_DOCK_DETACHED = 0,
 	MAX77803_MUIC_DOCK_DESKDOCK,
 	MAX77803_MUIC_DOCK_CARDOCK,
-	MAX77803_MUIC_DOCK_AUDIODOCK = 7,
-	MAX77803_MUIC_DOCK_SMARTDOCK = 8
+	MAX77803_MUIC_DOCK_AUDIODOCK = 101,
+	MAX77803_MUIC_DOCK_SMARTDOCK = 102
 };
 
 /* MAX77686 regulator IDs */
@@ -70,7 +70,6 @@ struct max77803_charger_platform_data {
 #endif
 };
 
-#ifdef CONFIG_VIBETONZ
 #define MAX8997_MOTOR_REG_CONFIG2	0x2
 #define MOTOR_LRA			(1<<7)
 #define MOTOR_EN			(1<<6)
@@ -88,7 +87,6 @@ struct max77803_haptic_platform_data {
 	void (*init_hw) (void);
 	void (*motor_en) (bool);
 };
-#endif
 
 #ifdef CONFIG_LEDS_MAX77803
 struct max77803_led_platform_data;
@@ -111,10 +109,8 @@ struct max77803_platform_data {
 	bool (*is_default_uart_path_cp) (void);
 	struct max77803_regulator_data *regulators;
 	int num_regulators;
-#ifdef CONFIG_VIBETONZ
 	/* haptic motor data */
 	struct max77803_haptic_platform_data *haptic_data;
-#endif
 #ifdef CONFIG_LEDS_MAX77803
 	/* led (flash/torch) data */
 	struct max77803_led_platform_data *led_data;
