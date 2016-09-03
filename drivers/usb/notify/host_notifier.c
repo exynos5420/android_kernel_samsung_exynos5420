@@ -17,8 +17,10 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/host_notify.h>
+#include <linux/usb_notify_sysfs.h>
 #include <linux/timer.h>
 #include <linux/kthread.h>
+#include <mach/usb3-drd.h>
 
 #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 #include <linux/earlysuspend.h>
@@ -41,6 +43,7 @@ struct  ovc {
 
 struct  host_notifier_info {
 	struct host_notifier_platform_data *pdata;
+	struct usb_notify_dev udev;
 	struct task_struct *th;
 	struct wake_lock	wlock;
 	struct delayed_work current_dwork;
@@ -273,7 +276,6 @@ static int start_usbhostd_notify(void)
 #ifdef CONFIG_MACH_P4NOTE
 	host_notifier_enable_irq();
 #endif
-
 	host_state_notify(&ninfo.pdata->ndev, NOTIFY_HOST_ADD);
 	wake_lock(&ninfo.wlock);
 
@@ -290,6 +292,50 @@ static int stop_usbhostd_notify(void)
 	host_state_notify(&ninfo.pdata->ndev, NOTIFY_HOST_REMOVE);
 	wake_unlock(&ninfo.wlock);
 
+	return 0;
+}
+
+static int check_usb_block(int disable)
+{
+	if(ninfo.pdata->ndev.mode == NOTIFY_HOST_MODE)
+	{
+		switch(disable){
+			case NOTIFY_BLOCK_TYPE_ALL:
+			case NOTIFY_BLOCK_TYPE_HOST:
+				#if defined(CONFIG_USB_EXYNOS5_USB3_DRD_CH0)
+					exynos_drd_switch_id_event(&exynos5_device_usb3_drd0, 1);
+				#else
+					exynos_drd_switch_id_event(&exynos5_device_usb3_drd1, 1);
+				#endif
+				if(ninfo.pdata->usbhostd_stop)
+					ninfo.pdata->usbhostd_stop();
+				ninfo.pdata->booster(0);
+				return 1;
+				
+			default:
+				if(ninfo.pdata->block_type==NOTIFY_BLOCK_TYPE_ALL || ninfo.pdata->block_type==NOTIFY_BLOCK_TYPE_HOST){
+					ninfo.pdata->booster(1);
+					#if defined(CONFIG_USB_EXYNOS5_USB3_DRD_CH0)
+						exynos_drd_switch_id_event(&exynos5_device_usb3_drd0, 0);
+					#else
+					exynos_drd_switch_id_event(&exynos5_device_usb3_drd1, 0);
+					#endif
+					if(ninfo.pdata->usbhostd_start)
+						ninfo.pdata->usbhostd_start();
+				}
+		}
+	}
+	return 0;
+	
+}
+
+static int set_usb_disable(struct usb_notify_dev *udev, int disable)
+{
+	if(check_usb_block(disable)){
+		pr_info("check_usb_block : event = %d, ninfo.block_type = %d\n",disable,ninfo.pdata->block_type);
+		host_state_notify(&ninfo.pdata->ndev, NOTIFY_HOST_BLOCK);
+	}
+	ninfo.pdata->block_type = disable;
 	return 0;
 }
 
@@ -440,6 +486,14 @@ static int host_notifier_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to host_notify_dev_register\n");
 		return ret;
 	}
+	ninfo.udev.name = "usb_control";
+	ninfo.udev.set_disable = set_usb_disable;
+	ret = usb_notify_dev_register(&ninfo.udev);
+	if (ret < 0) {
+		pr_err("usb_notify_dev_register is failed\n");
+		return ret;
+	}
+	ninfo.pdata->block_type = NOTIFY_BLOCK_TYPE_NONE;
 
 	ovc_init(&ninfo);
 

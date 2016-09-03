@@ -15,6 +15,7 @@ enum host_uevent_state {
 	NOTIFY_HOST_REMOVE,
 	NOTIFY_HOST_OVERCURRENT,
 	NOTIFY_HOST_LOWBATT,
+	NOTIFY_HOST_BLOCK,
 	NOTIFY_HOST_UNKNOWN,
 };
 
@@ -55,6 +56,7 @@ struct host_notifier_platform_data {
 	int		(*usbhostd_stop)(void);
 	int		thread_enable;
 	int		irq_enable;
+	int block_type;
 };
 
 enum ovc_check_value {
