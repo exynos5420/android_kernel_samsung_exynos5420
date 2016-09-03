@@ -109,10 +109,12 @@
 
 #define DRIVER_NAME		 "usb_mtp_gadget"
 
+#define MAX_GUID_SIZE	0x28
 static const char mtpg_longname[] =	"mtp";
 static const char shortname[] = DRIVER_NAME;
 static int mtp_pid;
 
+char guid_info[MAX_GUID_SIZE+1];
 /* MTP Device Structure*/
 struct mtpg_dev {
 	struct usb_function function;
@@ -283,6 +285,29 @@ static struct usb_ss_ep_comp_descriptor ss_intr_notify_desc = {
 	.wBytesPerInterval =	__constant_cpu_to_le16(MTPG_INTR_BUFFER_SIZE),
 };
 
+/* In VZW Models size of MTU is fixed using Devguru AVD Descriptor */
+
+struct usb_mtp_avd_descriptor {
+	__u8	bLength;
+	__u8	bDescriptorType;
+	__u8	bDescriptorSubType;
+
+	__u16	bDAU1_Type;
+	__u16	bDAU1_Length;
+	__u8	bDAU1_Value;
+} __attribute__ ((packed));
+
+static struct usb_mtp_avd_descriptor mtp_avd_descriptor = {
+	.bLength            =   0x08,
+	.bDescriptorType    =   0x24,
+	.bDescriptorSubType =   0x80,
+
+	/* First DAU = MTU Size */
+	.bDAU1_Type         =   0x000C,
+	.bDAU1_Length       =   0x0001,
+	.bDAU1_Value	= 0x01,
+};
+
 static struct usb_descriptor_header *ss_mtpg_descs[] = {
 	(struct usb_descriptor_header *) &mtpg_interface_desc,
 	(struct usb_descriptor_header *) &mtpg_superspeed_in_desc,
@@ -291,6 +316,7 @@ static struct usb_descriptor_header *ss_mtpg_descs[] = {
 	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
 	(struct usb_descriptor_header *) &int_hs_notify_desc,
 	(struct usb_descriptor_header *) &ss_intr_notify_desc,
+	(struct usb_descriptor_header *) &mtp_avd_descriptor,
 	NULL,
 };
 
@@ -299,6 +325,7 @@ static struct usb_descriptor_header *hs_mtpg_desc[] = {
 	(struct usb_descriptor_header *) &hs_mtpg_in_desc,
 	(struct usb_descriptor_header *) &hs_mtpg_out_desc,
 	(struct usb_descriptor_header *) &int_hs_notify_desc,
+	(struct usb_descriptor_header *) &mtp_avd_descriptor,
 	NULL
 };
 
@@ -311,6 +338,7 @@ static struct usb_descriptor_header *ss_ptpg_descs[] = {
 	(struct usb_descriptor_header *) &mtpg_superspeed_bulk_comp_desc,
 	(struct usb_descriptor_header *) &int_hs_notify_desc,
 	(struct usb_descriptor_header *) &ss_intr_notify_desc,
+	(struct usb_descriptor_header *) &mtp_avd_descriptor,
 	NULL,
 };
 
@@ -320,6 +348,7 @@ static struct usb_descriptor_header *_fs_ptp_descs[] = {
 	(struct usb_descriptor_header *) &fs_mtpg_in_desc,
 	(struct usb_descriptor_header *) &fs_mtpg_out_desc,
 	(struct usb_descriptor_header *) &int_fs_notify_desc,
+	(struct usb_descriptor_header *) &mtp_avd_descriptor,
 	NULL,
 };
 
@@ -328,6 +357,7 @@ static struct usb_descriptor_header *_hs_ptp_descs[] = {
 	(struct usb_descriptor_header *) &hs_mtpg_in_desc,
 	(struct usb_descriptor_header *) &hs_mtpg_out_desc,
 	(struct usb_descriptor_header *) &int_hs_notify_desc,
+	(struct usb_descriptor_header *) &mtp_avd_descriptor,
 	NULL,
 };
 
@@ -476,6 +506,27 @@ static void mtpg_req_put(struct mtpg_dev *dev, struct list_head *head,
 	spin_lock_irqsave(&dev->lock, flags);
 	list_add_tail(&req->list, head);
 	spin_unlock_irqrestore(&dev->lock, flags);
+}
+
+static ssize_t guid_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	printk(KERN_DEBUG "mtp: [%s]\tline = [%d]\n", __func__, __LINE__);
+	memcpy(buf, guid_info, MAX_GUID_SIZE);
+	return MAX_GUID_SIZE;
+}
+
+static ssize_t guid_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	printk(KERN_DEBUG "mtp: [%s]\tline = [%d]\n", __func__, __LINE__);
+	if (size > MAX_GUID_SIZE)
+		return -EINVAL;
+	
+	value = strlcpy(guid_info, buf, size);
+	return value;
 }
 
 /* remove a request from the head of a list */
@@ -826,7 +877,6 @@ static ssize_t interrupt_write(struct file *fd,
 						__func__, __LINE__, ret);
 	return ret;
 }
-
 static void mtp_complete_ep0_transection(struct usb_ep *ep, struct usb_request *req)
 {
 	if (req->status || req->actual != req->length) {
@@ -859,6 +909,12 @@ static void read_send_work(struct work_struct *work)
 
 	printk(KERN_DEBUG "[%s:%d] offset=[%lld]\t leth+hder=[%lld]\n",
 					 __func__, __LINE__, file_pos, count);
+
+	if(count<0) {
+		r = -EIO;
+		printk(KERN_ERR "[%s]\t%d ret = %d\n",
+						 __func__, __LINE__, r);
+		}
 
 	/* Zero Length Packet should be sent if the last trasfer
 	 * size is equals to the max packet size.
@@ -907,6 +963,8 @@ static void read_send_work(struct work_struct *work)
 					xfer - hdr_length, &file_pos);
 		if (ret < 0 || !req) {
 			r = ret;
+			printk(KERN_DEBUG "[%s]\t%d ret = %d\n",
+						 __func__, __LINE__, r);			
 			break;
 		}
 		xfer = ret + hdr_length;
@@ -1061,6 +1119,11 @@ static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
 		size = buf[0];
 		printk(KERN_DEBUG "[%s]SET_SETUP_DATA size=%d line=[%d]\n",
 						 __func__, size, __LINE__);
+
+		if ( size > USB_PTPREQUEST_GETSTATUS_SIZE) {
+			size = USB_PTPREQUEST_GETSTATUS_SIZE;
+		}
+
 		memcpy(req->buf, buf, size);
 		req->zero = 0;
 		req->length = size;
@@ -1287,7 +1350,8 @@ static void mtpg_complete_intr(struct usb_ep *ep, struct usb_request *req)
 
 	wake_up(&dev->intr_wq);
 }
-
+static DEVICE_ATTR(guid,  S_IRUGO | S_IWUSR,
+		guid_show, guid_store);
 static void
 mtpg_function_unbind(struct usb_configuration *c, struct usb_function *f)
 {
@@ -1304,6 +1368,8 @@ mtpg_function_unbind(struct usb_configuration *c, struct usb_function *f)
 
 	while ((req = mtpg_req_get(dev, &dev->intr_idle)))
 		mtpg_request_free(req, dev->int_in);
+	memset(guid_info, 0, sizeof (guid_info));
+	//printk(KERN_DEBUG "mtp: %s guid after reset = %s\n", __func__, guid_info);
 }
 
 static int
@@ -1497,6 +1563,9 @@ static void mtpg_function_disable(struct usb_function *f)
 	struct mtpg_dev	*dev = mtpg_func_to_dev(f);
 
 	printk(KERN_DEBUG "[%s]\tline = [%d]\n", __func__, __LINE__);
+	memset(guid_info, 0, sizeof (guid_info));
+	//printk(KERN_DEBUG "mtp: %s guid after reset = %s\n", __func__, guid_info);
+
 	dev->online = 0;
 	dev->error = 1;
 
@@ -1544,6 +1613,30 @@ mtp_complete_cancel_io(struct usb_ep *ep, struct usb_request *req)
 		mtp_send_signal(USB_PTPREQUEST_CANCELIO);
 	}
 
+}
+
+static void
+mtp_complete_get_guid(struct usb_ep *ep, struct usb_request *req)
+{
+	int size;
+
+	printk(KERN_DEBUG "[%s]\tline = [%d]\n", __func__, __LINE__);
+	DEBUG_MTPB("[%s]\tline = [%d]\n", __func__, __LINE__);
+	if (req->status != 0) {
+		DEBUG_MTPB("[%s]req->status !=0\tline = [%d]\n",
+						 __func__, __LINE__);
+		return;
+	}
+
+	if (req->actual >= sizeof(guid_info)) {
+		size = sizeof(guid_info)-1;
+	}
+	else
+		size = req->actual;
+	//printk(KERN_DEBUG "mtp: %s guid = %s\n", __func__, guid_info);
+	memset(guid_info, 0, sizeof(guid_info));
+	//printk(KERN_DEBUG "mtp: %s guid after reset = %s\n", __func__, guid_info);	
+	memcpy(guid_info, req->buf, size);
 }
 
 static int _mtp_ctrlrequest(struct usb_composite_dev *cdev,
@@ -1596,7 +1689,25 @@ static int _mtp_ctrlrequest(struct usb_composite_dev *cdev,
 			}
 			return value;
 		}
-		printk(KERN_DEBUG "mtp_ctrlrequest "\
+		else if ((ctrl->bRequest == 0xA3) && ( !(ctrl->bRequestType & USB_DIR_IN)))
+		{
+			printk("mtp: [%s] RECEIVE PC GUID / line[%d]\n",
+						__func__, __LINE__);
+			value = w_length;
+			cdev->gadget->ep0->driver_data = dev;
+			req->complete = mtp_complete_get_guid;
+			req->zero = 0;
+			req->length = value;
+			value = usb_ep_queue(cdev->gadget->ep0,
+						req, GFP_ATOMIC);
+			if (value < 0) {
+				printk(KERN_ERR "[%s:%d]Error usb_ep_queue\n",
+							__func__, __LINE__);
+			} else
+			DEBUG_MTPB("[%s] ep-queue-sucecc line[%d]\n",
+							__func__, __LINE__);			
+		}
+		printk(KERN_DEBUG "mtp: mtp_ctrlrequest "\
 				"%02x.%02x v%04x i%04x l%u\n",
 				ctrl->bRequestType, ctrl->bRequest,
 				w_value, w_index, w_length);
@@ -1704,8 +1815,10 @@ static int _mtp_setup(void)
 {
 	struct mtpg_dev	*mtpg;
 	int		rc;
+	int err;
 
 	printk(KERN_DEBUG "[%s] \tline = [%d]\n", __func__, __LINE__);
+	memset(guid_info, '0', 1);
 	mtpg = kzalloc(sizeof(*mtpg), GFP_KERNEL);
 	if (!mtpg) {
 		printk(KERN_ERR "mtpg_dev_alloc memory failed\n");
@@ -1743,7 +1856,15 @@ static int _mtp_setup(void)
 		printk(KERN_ERR " misc_register of mtpg Failed\n");
 		goto err_misc_register;
 	}
-
+	err = device_create_file(mtpg_device.this_device, &dev_attr_guid);
+	if (err) {
+		printk(KERN_DEBUG "mtp: %s failed to create guid attr\n",
+				__func__);
+		return err;
+	}
+	else
+		printk(KERN_DEBUG "mtp: %s success to create guid attr\n",
+				__func__);
 	return 0;
 err_work:
 err_misc_register:

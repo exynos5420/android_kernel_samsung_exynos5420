@@ -694,7 +694,7 @@ void xhci_queue_new_dequeue_state(struct xhci_hcd *xhci,
 	xhci_dbg(xhci, "Set TR Deq Ptr cmd, new deq seg = %p (0x%llx dma), "
 			"new deq ptr = %p (0x%llx dma), new cycle = %u\n",
 			deq_state->new_deq_seg,
-			(unsigned long long)((deq_state->new_deq_seg) ? deq_state->new_deq_seg->dma : 0),
+			(unsigned long long)deq_state->new_deq_seg->dma,
 			deq_state->new_deq_ptr,
 			(unsigned long long)xhci_trb_virt_to_dma(deq_state->new_deq_seg, deq_state->new_deq_ptr),
 			deq_state->new_cycle_state);
