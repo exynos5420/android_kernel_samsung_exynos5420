@@ -179,6 +179,9 @@ static int host_notify_uevent(struct device *dev, struct kobj_uevent_env *env)
 	case NOTIFY_HOST_LOWBATT:
 		state = "LOWBATT";
 		break;
+	case NOTIFY_HOST_BLOCK:
+		state = "BLOCK";
+		break;
 	case NOTIFY_HOST_UNKNOWN:
 		state = "UNKNOWN";
 		break;
