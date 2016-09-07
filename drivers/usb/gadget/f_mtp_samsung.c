@@ -52,6 +52,7 @@
 #include <asm-generic/siginfo.h>
 #include <linux/usb/android_composite.h>
 #include <linux/kernel.h>
+#include <linux/usb/f_mtp.h>
 #include "f_mtp.h"
 #include "gadget_chips.h"
 
