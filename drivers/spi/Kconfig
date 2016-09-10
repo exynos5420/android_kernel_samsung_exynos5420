@@ -449,7 +449,7 @@ config SPI_TLE62X0
 	  exposing both switch control and diagnostic feedback.
 
 config SENSORS_FP_SPI_NUMBER
-	depends on SENSORS_FINGERPRINT
+	depends on SENSORS_FPRINT_SECURE
 	int "Fingerprint spi gpio number"
 	default 0
 
