@@ -634,13 +634,12 @@ static int sec_spi_prepare(struct sec_spi_info *spi_info, struct spi_device *spi
 	if (!sdd)
 		return -EFAULT;
 
-	clk_prepare_enable(sdd->clk);
-	clk_prepare_enable(sdd->src_clk);
+	pm_runtime_get_sync(&sdd->pdev->dev);
 
-	/* set spi clock rate */
+	// set spi clock rate 
 	clk_set_rate(sdd->src_clk, spi_info->speed * 2);
 
-	/* enable chip select */
+	// enable chip select 
 	cs = spi->controller_data;
 
 	if(cs->line != (unsigned)NULL)
@@ -658,14 +657,12 @@ static int sec_spi_unprepare(struct sec_spi_info *spi_info, struct spi_device *s
 	if (!sdd)
 		return -EFAULT;
 
-	/* disable chip select */
+	// disable chip select
 	cs = spi->controller_data;
 	if(cs->line != (unsigned)NULL)
 		gpio_set_value(cs->line, 1);
 
-	clk_disable_unprepare(sdd->clk);
-	clk_disable_unprepare(sdd->src_clk);
-
+	pm_runtime_put(&sdd->pdev->dev);
 
 	return 0;
 }
