@@ -162,6 +162,18 @@ static int sec_bat_is_lpm_check(char *str)
 }
 __setup("androidboot.mode=", sec_bat_is_lpm_check);
 
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+int fg_reset;
+EXPORT_SYMBOL(fg_reset);
+static int sec_bat_get_fg_reset(char *val)
+{
+	fg_reset = strncmp(val, "1", 1) ? 0 : 1;
+	pr_info("%s, fg_reset:%d\n", __func__, fg_reset);
+	return 1;
+}
+__setup("fg_reset=", sec_bat_get_fg_reset);
+#endif
+
 static bool sec_bat_is_lpm(void)
 {
 	pr_err("%s: lpcharge(%d)\n", __func__, lpcharge);
@@ -673,8 +685,14 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.capacity_calculation_type =
 		SEC_FUELGAUGE_CAPACITY_TYPE_RAW |
 		SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
-		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
-		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
+#if defined(CONFIG_PREVENT_SOC_JUMP)
+		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE |
+		SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC |
+		SEC_FUELGAUGE_CAPACITY_TYPE_SKIP_ABNORMAL,
+#else
+	SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
+	/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
+#endif
 	.capacity_max = 1000,
 	.capacity_max_margin = 50,
 	.capacity_min = 0,
