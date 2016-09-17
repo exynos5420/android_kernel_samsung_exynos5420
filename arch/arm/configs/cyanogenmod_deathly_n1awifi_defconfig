@@ -461,8 +461,8 @@ CONFIG_N1A=y
 # CONFIG_V2A_3G is not set
 # CONFIG_V1A_WIFI is not set
 # CONFIG_V2A_WIFI is not set
-CONFIG_N1A_3G=y
-# CONFIG_N1A_WIFI is not set
+# CONFIG_N1A_3G is not set
+CONFIG_N1A_WIFI=y
 # CONFIG_N2A_3G is not set
 # CONFIG_N2A_WIFI is not set
 # CONFIG_CHAGALL_3G is not set
