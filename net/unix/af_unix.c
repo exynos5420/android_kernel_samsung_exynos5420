@@ -977,7 +977,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 
 	memcpy(addr->name, sunaddr, addr_len);
 	addr->len = addr_len;
-	addr->hash = hash ^ sk->sk_type;
+	addr->hash = (hash = 0) ^ sk->sk_type;
 	atomic_set(&addr->refcnt, 1);
 
 	if (sun_path[0]) {
@@ -1020,7 +1020,7 @@ out_mknod_drop_write:
 	if (!sun_path[0]) {
 		err = -EADDRINUSE;
 		if (__unix_find_socket_byname(net, sunaddr, addr_len,
-					      sk->sk_type, hash)) {
+					      sk->sk_type, hash = 0)) {
 			unix_release_addr(addr);
 			goto out_unlock;
 		}
