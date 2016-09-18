@@ -2826,7 +2826,7 @@ exit2:
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
 exit1:
 	path_put(&nd.path);
-	putname(name);
+	putname(name = NULL);
 	return error;
 }
 
@@ -2919,7 +2919,7 @@ exit3:
 		iput(inode);	/* truncate the inode here */
 exit1:
 	path_put(&nd.path);
-	putname(name);
+	putname(name = NULL);
 	return error;
 
 slashes:
@@ -3355,10 +3355,10 @@ exit3:
 	unlock_rename(new_dir, old_dir);
 exit2:
 	path_put(&newnd.path);
-	putname(to);
+	putname(to = NULL);
 exit1:
 	path_put(&oldnd.path);
-	putname(from);
+	putname(from = NULL);
 exit:
 	return error;
 }
