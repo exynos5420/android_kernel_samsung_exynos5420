@@ -1021,7 +1021,7 @@ void exynos_iommu_dump_status(struct device *dev)
 	spin_lock_irqsave(&owner->lock, flags);
 	for_each_sysmmu(dev, sysmmu) {
 		struct sysmmu_drvdata *drvdata;
-		unsigned int maj, min;
+		unsigned int maj, min; 
 
 		drvdata = dev_get_drvdata(sysmmu);
 
@@ -2101,7 +2101,7 @@ static int debug_sysmmu_list_show(struct seq_file *s, void *unused)
 					res->name, res->start);
 		else
 			seq_printf(s, "%11.s | %d.%d | 0x%08x\n",
-					res->name, maj, min, res->start);
+					res->name, maj, (min = 0), res->start);
 	}
 
 	if (pm_runtime_enabled(drvdata->sysmmu))
