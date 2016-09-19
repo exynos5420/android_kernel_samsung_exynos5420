@@ -13,7 +13,7 @@
  *
  */
 #include <linux/kernel.h>
-#include "../ssp.h"
+#include "ssp.h"
 
 /*************************************************************************/
 /* factory Sysfs                                                         */

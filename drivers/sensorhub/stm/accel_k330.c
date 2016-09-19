@@ -12,14 +12,14 @@
  *  GNU General Public License for more details.
  *
  */
-#include "../ssp.h"
+#include "ssp.h"
 
 /*************************************************************************/
 /* factory Sysfs                                                         */
 /*************************************************************************/
 
-#define VENDOR		"INVENSENSE"
-#define CHIP_ID		"MPU6500"
+#define VENDOR		"STM"
+#define CHIP_ID		"K330"
 
 #define CALIBRATION_FILE_PATH	"/efs/calibration_data"
 #define CALIBRATION_DATA_AMOUNT	20
@@ -75,55 +75,19 @@ int accel_open_calibration(struct ssp_data *data)
 	return iRet;
 }
 
-int set_accel_cal(struct ssp_data *data)
-{
-	int iRet = 0;
-	struct ssp_msg *msg;
-	s16 accel_cal[3];
-
-	accel_cal[0] = data->accelcal.x;
-	accel_cal[1] = data->accelcal.y;
-	accel_cal[2] = data->accelcal.z;
-
-	msg = kzalloc(sizeof(*msg), GFP_KERNEL);
-	if (msg == NULL) {
-		pr_err("[SSP] %s, failed to alloc memory for ssp_msg\n", __func__);
-		return -ENOMEM;
-	}
-	msg->cmd = MSG2SSP_AP_MCU_SET_ACCEL_CAL;
-	msg->length = 6;
-	msg->options = AP2HUB_WRITE;
-	msg->buffer = (char*) kzalloc(6, GFP_KERNEL);
-
-	msg->free_buffer = 1;
-	memcpy(msg->buffer, accel_cal, 6);
-
-	iRet = ssp_spi_async(data, msg);
-
-	if (iRet != SUCCESS) {
-		pr_err("[SSP]: %s - i2c fail %d\n", __func__, iRet);
-		iRet = ERROR;
-	}
-
-	pr_info("[SSP] Set accel cal data %d, %d, %d\n", accel_cal[0], accel_cal[1], accel_cal[2]);
-	return iRet;
-}
-
 static int enable_accel_for_cal(struct ssp_data *data)
 {
-	u8 uBuf[4] = { 0, };
-	s32 dMsDelay = get_msdelay(data->adDelayBuf[ACCELEROMETER_SENSOR]);
-	memcpy(&uBuf[0], &dMsDelay, 4);
+	u8 uBuf[2] = {0, 10};
 
 	if (atomic_read(&data->aSensorEnable) & (1 << ACCELEROMETER_SENSOR)) {
 		if (get_msdelay(data->adDelayBuf[ACCELEROMETER_SENSOR]) != 10) {
 			send_instruction(data, CHANGE_DELAY,
-				ACCELEROMETER_SENSOR, uBuf, 4);
+				ACCELEROMETER_SENSOR, uBuf, 2);
 			return SUCCESS;
 		}
 	} else {
 		send_instruction(data, ADD_SENSOR,
-			ACCELEROMETER_SENSOR, uBuf, 4);
+			ACCELEROMETER_SENSOR, uBuf, 2);
 	}
 
 	return FAIL;
@@ -131,17 +95,17 @@ static int enable_accel_for_cal(struct ssp_data *data)
 
 static void disable_accel_for_cal(struct ssp_data *data, int iDelayChanged)
 {
-	u8 uBuf[4] = { 0, };
-	s32 dMsDelay = get_msdelay(data->adDelayBuf[ACCELEROMETER_SENSOR]);
-	memcpy(&uBuf[0], &dMsDelay, 4);
+	u8 uBuf[2] = {0, 10};
 
 	if (atomic_read(&data->aSensorEnable) & (1 << ACCELEROMETER_SENSOR)) {
+		uBuf[1] = get_msdelay(data->adDelayBuf[ACCELEROMETER_SENSOR]);
+		uBuf[0] = get_delay_cmd(uBuf[1]);
 		if (iDelayChanged)
 			send_instruction(data, CHANGE_DELAY,
-				ACCELEROMETER_SENSOR, uBuf, 4);
+				ACCELEROMETER_SENSOR, uBuf, 2);
 	} else {
 		send_instruction(data, REMOVE_SENSOR,
-			ACCELEROMETER_SENSOR, uBuf, 4);
+			ACCELEROMETER_SENSOR, uBuf, 2);
 	}
 }
 
@@ -207,7 +171,7 @@ static int accel_do_calibrate(struct ssp_data *data, int iEnable)
 
 	filp_close(cal_filp, current->files);
 	set_fs(old_fs);
-	set_accel_cal(data);
+
 	return iRet;
 }
 
@@ -262,11 +226,9 @@ static ssize_t raw_data_read(struct device *dev,
 static ssize_t accel_reactive_alert_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t size)
 {
-	int iRet = 0;
-	char chTempBuf = 1;
+	char chTempBuf[2] = {0, 10};
+	int iRet, iDelayCnt = 0;
 	struct ssp_data *data = dev_get_drvdata(dev);
-
-	struct ssp_msg *msg;
 
 	if (sysfs_streq(buf, "1"))
 		ssp_dbg("[SSP]: %s - on\n", __func__);
@@ -275,28 +237,27 @@ static ssize_t accel_reactive_alert_store(struct device *dev,
 	else if (sysfs_streq(buf, "2")) {
 		ssp_dbg("[SSP]: %s - factory\n", __func__);
 
-		data->bAccelAlert = 0;
+		data->uFactorydataReady = 0;
+		memset(data->uFactorydata, 0, sizeof(char) * FACTORY_DATA_MAX);
 
-		msg = kzalloc(sizeof(*msg), GFP_KERNEL);
-		if (msg == NULL) {
-			pr_err("[SSP] %s, failed to alloc memory for ssp_msg\n", __func__);
-			return -ENOMEM;
-		}
-		msg->cmd = ACCELEROMETER_FACTORY;
-		msg->length = 1;
-		msg->options = AP2HUB_READ;
-		msg->data = chTempBuf;
-		msg->buffer = &chTempBuf;
-		msg->free_buffer = 0;
+		data->bAccelAlert = false;
+		iRet = send_instruction(data, FACTORY_MODE,
+				ACCELEROMETER_FACTORY, chTempBuf, 2);
 
-		iRet = ssp_spi_sync(data, msg, 3000);
-		data->bAccelAlert = chTempBuf;
+		while (!(data->uFactorydataReady & (1 << ACCELEROMETER_FACTORY))
+			&& (iDelayCnt++ < 150)
+			&& (iRet == SUCCESS))
+			msleep(20);
 
-		if (iRet != SUCCESS) {
-			pr_err("[SSP]: %s - accel Selftest Timeout!!\n", __func__);
+		if ((iDelayCnt >= 150) || (iRet != SUCCESS)) {
+			pr_err("[SSP]: %s - accel Selftest Timeout!!\n",
+				__func__);
 			goto exit;
 		}
 
+		mdelay(5);
+
+		data->bAccelAlert = data->uFactorydata[0];
 		ssp_dbg("[SSP]: %s factory test success!\n", __func__);
 	} else {
 		pr_err("[SSP]: %s - invalid value %d\n", __func__, *buf);
@@ -321,52 +282,6 @@ static ssize_t accel_reactive_alert_show(struct device *dev,
 	return sprintf(buf, "%u\n", bSuccess);
 }
 
-static ssize_t accel_hw_selftest_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	char chTempBuf[8] = { 2, 0, };
-	s8 init_status = 0, result = -1;
-	s16 shift_ratio[3] = { 0, };
-	int iRet;
-	struct ssp_data *data = dev_get_drvdata(dev);
-	struct ssp_msg *msg;
-
-	msg = kzalloc(sizeof(*msg), GFP_KERNEL);
-	if (msg == NULL) {
-		pr_err("[SSP] %s, failed to alloc memory for ssp_msg\n", __func__);
-		goto exit;
-	}
-	msg->cmd = ACCELEROMETER_FACTORY;
-	msg->length = 8;
-	msg->options = AP2HUB_READ;
-	msg->data = chTempBuf[0];
-	msg->buffer = chTempBuf;
-	msg->free_buffer = 0;
-
-	iRet = ssp_spi_sync(data, msg, 3000);
-	if (iRet != SUCCESS) {
-		pr_err("[SSP] %s - accel hw selftest Timeout!!\n", __func__);
-		goto exit;
-	}
-
-	init_status = chTempBuf[0];
-	shift_ratio[0] = (s16)((chTempBuf[2] << 8) + chTempBuf[1]);
-	shift_ratio[1] = (s16)((chTempBuf[4] << 8) + chTempBuf[3]);
-	shift_ratio[2] = (s16)((chTempBuf[6] << 8) + chTempBuf[5]);
-	result = chTempBuf[7];
-
-	pr_info("[SSP] %s - %d, %d, %d, %d, %d\n", __func__,
-		init_status, result, shift_ratio[0], shift_ratio[1], shift_ratio[2]);
-
-	return sprintf(buf, "%d,%d.%d,%d.%d,%d.%d\n", result,
-		shift_ratio[0] / 10, shift_ratio[0] % 10,
-		shift_ratio[1] / 10, shift_ratio[1] % 10,
-		shift_ratio[2] / 10, shift_ratio[2] % 10);
-exit:
-	return sprintf(buf, "%d,%d,%d,%d\n", -5, 0, 0, 0);
-}
-
-
 static DEVICE_ATTR(name, S_IRUGO, accel_name_show, NULL);
 static DEVICE_ATTR(vendor, S_IRUGO, accel_vendor_show, NULL);
 static DEVICE_ATTR(calibration, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -374,7 +289,6 @@ static DEVICE_ATTR(calibration, S_IRUGO | S_IWUSR | S_IWGRP,
 static DEVICE_ATTR(raw_data, S_IRUGO, raw_data_read, NULL);
 static DEVICE_ATTR(reactive_alert, S_IRUGO | S_IWUSR | S_IWGRP,
 	accel_reactive_alert_show, accel_reactive_alert_store);
-static DEVICE_ATTR(selftest, S_IRUGO, accel_hw_selftest_show, NULL);
 
 static struct device_attribute *acc_attrs[] = {
 	&dev_attr_name,
@@ -382,7 +296,6 @@ static struct device_attribute *acc_attrs[] = {
 	&dev_attr_calibration,
 	&dev_attr_raw_data,
 	&dev_attr_reactive_alert,
-	&dev_attr_selftest,
 	NULL,
 };
 

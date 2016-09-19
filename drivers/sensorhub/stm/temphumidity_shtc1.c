@@ -12,7 +12,7 @@
  *  GNU General Public License for more details.
  *
  */
-#include "../ssp.h"
+#include "ssp.h"
 #include <linux/platform_device.h>
 #include <plat/adc.h>
 
