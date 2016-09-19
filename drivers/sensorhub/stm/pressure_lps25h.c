@@ -12,7 +12,7 @@
  *  GNU General Public License for more details.
  *
  */
-#include "../ssp.h"
+#include "ssp.h"
 
 #define	VENDOR		"STM"
 #define	CHIP_ID		"LPS25H"
