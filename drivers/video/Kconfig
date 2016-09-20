@@ -29,6 +29,8 @@ source "drivers/gpu/arm/Kconfig"
 
 source "drivers/gpu/pvr/Kconfig"
 
+source "drivers/gpu/gpu_sysfs/Kconfig"
+
 config VGASTATE
        tristate
        default n
