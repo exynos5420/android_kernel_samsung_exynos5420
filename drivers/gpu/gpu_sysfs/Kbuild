@@ -1,0 +1,8 @@
+obj-y := gpu_sysfs.o
+
+
+# Common files.
+gpu_sysfs-y :=	gpu_sysfs_main.o \
+                gpu_sysfs_util.o \
+                gpu_sysfs_target_exynos5420.o
+
