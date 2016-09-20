@@ -29,7 +29,11 @@
 #include <linux/mfd/arizona/core.h>
 #include <linux/mfd/arizona/registers.h>
 
+<<<<<<< PATCH SET (f92031 Filter Arizona sound card control)
+#if defined(CONFIG_MFD_ARIZONA)
+=======
 #ifdef CONFIG_MFD_ARIZONA
+>>>>>>> BASE      (9a7a18 Fix filtering of Arizona sound card control)
 #include <linux/mfd/arizona/control.h>
 #endif
 
@@ -1681,9 +1685,17 @@ static int wm5102_codec_probe(struct snd_soc_codec *codec)
 
 	priv->core.arizona->dapm = &codec->dapm;
 
+<<<<<<< PATCH SET (f92031 Filter Arizona sound card control)
+#if defined(CONFIG_MFD_ARIZONA)
+=======
 #ifdef CONFIG_MFD_ARIZONA
+>>>>>>> BASE      (9a7a18 Fix filtering of Arizona sound card control)
 	arizona_control_init(codec);
 #endif
+<<<<<<< PATCH SET (f92031 Filter Arizona sound card control)
+
+=======
+>>>>>>> BASE      (9a7a18 Fix filtering of Arizona sound card control)
 	return 0;
 }
 
