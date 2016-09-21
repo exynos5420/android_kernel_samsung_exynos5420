@@ -9,5 +9,10 @@
 #
 #
 
-obj-$(CONFIG_MALI_T6XX_R7P0) += t6xx/r7p0/
-obj-$(CONFIG_MALI_MIDGARD_WK04) += midgard_wk04/
+MALI_CUSTOMER_RELEASE = 1
+
+obj-y += mali_kbase_config_5420.o
+
+obj-$(CONFIG_MALI_MIDGARD_WK04) += mali_kbase_platform.o
+obj-$(CONFIG_MALI_MIDGARD_WK04) += mali_kbase_dvfs.o
+
