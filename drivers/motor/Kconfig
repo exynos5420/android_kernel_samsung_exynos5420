@@ -7,6 +7,20 @@ config MOTOR_DRV_MAX77803
 	  If you say yes here you will get support for the
 	  motor of Maxim MAX77803 PMIC.
 
+config MOTOR_DRV_ISA1200
+	tristate "ISA1200 motor"
+	default n
+	depends on I2C
+	help
+	  Say Y to enalbe the ISA1200 IC.
+
+config MOTOR_DRV_ISA1400
+	tristate "ISA1400 motor"
+	default n
+	depends on I2C
+	help
+	  Say Y to enalbe the ISA1400 IC.
+
 config HAPTIC_ISA1200
 	tristate "ISA1200 motor"
 	default n
@@ -14,3 +28,9 @@ config HAPTIC_ISA1200
 	help
 	  Say Y to enalbe the ISA1200 IC.
 
+config HAPTIC_ISA1400
+	tristate "ISA1400 motor"
+	default n
+	depends on I2C
+	help
+	  Say Y to enalbe the ISA1400 IC.
