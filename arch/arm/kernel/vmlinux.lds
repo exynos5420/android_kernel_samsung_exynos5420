@@ -1,7 +1,7 @@
 /*
  *
  * Automatically generated file; DO NOT EDIT.
- * Linux/arm 3.4.39 Kernel Configuration
+ * Linux/arm 3.4.112 Kernel Configuration
  *
  */
 /*
@@ -16,27 +16,16 @@
  * When CONFIG_BOOGER is not defined, we generate a (... 1, 0) pair, and when
  * the last step cherry picks the 2nd arg, we get a zero.
  */
-
-
-
-
-
-
 /*
  * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
  * 0 otherwise.
  *
  */
-
-
-
 /*
  * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
  * otherwise. For boolean options, this is equivalent to
  * IS_ENABLED(CONFIG_FOO).
  */
-
-
 /*
  * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
  * otherwise.
@@ -276,13 +265,7 @@
  * directly leading to the call is unlikely.
  */
 /* Simple shorthand for a section definition */
-
-
 /* Are two types/vars the same type (ignoring qualifiers)? */
-
-
-
-
 /* Compile time object size, -1 for unknown */
 /*
  * Prevent the compiler from merging or refetching accesses.  The compiler
