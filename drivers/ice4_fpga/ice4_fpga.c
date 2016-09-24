@@ -1071,11 +1071,7 @@ err_create_wq:
 	return 0;
 }
 
-#if defined(CONFIG_ICE4_TWO_FUNC_INPUT)
-deferred_module_init(barcode_emul_init);
-#else
 late_initcall(barcode_emul_init);
-#endif
 
 static void __exit barcode_emul_exit(void)
 {
