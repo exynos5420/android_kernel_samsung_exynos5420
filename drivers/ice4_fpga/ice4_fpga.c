@@ -74,8 +74,6 @@
 #define READ_LENGTH		8
 #endif
 
-#define US_TO_PATTERN		1000000
-
 struct ice4_fpga_data {
 	struct i2c_client		*client;
 #if defined(CONFIG_IR_REMOCON_FPGA)
@@ -675,8 +673,8 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t size)
 {
 	struct ice4_fpga_data *data = dev_get_drvdata(dev);
-	unsigned int _data, _tdata;
-	int count, i, converting_factor = 1;
+	unsigned int _data;
+	int count, i;
 
 	printk(KERN_INFO "%s : ir_send called\n", __func__);
 	if (!fw_loaded) {
@@ -689,10 +687,8 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 			if (_data == 0 || buf == '\0')
 				break;
 
-			// 2 is the initial value of count
 			if (data->count == 2) {
 				data->ir_freq = _data;
-				converting_factor = US_TO_PATTERN / data->ir_freq;
 				data->i2c_block_transfer.data[2] = _data >> 16;
 				data->i2c_block_transfer.data[3]
 							= (_data >> 8) & 0xFF;
@@ -700,13 +696,12 @@ static ssize_t remocon_store(struct device *dev, struct device_attribute *attr,
 
 				data->count += 3;
 			} else {
-				_tdata = _data / converting_factor;
-				data->ir_sum += _tdata;
+				data->ir_sum += _data;
 				count = data->count;
 				data->i2c_block_transfer.data[count]
-								= _tdata >> 8;
+								= _data >> 8;
 				data->i2c_block_transfer.data[count+1]
-								= _tdata & 0xFF;
+								= _data & 0xFF;
 				data->count += 2;
 			}
 
@@ -1070,12 +1065,7 @@ err_create_wq:
 #endif
 	return 0;
 }
-
-#if defined(CONFIG_ICE4_TWO_FUNC_INPUT)
-deferred_module_init(barcode_emul_init);
-#else
 late_initcall(barcode_emul_init);
-#endif
 
 static void __exit barcode_emul_exit(void)
 {
