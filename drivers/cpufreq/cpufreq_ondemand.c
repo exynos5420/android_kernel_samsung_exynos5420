@@ -61,10 +61,10 @@
 #define DEF_FREQUENCY_HIGH_ZONE			(1200000)
 #define DEF_FREQUENCY_CONSERVATIVE_STEP		(100000)
 #define MICRO_FREQUENCY_UP_THRESHOLD_H		(90)
-#define MICRO_FREQUENCY_UP_THRESHOLD_L		(60)
+#define MICRO_FREQUENCY_UP_THRESHOLD_L		(85)
 #define MICRO_FREQUENCY_UP_STEP_LEVEL_B		(1200000)
 #define MICRO_FREQUENCY_UP_STEP_LEVEL_L		L_MAX_FREQ
-#define MICRO_FREQUENCY_DOWN_STEP_LEVEL		(250000)
+#define MICRO_FREQUENCY_DOWN_STEP_LEVEL		(200000)
 #define MICRO_FREQUENCY_DOWN_DIFFER_L		(20)
 #define MIN_FREQUENCY_UP_STEP_LEVEL		(500000)
 #define MAX_FREQUENCY_UP_STEP_LEVEL		B_MAX_FREQ
@@ -902,12 +902,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 			if (!dbs_tuners_ins.powersave_bias) {
 				__cpufreq_driver_target(policy, freq_next,
-						CPUFREQ_RELATION_L);
+						CPUFREQ_RELATION_C);
 			} else {
 				int freq = powersave_bias_target(policy, freq_next,
 						CPUFREQ_RELATION_L);
 				__cpufreq_driver_target(policy, freq,
-					CPUFREQ_RELATION_L);
+					CPUFREQ_RELATION_C);
 			}
 		}
 	} else {
