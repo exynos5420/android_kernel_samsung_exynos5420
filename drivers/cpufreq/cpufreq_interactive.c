@@ -90,11 +90,8 @@ static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 /*
  * The sample rate of the timer used to increase frequency
  */
-#define DEFAULT_TIMER_RATE (30 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
-
-/* Busy SDF parameters*/
-#define MIN_BUSY_TIME (100 * USEC_PER_MSEC)
 
 /*
  * Wait this long before raising speed above hispeed, by default a single
@@ -118,10 +115,10 @@ static u64 boostpulse_endtime;
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-#define DEFAULT_TIMER_SLACK (2 * DEFAULT_TIMER_RATE)
+#define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
-static bool io_is_busy = true;
+static bool io_is_busy;
 
 #ifdef CONFIG_MODE_AUTO_CHANGE
 struct cpufreq_loadinfo {
@@ -289,8 +286,6 @@ static unsigned int freq_to_above_hispeed_delay(unsigned int freq)
 		;
 
 	ret = above_hispeed_delay[i];
-	ret = (ret > (1 * USEC_PER_MSEC)) ? (ret - (1 * USEC_PER_MSEC)) : ret;
-
 	spin_unlock_irqrestore(&above_hispeed_delay_lock, flags);
 	return ret;
 }
@@ -339,7 +334,7 @@ static unsigned int choose_freq(
 
 		if (cpufreq_frequency_table_target(
 			    pcpu->policy, pcpu->freq_table, loadadjfreq / tl,
-			    CPUFREQ_RELATION_L, &index))
+			    CPUFREQ_RELATION_C, &index))
 			break;
 		freq = pcpu->freq_table[index].frequency;
 
@@ -381,7 +376,7 @@ static unsigned int choose_freq(
 				 */
 				if (cpufreq_frequency_table_target(
 					    pcpu->policy, pcpu->freq_table,
-					    freqmin + 1, CPUFREQ_RELATION_L,
+					    freqmin + 1, CPUFREQ_RELATION_C,
 					    &index))
 					break;
 				freq = pcpu->freq_table[index].frequency;
@@ -631,7 +626,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	pcpu->hispeed_validate_time = now;
 
 	if (cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table,
-					   new_freq, CPUFREQ_RELATION_L,
+					   new_freq, CPUFREQ_RELATION_C,
 					   &index))
 		goto rearm;
 
@@ -705,7 +700,6 @@ static void cpufreq_interactive_idle_start(void)
 	struct cpufreq_interactive_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 	int pending;
-	u64 now;
 
 	if (!down_read_trylock(&pcpu->enable_sem))
 		return;
@@ -725,17 +719,8 @@ static void cpufreq_interactive_idle_start(void)
 		 * min indefinitely.  This should probably be a quirk of
 		 * the CPUFreq driver.
 		 */
-		if (!pending) {
+		if (!pending)
 			cpufreq_interactive_timer_resched(pcpu);
-
-			now = ktime_to_us(ktime_get());
-			if ((pcpu->policy->cur == pcpu->policy->max) &&
-				(now - pcpu->hispeed_validate_time) >
-							MIN_BUSY_TIME) {
-				pcpu->floor_validate_time = now;
-			}
-
-		}
 	}
 
 	up_read(&pcpu->enable_sem);
@@ -969,7 +954,7 @@ static ssize_t show_target_loads(
 			       i & 0x1 ? ":" : " ");
 #endif
 
-	sprintf(buf + ret - 1, "\n");
+	ret += sprintf(buf + --ret, "\n");
 	spin_unlock_irqrestore(&target_loads_lock, flags);
 	return ret;
 }
@@ -1037,7 +1022,7 @@ static ssize_t show_above_hispeed_delay(
 			       i & 0x1 ? ":" : " ");
 #endif
 
-	sprintf(buf + ret - 1, "\n");
+	ret += sprintf(buf + --ret, "\n");
 	spin_unlock_irqrestore(&above_hispeed_delay_lock, flags);
 	return ret;
 }
@@ -1462,7 +1447,7 @@ static ssize_t show_cpu_util(
 			ret += sprintf(buf + ret, "OFF ");
 	}
 
-	sprintf(buf + ret - 1, "\n");
+	ret += sprintf(buf + --ret, "\n");
 	return ret;
 }
 
@@ -1643,7 +1628,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 					policy->max, CPUFREQ_RELATION_H);
 		else if (policy->min > policy->cur)
 			__cpufreq_driver_target(policy,
-					policy->min, CPUFREQ_RELATION_L);
+					policy->min, CPUFREQ_RELATION_C);
 		for_each_cpu(j, policy->cpus) {
 			pcpu = &per_cpu(cpuinfo, j);
 
