@@ -50,6 +50,7 @@ static gpu_dvfs_info gpu_dvfs_table_default[] = {
 	{266,  862500, 0, 60,  90, 1, 0, 400000, 222000,  250000, CPU_MAX},
 #ifdef CONFIG_SUPPORT_WQXGA
 	{177,  812500, 0,  0,  90, 1, 0, 160000,  83000,  250000, CPU_MAX},
+	{100,  812500, 0,  0,  90, 3, 0, 160000,  83000,  250000, CPU_MAX},
 #else
 	{177,  812500, 0, 53,  90, 1, 0, 160000,  83000,  250000, CPU_MAX},
 	{100,  812500, 0,  0,  90, 3, 0, 160000,  83000,  250000, CPU_MAX},
@@ -62,6 +63,7 @@ static gpu_dvfs_info gpu_dvfs_table_default[] = {
 	{266,  862500, 0, 60,  90, 1, 0, 400000, 222000,  250000, CPU_MAX, 500000},
 #ifdef CONFIG_SUPPORT_WQXGA
 	{177,  812500, 0,  0,  90, 1, 0, 160000,  83000,  250000, CPU_MAX, 500000},
+	{100,  812500, 0,  0,  90, 3, 0, 160000,  83000,  250000, CPU_MAX, 500000},
 #else
 	{177,  812500, 0, 53,  90, 1, 0, 160000,  83000,  250000, CPU_MAX, 500000},
 	{100,  812500, 0,  0,  90, 3, 0, 160000,  83000,  250000, CPU_MAX, 500000},
@@ -78,10 +80,10 @@ static int mif_min_table[] = {
 //static int available_max_clock[] = {GPU_L2, GPU_L2, GPU_L0, GPU_L0, GPU_L0};
 
 static gpu_attribute gpu_config_attributes[] = {
-	{GPU_MAX_CLOCK, 480},
-	{GPU_MAX_CLOCK_LIMIT, 480},
+	{GPU_MAX_CLOCK, 533},
+	{GPU_MAX_CLOCK_LIMIT, 533},
 #ifdef CONFIG_SUPPORT_WQXGA
-	{GPU_MIN_CLOCK, 177},
+	{GPU_MIN_CLOCK, 100},
 	{GPU_DVFS_START_CLOCK, 266},
 #else
 	{GPU_MIN_CLOCK, 100},
@@ -101,16 +103,16 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_GOVERNOR_TABLE_SIZE_INTERACTIVE, GPU_DVFS_TABLE_LIST_SIZE(gpu_dvfs_table_default)},
 	{GPU_GOVERNOR_TABLE_SIZE_STATIC, GPU_DVFS_TABLE_LIST_SIZE(gpu_dvfs_table_default)},
 	{GPU_GOVERNOR_TABLE_SIZE_BOOSTER, GPU_DVFS_TABLE_LIST_SIZE(gpu_dvfs_table_default)},
-	{GPU_GOVERNOR_INTERACTIVE_HIGHSPEED_CLOCK, 420},
+	{GPU_GOVERNOR_INTERACTIVE_HIGHSPEED_CLOCK, 480},
 	{GPU_GOVERNOR_INTERACTIVE_HIGHSPEED_LOAD, 95},
 	{GPU_GOVERNOR_INTERACTIVE_HIGHSPEED_DELAY, 0},
 	{GPU_DEFAULT_VOLTAGE, 937500},
 	{GPU_COLD_MINIMUM_VOL, 0},
 	{GPU_VOLTAGE_OFFSET_MARGIN, 37500},
 	{GPU_TMU_CONTROL, 1},
-	{GPU_TEMP_THROTTLING1, 420},
-	{GPU_TEMP_THROTTLING2, 350},
-	{GPU_TEMP_THROTTLING3, 266},
+	{GPU_TEMP_THROTTLING1, 533},
+	{GPU_TEMP_THROTTLING2, 420},
+	{GPU_TEMP_THROTTLING3, 350},
 	{GPU_TEMP_THROTTLING4, 160},
 	{GPU_TEMP_TRIPPING, 160},
 	{GPU_BOOST_MIN_LOCK, 0},
@@ -590,7 +592,7 @@ static int gpu_get_clock(struct kbase_device *kbdev)
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "%s: failed to clk_get [mout_vpll]\n", __func__);
 		return -1;
 	}
-	
+
 	clk_ahb2apb_g3dp = clk_get(kbdev->dev, "clk_ahb2apb_g3dp");
 	if (IS_ERR(clk_ahb2apb_g3dp)) {
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "%s: failed to clk_get [clk_ahb2apb_g3dp]\n", __func__);

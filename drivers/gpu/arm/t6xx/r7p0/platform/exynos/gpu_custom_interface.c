@@ -499,6 +499,98 @@ static ssize_t set_governor(struct device *dev, struct device_attribute *attr, c
 	return count;
 }
 
+static ssize_t show_gpu_custom_max_clock(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d", platform->gpu_max_clock);
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
+
+static ssize_t set_gpu_custom_max_clock(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret, gpu_max_clock;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret = kstrtoint(buf, 0, &gpu_max_clock);
+
+	if (ret) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: invalid value\n", __func__);
+		return -ENOENT;
+	}
+
+	if ((gpu_max_clock < 100) || (gpu_max_clock > 533)) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range [100~533] (%d)\n", __func__, gpu_max_clock);
+		return -ENOENT;
+	}
+
+	platform->gpu_max_clock = gpu_max_clock;
+
+	return count;
+}
+
+static ssize_t show_gpu_custom_min_clock(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d", platform->gpu_min_clock);
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
+
+static ssize_t set_gpu_custom_min_clock(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret, gpu_min_clock;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret = kstrtoint(buf, 0, &gpu_min_clock);
+
+	if (ret) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: invalid value\n", __func__);
+		return -ENOENT;
+	}
+
+	if ((gpu_min_clock < 100) || (gpu_min_clock > 533)) {
+		GPU_LOG(DVFS_WARNING, DUMMY, 0u, 0u, "%s: out of range [100~533] (%d)\n", __func__, gpu_min_clock);
+		return -ENOENT;
+	}
+
+	platform->gpu_min_clock = gpu_min_clock;
+
+	return count;
+}
+
 static ssize_t show_max_lock_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -1509,6 +1601,8 @@ DEVICE_ATTR(highspeed_load, S_IRUGO|S_IWUSR, show_highspeed_load, set_highspeed_
 DEVICE_ATTR(highspeed_delay, S_IRUGO|S_IWUSR, show_highspeed_delay, set_highspeed_delay);
 DEVICE_ATTR(wakeup_lock, S_IRUGO|S_IWUSR, show_wakeup_lock, set_wakeup_lock);
 DEVICE_ATTR(polling_speed, S_IRUGO|S_IWUSR, show_polling_speed, set_polling_speed);
+DEVICE_ATTR(max_clock, S_IRUGO|S_IWUSR, show_gpu_custom_max_clock, set_gpu_custom_max_clock);
+DEVICE_ATTR(min_clock, S_IRUGO|S_IWUSR, show_gpu_custom_min_clock, set_gpu_custom_min_clock);
 DEVICE_ATTR(tmu, S_IRUGO|S_IWUSR, show_tmu, set_tmu_control);
 #ifdef CONFIG_CPU_THERMAL_IPA
 DEVICE_ATTR(norm_utilization, S_IRUGO, show_norm_utilization, NULL);
@@ -1638,6 +1732,16 @@ int gpu_create_sysfs_file(struct device *dev)
 		goto out;
 	}
 
+	if (device_create_file(dev, &dev_attr_max_clock)) {
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [max_clock]\n");
+		goto out;
+	}
+
+	if (device_create_file(dev, &dev_attr_min_clock)) {
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [min_clock]\n");
+		goto out;
+	}
+
 	if (device_create_file(dev, &dev_attr_tmu)) {
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [tmu]\n");
 		goto out;
@@ -1732,6 +1836,8 @@ void gpu_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_highspeed_delay);
 	device_remove_file(dev, &dev_attr_wakeup_lock);
 	device_remove_file(dev, &dev_attr_polling_speed);
+	device_remove_file(dev, &dev_attr_max_clock);
+	device_remove_file(dev, &dev_attr_min_clock);
 	device_remove_file(dev, &dev_attr_tmu);
 #ifdef CONFIG_CPU_THERMAL_IPA
 	device_remove_file(dev, &dev_attr_norm_utilization);
