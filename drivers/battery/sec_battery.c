@@ -91,6 +91,7 @@ static enum power_supply_property sec_battery_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_AVG,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_CHARGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_TEMP,
@@ -3329,10 +3330,13 @@ static int sec_bat_get_property(struct power_supply *psy,
 		val->intval = battery->voltage_avg * 1000;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		val->intval = battery->current_now;
+		val->intval = battery->current_now * 1000;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
-		val->intval = battery->current_avg;
+		val->intval = battery->current_avg * 1000;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = battery->current_max * 1000;
 		break;
 	/* charging mode (differ from power supply) */
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
