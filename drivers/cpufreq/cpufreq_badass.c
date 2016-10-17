@@ -54,6 +54,11 @@
 #define DECREASE_IDLE_COUNTER			14
 
 /*
+ * dbs_mutex protects dbs_enable in governor start/stop.
+ */
+static DEFINE_MUTEX(dbs_mutex);
+
+/*
  * The polling frequency of this governor depends on the capability of
  * the processor. Default polling frequency is 1000 times the transition
  * latency of the processor. The governor will work on any processor with
@@ -519,8 +524,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 		if (reenable_timer) {
 			/* reinstate bds timer */
 			for_each_online_cpu(cpu) {
-				if (lock_policy_rwsem_write(cpu) < 0)
-					continue;
+				mutex_lock(&dbs_mutex);
 
 				bds_info = &per_cpu(od_cpu_bds_info, cpu);
 
@@ -542,7 +546,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 					bds_timer_init(bds_info);
 				}
 skip_this_cpu:
-				unlock_policy_rwsem_write(cpu);
+				mutex_unlock(&dbs_mutex);
 			}
 		}
 		badass_powersave_bias_init();
@@ -550,8 +554,7 @@ skip_this_cpu:
 		/* running at maximum or minimum frequencies; cancel
 		   bds timer as periodic load sampling is not necessary */
 		for_each_online_cpu(cpu) {
-			if (lock_policy_rwsem_write(cpu) < 0)
-				continue;
+			mutex_lock(&dbs_mutex);
 
 			bds_info = &per_cpu(od_cpu_bds_info, cpu);
 
@@ -582,7 +585,7 @@ skip_this_cpu:
 				mutex_unlock(&bds_info->timer_mutex);
 			}
 skip_this_cpu_bypass:
-			unlock_policy_rwsem_write(cpu);
+			mutex_unlock(&dbs_mutex);
 		}
 	}
 
@@ -1021,14 +1024,13 @@ static void bds_refresh_callback(struct work_struct *unused)
 	struct cpu_bds_info_s *this_bds_info;
 	unsigned int cpu = smp_processor_id();
 
-	if (lock_policy_rwsem_write(cpu) < 0)
-		return;
+	mutex_lock(&dbs_mutex);
 
 	this_bds_info = &per_cpu(od_cpu_bds_info, cpu);
 	policy = this_bds_info->cur_policy;
 	if (!policy) {
 		/* CPU not using badass governor */
-		unlock_policy_rwsem_write(cpu);
+		mutex_unlock(&dbs_mutex);
 		return;
 	}
 
@@ -1040,7 +1042,7 @@ static void bds_refresh_callback(struct work_struct *unused)
 		this_bds_info->prev_cpu_idle = get_cpu_idle_time(cpu,
 				&this_bds_info->prev_cpu_wall);
 	}
-	unlock_policy_rwsem_write(cpu);
+	mutex_unlock(&dbs_mutex);
 }
 
 static unsigned int enable_bds_input_event;
