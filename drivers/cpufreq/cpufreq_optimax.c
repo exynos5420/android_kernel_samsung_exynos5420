@@ -723,8 +723,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 		if (reenable_timer) {
 			/* reinstate dbs timer */
 			for_each_online_cpu(cpu) {
-				if (lock_policy_rwsem_write(cpu) < 0)
-					continue;
+				mutex_lock(&dbs_mutex);
 
 				dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 
@@ -750,7 +749,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 					atomic_set(&dbs_info->sync_enabled, 1);
 				}
 skip_this_cpu:
-				unlock_policy_rwsem_write(cpu);
+				mutex_unlock(&dbs_mutex);
 			}
 		}
 		optimax_powersave_bias_init();
@@ -758,8 +757,7 @@ skip_this_cpu:
 		/* running at maximum or minimum frequencies; cancel
 		   dbs timer as periodic load sampling is not necessary */
 		for_each_online_cpu(cpu) {
-			if (lock_policy_rwsem_write(cpu) < 0)
-				continue;
+			mutex_lock(&dbs_mutex);
 
 			dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 
@@ -792,7 +790,7 @@ skip_this_cpu:
 
 			}
 skip_this_cpu_bypass:
-			unlock_policy_rwsem_write(cpu);
+			mutex_unlock(&dbs_mutex);
 		}
 	}
 
@@ -1172,9 +1170,6 @@ static void dbs_refresh_callback(struct work_struct *work)
 
 	get_online_cpus();
 
-	if (lock_policy_rwsem_write(cpu) < 0)
-		goto bail_acq_sema_failed;
-
 	this_dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 	policy = this_dbs_info->cur_policy;
 	if (!policy) {
@@ -1201,7 +1196,7 @@ static void dbs_refresh_callback(struct work_struct *work)
 	}
 
 bail_incorrect_governor:
-	unlock_policy_rwsem_write(cpu);
+	mutex_unlock(&dbs_mutex);
 
 bail_acq_sema_failed:
 	put_online_cpus();
@@ -1244,13 +1239,10 @@ static int dbs_sync_thread(void *data)
 			src_max_load = 0;
 		}
 
-		if (lock_policy_rwsem_write(cpu) < 0)
-			goto bail_acq_sema_failed;
-
 		if (!atomic_read(&this_dbs_info->sync_enabled)) {
 			atomic_set(&this_dbs_info->src_sync_cpu, -1);
 			put_online_cpus();
-			unlock_policy_rwsem_write(cpu);
+			mutex_unlock(&dbs_mutex);
 			continue;
 		}
 
@@ -1287,7 +1279,7 @@ static int dbs_sync_thread(void *data)
 		}
 
 bail_incorrect_governor:
-		unlock_policy_rwsem_write(cpu);
+		mutex_unlock(&dbs_mutex);
 bail_acq_sema_failed:
 		put_online_cpus();
 		atomic_set(&this_dbs_info->src_sync_cpu, -1);
