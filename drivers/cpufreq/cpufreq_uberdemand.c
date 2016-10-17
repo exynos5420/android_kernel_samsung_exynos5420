@@ -466,15 +466,15 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 		if (reenable_timer) {
 			/* reinstate dbs timer */
 			for_each_online_cpu(cpu) {
-				if (lock_policy_rwsem_write(cpu) < 0)
-					continue;
+
+				mutex_lock(&dbs_mutex);
 
 				dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 				if (dbs_info->cur_policy) {
 					/* restart dbs timer */
 					dbs_timer_init(dbs_info);
 				}
-				unlock_policy_rwsem_write(cpu);
+				mutex_unlock(&dbs_mutex);
 			}
 		}
 		uberdemand_powersave_bias_init();
@@ -482,8 +482,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 		/* running at maximum or minimum frequencies; cancel
 		   dbs timer as periodic load sampling is not necessary */
 		for_each_online_cpu(cpu) {
-			if (lock_policy_rwsem_write(cpu) < 0)
-				continue;
+			mutex_lock(&dbs_mutex);
 
 			dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 			if (dbs_info->cur_policy) {
@@ -498,7 +497,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 
 				mutex_unlock(&dbs_info->timer_mutex);
 			}
-			unlock_policy_rwsem_write(cpu);
+			mutex_unlock(&dbs_mutex);
 		}
 	}
 
@@ -791,14 +790,13 @@ static void dbs_refresh_callback(struct work_struct *unused)
 	struct cpu_dbs_info_s *this_dbs_info;
 	unsigned int cpu = smp_processor_id();
 
-	if (lock_policy_rwsem_write(cpu) < 0)
-		return;
+	mutex_lock(&dbs_mutex);
 
 	this_dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
 	policy = this_dbs_info->cur_policy;
 	if (!policy) {
 		/* CPU not using uberdemand governor */
-		unlock_policy_rwsem_write(cpu);
+		mutex_unlock(&dbs_mutex);
 		return;
 	}
 
@@ -810,7 +808,7 @@ static void dbs_refresh_callback(struct work_struct *unused)
 		this_dbs_info->prev_cpu_idle = get_cpu_idle_time(cpu,
 				&this_dbs_info->prev_cpu_wall);
 	}
-	unlock_policy_rwsem_write(cpu);
+	mutex_unlock(&dbs_mutex);
 }
 
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
