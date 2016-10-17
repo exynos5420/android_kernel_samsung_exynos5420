@@ -353,7 +353,7 @@ static int tmds_control(struct sii8240_data *sii8240, bool tmds_on)
 	ret = mhl_modify_reg(hdmi, 0x81, 0x3F, 0x3C);
 	ret = mhl_modify_reg(hdmi, 0x87, 0x07, 0x03);
 
-	switch (tmds_on) {
+	switch (tmds_on, false) {
 	case true:
 #ifdef SFEATURE_HDCP_SUPPORT
 		if (sii8240->hdcp_support) {
