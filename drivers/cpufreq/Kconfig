@@ -653,36 +653,11 @@ config CPU_FREQ_GOV_POWERSAVE
 	  If in doubt, say Y.
 
 config CPU_FREQ_GOV_SMARTMAX
-        tristate "'smartmax' cpufreq policy governor"
-        select CPU_FREQ_TABLE
-        help
-          'smartmax' combined ondemand and smartass2
-
-config CPU_FREQ_GOV_SMARTMAX_TEGRA
-        bool "'smartmax' for tegra"
-        depends on CPU_FREQ_GOV_SMARTMAX || CPU_FREQ_GOV_SMARTMAX_EPS
-
-config CPU_FREQ_GOV_SMARTMAX_30
-        bool "'smartmax' for 3.0 and 3.1 kernels"
-        depends on CPU_FREQ_GOV_SMARTMAX || CPU_FREQ_GOV_SMARTMAX_EPS
-
-config CPU_FREQ_GOV_SMARTMAX_ENRC2B
-        bool "'smartmax' defaults for enrc2b"
-        depends on CPU_FREQ_GOV_SMARTMAX || CPU_FREQ_GOV_SMARTMAX_EPS
-
-config CPU_FREQ_GOV_SMARTMAX_PRIMOU
-        bool "'smartmax' defaults for primou"
-        depends on CPU_FREQ_GOV_SMARTMAX || CPU_FREQ_GOV_SMARTMAX_EPS
-
-config CPU_FREQ_GOV_SMARTMAX_M7
-        bool "'smartmax' defaults for m7"
-        depends on CPU_FREQ_GOV_SMARTMAX || CPU_FREQ_GOV_SMARTMAX_EPS
-
-config CPU_FREQ_GOV_SMARTMAX_EPS
-        tristate "'smartmax EPS' cpufreq policy governor"
-        select CPU_FREQ_TABLE
-        help
-          'smartmax EPS' is the extreme powersaving version of smartmax
+           tristate "'smartmax' cpufreq governor"
+           depends on CPU_FREQ
+           help
+             smartmax' - a "smart" optimized governor!
+             If in doubt, say N.
 
 config CPU_FREQ_GOV_UBERDEMAND
 	tristate "'uberdemand' cpufreq policy governor"
