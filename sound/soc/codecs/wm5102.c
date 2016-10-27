@@ -29,7 +29,7 @@
 #include <linux/mfd/arizona/core.h>
 #include <linux/mfd/arizona/registers.h>
 
-#if defined(CONFIG_MFD_ARIZONA)
+#ifdef CONFIG_MFD_ARIZONA
 #include <linux/mfd/arizona/control.h>
 #endif
 
@@ -1681,7 +1681,7 @@ static int wm5102_codec_probe(struct snd_soc_codec *codec)
 
 	priv->core.arizona->dapm = &codec->dapm;
 
-#if defined(CONFIG_MFD_ARIZONA)
+#ifdef CONFIG_MFD_ARIZONA
 	arizona_control_init(codec);
 #endif
 
