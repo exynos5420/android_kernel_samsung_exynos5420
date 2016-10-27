@@ -16,7 +16,7 @@
 #include <linux/mutex.h>
 #include <linux/err.h>
 
-#if defined(CONFIG_MFD_ARIZONA)
+#ifdef CONFIG_MFD_ARIZONA
 #include <linux/mfd/arizona/control.h>
 #endif
 
@@ -485,7 +485,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	int ret;
 	BUG_ON(!map->format.format_write && !map->format.format_val);
 
-#if defined(CONFIG_MFD_ARIZONA)
+#ifdef CONFIG_MFD_ARIZONA
 	mutex_unlock(&map->lock);
 	arizona_control_regmap_hook(map, reg, &val);
 	mutex_lock(&map->lock);
