@@ -16,6 +16,10 @@
 #include <linux/mutex.h>
 #include <linux/err.h>
 
+<<<<<<< PATCH SET (e3fa2d Fix filtering of Arizona sound card control)
+#ifdef CONFIG_MFD_ARIZONA
+=======
+>>>>>>> BASE      (026853 Wolfson syfs: Fix speaker gain name)
 #include <linux/mfd/arizona/control.h>
 
 #define CREATE_TRACE_POINTS
@@ -483,6 +487,10 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	int ret;
 	BUG_ON(!map->format.format_write && !map->format.format_val);
 
+<<<<<<< PATCH SET (e3fa2d Fix filtering of Arizona sound card control)
+#ifdef CONFIG_MFD_ARIZONA
+=======
+>>>>>>> BASE      (026853 Wolfson syfs: Fix speaker gain name)
 	mutex_unlock(&map->lock);
 	arizona_control_regmap_hook(map, reg, &val);
 	mutex_lock(&map->lock);

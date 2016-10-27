@@ -28,6 +28,11 @@
 
 #include <linux/mfd/arizona/core.h>
 #include <linux/mfd/arizona/registers.h>
+<<<<<<< PATCH SET (e3fa2d Fix filtering of Arizona sound card control)
+
+#ifdef CONFIG_MFD_ARIZONA
+=======
+>>>>>>> BASE      (026853 Wolfson syfs: Fix speaker gain name)
 #include <linux/mfd/arizona/control.h>
 
 #include "arizona.h"
@@ -1678,6 +1683,10 @@ static int wm5102_codec_probe(struct snd_soc_codec *codec)
 
 	priv->core.arizona->dapm = &codec->dapm;
 
+<<<<<<< PATCH SET (e3fa2d Fix filtering of Arizona sound card control)
+#ifdef CONFIG_MFD_ARIZONA
+=======
+>>>>>>> BASE      (026853 Wolfson syfs: Fix speaker gain name)
 	arizona_control_init(codec);
 
 	return 0;
