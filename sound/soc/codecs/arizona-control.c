@@ -81,7 +81,7 @@ struct arizona_control {
 static inline void _ctl_set(struct arizona_control *ctl, int val)
 {
 	ctl->value = val;
-	_write(ctl->reg, 
+	_write(ctl->reg,
 		(_read(ctl->reg) & ~ctl->mask) | (ctl->hook(ctl) << ctl->shift));
 }
 
@@ -159,10 +159,10 @@ static struct arizona_control ctls[] = {
 	/* Volumes */
 	_ctl("headphone_left", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_1L,
 		ARIZONA_OUT1L_VOL_MASK, ARIZONA_OUT1L_VOL_SHIFT, __hp_volume),
-	_ctl("headphone_right", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_1R, 
+	_ctl("headphone_right", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_1R,
 		ARIZONA_OUT1R_VOL_MASK, ARIZONA_OUT1R_VOL_SHIFT, __hp_volume),
 
-	_ctl("dock_left", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_2L, 
+	_ctl("dock_left", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_2L,
 		ARIZONA_OUT2L_VOL_MASK, ARIZONA_OUT2L_VOL_SHIFT, __simple),
 	_ctl("dock_right", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_2R,
 		ARIZONA_OUT2R_VOL_MASK, ARIZONA_OUT2R_VOL_SHIFT, __simple),
@@ -170,9 +170,9 @@ static struct arizona_control ctls[] = {
 	_ctl("earpiece_volume", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_3L,
 		ARIZONA_OUT3L_VOL_MASK, ARIZONA_OUT3L_VOL_SHIFT, __delta),
 
-	_ctl("speaker_volume_left", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_4L,
+	_ctl("speaker_gain_left", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_4L,
 		ARIZONA_OUT4L_VOL_MASK, ARIZONA_OUT4L_VOL_SHIFT, sp_volume),
-	_ctl("speaker_volume_right", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_4R,
+	_ctl("speaker_gain_right", CTL_ACTIVE, ARIZONA_DAC_DIGITAL_VOLUME_4R,
 		ARIZONA_OUT4R_VOL_MASK, ARIZONA_OUT4R_VOL_SHIFT, sp_volume),
 
 	/* Master switches */
@@ -383,7 +383,7 @@ static unsigned int hp_callback(struct arizona_control *ctl)
 			_ctl_set(&ctls[HPOUT1L2], mono_bridge ? 33 : 0);
 			_ctl_set(&ctls[HPOUT1R2], mono_bridge ? 32 : 0);
 		}
-		
+
 		_ctl_set(&ctls[DRC1LENA], drc_bridge);
 		_ctl_set(&ctls[DRC1RENA], drc_bridge);
 		_ctl_set(&ctls[EQ1ENA], eq_bridge);
@@ -393,7 +393,7 @@ static unsigned int hp_callback(struct arizona_control *ctl)
 		drc_bridge_live = drc_bridge;
 		mono_bridge_live = mono_bridge;
 	}
-	
+
 	return ctl->value;
 }
 
@@ -466,8 +466,8 @@ static unsigned int sp_callback(struct arizona_control *ctl)
 static bool is_delta(struct arizona_control *ctl)
 {
 	if (ctl->hook == __delta	||
-	    ctl->hook == __eq_hp_gain	||  
-	    ctl->hook == __eq_sp_gain	||  
+	    ctl->hook == __eq_hp_gain	||
+	    ctl->hook == __eq_sp_gain	||
 	    ctl->hook == sp_volume	  )
 		return true;
 
@@ -620,7 +620,7 @@ static ssize_t store_arizona_property(struct device *dev,
 
 	if (ctl == &ctls[SPEQFREQS])
 		return eq_sp_freq_store(buf, count);
-	
+
 	if (sscanf(buf, "%d", &val) != 1)
 		return -EINVAL;
 
