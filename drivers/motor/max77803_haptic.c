@@ -118,7 +118,35 @@ static ssize_t intensity_show(struct device *dev,
 	return sprintf(buf, "%u\n", (drvdata->intensity / 100));
 }
 
-static DEVICE_ATTR(pwm_value, 0660, intensity_show, intensity_store);
+static ssize_t pwm_default_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", 50);
+}
+
+static ssize_t pwm_max_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", 100);
+}
+
+static ssize_t pwm_min_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", 0);
+}
+
+static ssize_t pwm_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", 75);
+}
+
+static DEVICE_ATTR(pwm_default, 0444, pwm_default_show, NULL);
+static DEVICE_ATTR(pwm_max, 0444, pwm_max_show, NULL);
+static DEVICE_ATTR(pwm_min, 0444, pwm_min_show, NULL);
+static DEVICE_ATTR(pwm_threshold, 0444, pwm_threshold_show, NULL);
+static DEVICE_ATTR(pwm_value, 0664, intensity_show, intensity_store);
 
 static int haptic_get_time(struct timed_output_dev *tout_dev)
 {
@@ -287,9 +315,37 @@ static int max77803_haptic_probe(struct platform_device *pdev)
 	}
 
 	error = sysfs_create_file(&hap_data->tout_dev.dev->kobj,
+				&dev_attr_pwm_default.attr);
+	if (error < 0) {
+		pr_err("[VIB] Failed to register pwm_default sysfs : %d\n", error);
+		goto err_timed_output_register;
+	}
+
+	error = sysfs_create_file(&hap_data->tout_dev.dev->kobj,
+				&dev_attr_pwm_max.attr);
+	if (error < 0) {
+		pr_err("[VIB] Failed to register pwm_max sysfs : %d\n", error);
+		goto err_timed_output_register;
+	}
+
+	error = sysfs_create_file(&hap_data->tout_dev.dev->kobj,
+				&dev_attr_pwm_min.attr);
+	if (error < 0) {
+		pr_err("[VIB] Failed to register pwm_min sysfs : %d\n", error);
+		goto err_timed_output_register;
+	}
+
+	error = sysfs_create_file(&hap_data->tout_dev.dev->kobj,
+				&dev_attr_pwm_threshold.attr);
+	if (error < 0) {
+		pr_err("[VIB] Failed to register pwm_threshold sysfs : %d\n", error);
+		goto err_timed_output_register;
+	}
+
+	error = sysfs_create_file(&hap_data->tout_dev.dev->kobj,
 				&dev_attr_pwm_value.attr);
 	if (error < 0) {
-		pr_err("[VIB] Failed to register sysfs : %d\n", error);
+		pr_err("[VIB] Failed to register pwm_value sysfs : %d\n", error);
 		goto err_timed_output_register;
 	}
 #endif
