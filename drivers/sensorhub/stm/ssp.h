@@ -49,23 +49,29 @@
 #undef CONFIG_HAS_EARLYSUSPEND
 #endif
 
-#define SSP_DBG		1
-
+#define SSP_DBG		0
+#define SSP_DATA_DBG 0
+#define SSP_FUNC_DBG 0
+#define SSP_SEC_DEBUG	0
 #define SUCCESS		1
 #define FAIL		0
 #define ERROR		-1
 
 #define FACTORY_DATA_MAX	99
+/* ssp mcu device ID */
+#define DEVICE_ID 0x55
 
 #undef SAVE_MAG_LOG	/* Magnetic sensor data logging flag */
+
+#ifdef SAVE_MAG_LOG/*normal mode = 0, logging mode = 1*/
+#define MAG_LOG_MODE 1
+#else
+#define MAG_LOG_MODE 0
+#endif
 
 #if SSP_DBG
 #define SSP_FUNC_DBG 1
 #define SSP_DATA_DBG 0
-
-/* ssp mcu device ID */
-#define DEVICE_ID		0x55
-
 
 #define ssp_dbg(dev, format, ...) do { \
 	printk(KERN_INFO dev, format, ##__VA_ARGS__); \
