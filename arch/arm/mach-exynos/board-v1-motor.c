@@ -53,7 +53,7 @@ static int motor_vdd_en(bool en)
 	return gpio_direction_output(GPIO_MOTOR_EN, en);
 }
 
-static int motor_pwm_en(bool en)
+int motor_pwm_en(bool en)
 {
 
 	if (IS_ERR(motor_pwm)) {
@@ -74,7 +74,7 @@ static int motor_pwm_en(bool en)
 	return 0;
 }
 
-static int motor_pwm_config(int duty)
+int motor_pwm_config(int duty)
 {
 	u32 duty_ns = (u32)(duty * motor_pwm_period)
 		/ 1000;
