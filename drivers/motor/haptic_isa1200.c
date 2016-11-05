@@ -35,6 +35,13 @@
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 
+/* CMHW Vibrator Controls */
+#define INTENSITY_DEF 999
+#define INTENSITY_MAX 999
+#define INTENSITY_MIN 500
+#define INTENSITY_THR 750
+static int intensity = INTENSITY_MAX;
+
 int isa1200_i2c_write(struct i2c_client *client,
 					u8 addr, u8 val)
 {
@@ -96,18 +103,71 @@ static void isa1200_work(struct work_struct *_work)
 		data->running = false;
 		isa1200_on(data, false);
 		data->pdata->pwm_en(false);
-		data->pdata->pwm_cfg(500);
+		data->pdata->pwm_cfg(INTENSITY_MIN);
 	} else {
 		if (data->running)
 			return ;
 
 		data->running = true;
-		data->pdata->pwm_cfg(999);
+		data->pdata->pwm_cfg(intensity);
 		data->pdata->pwm_en(true);
 		usleep_range(1000, 1500);
 		isa1200_on(data, true);
 	}
 }
+
+static ssize_t intensity_store(struct device *dev,
+		struct device_attribute *devattr, const char *buf, size_t count)
+{
+	int ret = 0;
+
+	ret = kstrtoint(buf, 0, &intensity);
+
+	if (intensity < 0 || intensity > INTENSITY_MAX) {
+		pr_err("out of range\n");
+		return -EINVAL;
+	}
+
+	motor_pwm_config(intensity);
+
+	return count;
+}
+
+static ssize_t intensity_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", intensity);
+}
+
+static ssize_t pwm_default_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", INTENSITY_MAX);
+}
+
+static ssize_t pwm_max_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", INTENSITY_MAX);
+}
+
+static ssize_t pwm_min_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", INTENSITY_MIN);
+}
+
+static ssize_t pwm_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", INTENSITY_MAX);
+}
+
+static DEVICE_ATTR(pwm_default, 0444, pwm_default_show, NULL);
+static DEVICE_ATTR(pwm_max, 0444, pwm_max_show, NULL);
+static DEVICE_ATTR(pwm_min, 0444, pwm_min_show, NULL);
+static DEVICE_ATTR(pwm_threshold, 0444, pwm_threshold_show, NULL);
+static DEVICE_ATTR(pwm_value, 0664, intensity_show, intensity_store);
 
 static int isa1200_get_time(struct timed_output_dev *_dev)
 {
@@ -187,6 +247,41 @@ static int __devinit isa1200_i2c_probe(struct i2c_client *client,
 	ret = timed_output_dev_register(&ddata->dev);
 	if (ret < 0) {
 		printk(KERN_ERR "[VIB] Failed to register timed_output : -%d\n", ret);
+		goto err_to_dev_reg;
+	}
+
+	ret = sysfs_create_file(&ddata->dev.dev->kobj,
+				&dev_attr_pwm_default.attr);
+	if (ret < 0) {
+		pr_err("[VIB] Failed to register pwm_default sysfs : %d\n", ret);
+		goto err_to_dev_reg;
+	}
+
+	ret = sysfs_create_file(&ddata->dev.dev->kobj,
+				&dev_attr_pwm_max.attr);
+	if (ret < 0) {
+		pr_err("[VIB] Failed to register pwm_max sysfs : %d\n", ret);
+		goto err_to_dev_reg;
+	}
+
+	ret = sysfs_create_file(&ddata->dev.dev->kobj,
+				&dev_attr_pwm_min.attr);
+	if (ret < 0) {
+		pr_err("[VIB] Failed to register pwm_min sysfs : %d\n", ret);
+		goto err_to_dev_reg;
+	}
+
+	ret = sysfs_create_file(&ddata->dev.dev->kobj,
+				&dev_attr_pwm_threshold.attr);
+	if (ret < 0) {
+		pr_err("[VIB] Failed to register pwm_threshold sysfs : %d\n", ret);
+		goto err_to_dev_reg;
+	}
+
+	ret = sysfs_create_file(&ddata->dev.dev->kobj,
+				&dev_attr_pwm_value.attr);
+	if (ret < 0) {
+		pr_err("[VIB] Failed to register pwm_value sysfs : %d\n", ret);
 		goto err_to_dev_reg;
 	}
 

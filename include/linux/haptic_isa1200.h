@@ -91,4 +91,6 @@ struct isa1200_drvdata {
 	int max_timeout;
 };
 
+extern int motor_pwm_config(int duty);
+
 #endif	/* _ISA1200_H */

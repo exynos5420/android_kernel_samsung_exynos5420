@@ -74,7 +74,7 @@ static int motor_pwm_en(bool en)
 	return 0;
 }
 
-static int motor_pwm_config(int duty)
+int motor_pwm_config(int duty)
 {
 	u32 duty_ns = (u32)(duty * motor_pwm_period)
 		/ 1000;
