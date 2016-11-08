@@ -84,9 +84,11 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_MAX_CLOCK_LIMIT, 533},
 #ifdef CONFIG_SUPPORT_WQXGA
 	{GPU_MIN_CLOCK, 100},
+	{GPU_MIN_CLOCK_LIMIT, 100},
 	{GPU_DVFS_START_CLOCK, 266},
 #else
 	{GPU_MIN_CLOCK, 100},
+	{GPU_MIN_CLOCK_LIMIT, 100},
 	{GPU_DVFS_START_CLOCK, 177},
 #endif
 	{GPU_DVFS_BL_CONFIG_CLOCK, 350},

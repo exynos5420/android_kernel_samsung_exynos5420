@@ -237,7 +237,7 @@ static ssize_t show_volt_table(struct device *dev, struct device_attribute *attr
 		return -ENODEV;
 
 	max = 0; /* max DVFS level (100MHz) */
-	min = 5; /* min DVFS level (533MHz) */
+	min = 6; /* min DVFS level (533MHz) */
 	pr_len = (size_t)((PAGE_SIZE - 2) / (min-max));
 
 	for (i = max; i <= min; i++) {
@@ -254,7 +254,7 @@ static ssize_t set_volt_table(struct device *dev, struct device_attribute *attr,
 	struct kbase_device *kbdev;
 	struct exynos_context *platform;
 	int max = 0; /* max DVFS level (100MHz) */
-	int min = 5; /* min DVFS level (533MHz) */
+	int min = 6; /* min DVFS level (533MHz) */
 	int i, tokens, rest, target;
 	int t[min - max];
 	unsigned long flags;
@@ -337,6 +337,45 @@ static ssize_t show_dvfs_table(struct device *dev, struct device_attribute *attr
 	return ret;
 }
 
+static int gpu_get_freqs_table(struct exynos_context *platform, char *buf, size_t buf_size)
+{
+	int i, cnt = 0;
+
+	if (!platform)
+		return -ENODEV;
+
+	if (buf == NULL)
+		return 0;
+
+	for (i = 0; i <= 6; i++)
+		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
+
+	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
+
+	return cnt;
+}
+
+static ssize_t show_freqs_table(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+	struct exynos_context *platform = (struct exynos_context *)pkbdev->platform_context;
+
+	if (!platform)
+		return -ENODEV;
+
+	ret += gpu_get_freqs_table(platform, buf+ret, (size_t)PAGE_SIZE-ret);
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
+}
+
 static ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -348,7 +387,7 @@ static ssize_t show_time_in_state(struct device *dev, struct device_attribute *a
 
 	gpu_dvfs_update_time_in_state(gpu_control_is_power_on(pkbdev) * platform->cur_clock);
 
-	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock); i--) {
+	for (i = 6; i >= 0; i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				platform->table[i].clock,
 				platform->table[i].time);
@@ -1815,6 +1854,7 @@ DEVICE_ATTR(power_state, S_IRUGO, show_power_state, NULL);
 DEVICE_ATTR(asv_table, S_IRUGO, show_asv_table, NULL);
 DEVICE_ATTR(volt_table, S_IRUGO|S_IWUSR, show_volt_table, set_volt_table);
 DEVICE_ATTR(dvfs_table, S_IRUGO, show_dvfs_table, NULL);
+DEVICE_ATTR(freq_table, S_IRUGO, show_freqs_table, NULL);
 DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_state);
 DEVICE_ATTR(utilization, S_IRUGO, show_utilization, NULL);
 DEVICE_ATTR(perf, S_IRUGO, show_perf, NULL);
@@ -1888,6 +1928,11 @@ int gpu_create_sysfs_file(struct device *dev)
 	}
 
 	if (device_create_file(dev, &dev_attr_dvfs_table)) {
+		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [dvfs_table]\n");
+		goto out;
+	}
+
+	if (device_create_file(dev, &dev_attr_freq_table)) {
 		GPU_LOG(DVFS_ERROR, DUMMY, 0u, 0u, "couldn't create sysfs file [dvfs_table]\n");
 		goto out;
 	}
@@ -2080,6 +2125,7 @@ void gpu_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_asv_table);
 	device_remove_file(dev, &dev_attr_volt_table);
 	device_remove_file(dev, &dev_attr_dvfs_table);
+	device_remove_file(dev, &dev_attr_freq_table);
 	device_remove_file(dev, &dev_attr_time_in_state);
 	device_remove_file(dev, &dev_attr_utilization);
 	device_remove_file(dev, &dev_attr_perf);
