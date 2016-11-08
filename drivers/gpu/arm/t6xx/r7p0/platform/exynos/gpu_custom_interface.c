@@ -192,7 +192,7 @@ static int gpu_get_asv_table(struct exynos_context *platform, char *buf, size_t 
 
 	cnt += snprintf(buf+cnt, buf_size-cnt, "GPU, vol, min, max, down_stay, mif, int, cpu\n");
 
-	for (i = gpu_dvfs_get_level(platform->gpu_max_clock); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++) {
+	for (i = 0; i <= 5; i++) {
 		cnt += snprintf(buf+cnt, buf_size-cnt, "%d, %7d, %2d, %3d, %d, %6d, %6d, %7d\n",
 		platform->table[i].clock, platform->table[i].voltage, platform->table[i].min_threshold,
 		platform->table[i].max_threshold, platform->table[i].down_staycount, platform->table[i].mem_freq,
@@ -308,7 +308,7 @@ static int gpu_get_dvfs_table(struct exynos_context *platform, char *buf, size_t
 	if (buf == NULL)
 		return 0;
 
-	for (i = gpu_dvfs_get_level(platform->gpu_max_clock); i <= gpu_dvfs_get_level(platform->gpu_min_clock); i++)
+	for (i = 0; i <= 5; i++)
 		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
 
 	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
@@ -348,7 +348,7 @@ static ssize_t show_time_in_state(struct device *dev, struct device_attribute *a
 
 	gpu_dvfs_update_time_in_state(gpu_control_is_power_on(pkbdev) * platform->cur_clock);
 
-	for (i = gpu_dvfs_get_level(platform->gpu_min_clock); i >= gpu_dvfs_get_level(platform->gpu_max_clock); i--) {
+	for (i = 5; i >= 0; i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				platform->table[i].clock,
 				platform->table[i].time);
