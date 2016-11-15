@@ -346,13 +346,13 @@ trip_point_temp_oneshot_store(struct device *dev, struct device_attribute *attr,
 {
 	struct thermal_zone_device *tz = to_thermal_zone(dev);
 	int ret;
-	unsigned int temp0, temp1, temp2;
+	unsigned int temp0, temp1, temp2, temp3;
 
 	if (!tz->ops->set_trip_temp)
 		return -EPERM;
 
-	if (!sscanf(buf, "%d %d %d\n",
-		&temp0, &temp1, &temp2))
+	if (!sscanf(buf, "%d %d %d %d\n",
+		&temp0, &temp1, &temp2, &temp3))
 		return -EINVAL;
 
 	ret = tz->ops->set_trip_temp(tz, 0, temp0);
@@ -367,10 +367,14 @@ trip_point_temp_oneshot_store(struct device *dev, struct device_attribute *attr,
 	if (ret)
 		return ret;
 
+	ret = tz->ops->set_trip_temp(tz, 3, temp3);
+	if (ret)
+		return ret;
+
 	if (!tz->ops->set_trip_temp_level)
 		return -EPERM;
 
-	ret = tz->ops->set_trip_temp_level(tz, temp0, temp1, temp2);
+	ret = tz->ops->set_trip_temp_level(tz, temp0, temp1, temp2, temp3);
 
 	return ret ? ret : count;
 }
@@ -381,7 +385,7 @@ trip_point_temp_oneshot_show(struct device *dev, struct device_attribute *attr,
 {
 	struct thermal_zone_device *tz = to_thermal_zone(dev);
 	int ret;
-	unsigned long trip_temp0, trip_temp1, trip_temp2;
+	unsigned long trip_temp0, trip_temp1, trip_temp2, trip_temp3;
 
 	if (!tz->ops->get_trip_temp)
 		return -EPERM;
@@ -397,7 +401,11 @@ trip_point_temp_oneshot_show(struct device *dev, struct device_attribute *attr,
 	ret = tz->ops->get_trip_temp(tz, 2, &trip_temp2);
 	if (ret)
 		return ret;
-	return snprintf(buf, PAGE_SIZE, "%ld %ld %ld\n", trip_temp0, trip_temp1, trip_temp2);
+
+	ret = tz->ops->get_trip_temp(tz, 3, &trip_temp3);
+	if (ret)
+		return ret;
+	return snprintf(buf, PAGE_SIZE, "%ld %ld %ld %ld\n", trip_temp0, trip_temp1, trip_temp2, trip_temp3);
 }
 
 static ssize_t
