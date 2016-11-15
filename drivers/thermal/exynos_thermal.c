@@ -333,7 +333,7 @@ static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
 static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
 				unsigned long *temp)
 {
-	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
+	if ( trip > th_zone->sensor_conf->trip_data.trip_count)
 		return -EINVAL;
 
 	*temp = th_zone->sensor_conf->trip_data.trip_val[trip];
@@ -444,7 +444,7 @@ static int exynos_get_trip_temp_level(struct thermal_zone_device *thermal, int t
 
 static int exynos_set_trip_temp_level(struct thermal_zone_device *thermal,
 				unsigned int temp0, unsigned int temp1,
-				unsigned int temp2)
+				unsigned int temp2, unsigned int temp3)
 {
 	if (!th_zone->sensor_conf) {
 		pr_info("Temperature sensor not initialised\n");
@@ -454,6 +454,7 @@ static int exynos_set_trip_temp_level(struct thermal_zone_device *thermal,
 	th_zone->sensor_conf->cooling_data.freq_data[0].temp_level = temp0;
 	th_zone->sensor_conf->cooling_data.freq_data[1].temp_level = temp1;
 	th_zone->sensor_conf->cooling_data.freq_data[2].temp_level = temp2;
+	th_zone->sensor_conf->cooling_data.freq_data[3].temp_level = temp3;
 
 	return 0;
 }

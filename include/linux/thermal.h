@@ -63,7 +63,7 @@ struct thermal_zone_device_ops {
 	int (*get_trip_temp_level) (struct thermal_zone_device *, int,
 			      bool);
 	int (*set_trip_temp_level) (struct thermal_zone_device *,
-			      unsigned int, unsigned int, unsigned int);
+			      unsigned int, unsigned int, unsigned int, unsigned int);
 	int (*get_trip_freq) (struct thermal_zone_device *, unsigned int,
 			      unsigned long *);
 	int (*set_trip_freq) (struct thermal_zone_device *, unsigned int,
