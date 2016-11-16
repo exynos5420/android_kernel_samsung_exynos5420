@@ -70,9 +70,10 @@
 /* Timeout value for polling DRDY signal assertion */
 #define DRDY_TIMEOUT_MS      40
 
+/* Disabled to fix device never sleeping
 #ifdef ENABLE_SENSORS_FPRINT_SECURE
 #define FEATURE_SPI_WAKELOCK
-#endif
+#endif*/
 
 #define PINCONTROL
 
