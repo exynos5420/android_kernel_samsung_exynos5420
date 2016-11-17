@@ -124,6 +124,7 @@ obj-$(CONFIG_FB_IMX)              += imxfb.o
 obj-$(CONFIG_FB_MIPI_DSIM)	  += s5p_mipi_dsi.o s5p_mipi_dsi_lowlevel.o
 obj-$(CONFIG_FB_MIC)		  += s5p_mic.o
 obj-$(CONFIG_FB_S5P_MDNIE)        += ielcd.o mdnie.o mdnie_tuning.o
+obj-$(CONFIG_FB_MDNIE_RGB_ADJUST) += mdnie_rgb_adj.o
 obj-$(CONFIG_FB_S5P_MDNIE_LITE)   += mdnie_lite.o mdnie_lite_tuning.o
 obj-$(CONFIG_FB_S3C)		  += s3c-fb.o secfb_notify.o
 obj-$(CONFIG_S5P_DP)		  += s5p-dp-core.o s5p-dp-reg.o

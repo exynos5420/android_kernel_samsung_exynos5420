@@ -69,6 +69,10 @@ static void __iomem *s3c_mdnie_base;
 #define SCENARIO_IS_DMB(scenario)	NULL
 #endif
 
+#ifdef CONFIG_FB_MDNIE_RGB_ADJUST
+#include "mdnie_rgb_adj.h"
+#endif
+
 #define SCENARIO_IS_VIDEO(scenario)			(scenario == VIDEO_MODE)
 #define SCENARIO_IS_VALID(scenario)			(SCENARIO_IS_DMB(scenario) || scenario < SCENARIO_MAX)
 
@@ -194,6 +198,10 @@ static int mdnie_send_sequence(struct mdnie_info *mdnie, const unsigned short *s
 {
 	int ret = 0, i = 0;
 	const unsigned short *wbuf = NULL;
+#ifdef CONFIG_FB_MDNIE_RGB_ADJUST
+	u16 res = 0;
+	bool did_apply_rgb = false;
+#endif
 
 	if (IS_ERR_OR_NULL(seq)) {
 		dev_err(mdnie->dev, "mdnie sequence is null\n");
@@ -216,7 +224,27 @@ static int mdnie_send_sequence(struct mdnie_info *mdnie, const unsigned short *s
 	mdnie_mask();
 
 	while (wbuf[i] != END_SEQ) {
+#ifdef CONFIG_FB_MDNIE_RGB_ADJUST
+		if (wbuf[i] == MDNIE_EFFECT_MASTER) {
+			// ensure that scr is enabled
+			res = mdnie_effect_master_hook(mdnie, wbuf[i+1]);
+			mdnie_write(wbuf[i], res);
+		} else if (wbuf[i] >= MDNIE_SCR_START && wbuf[i] <= MDNIE_SCR_END) {
+			did_apply_rgb = true;
+			res = mdnie_rgb_hook(mdnie, wbuf[i], wbuf[i+1]);
+			mdnie_write(wbuf[i], res);
+		} else {
+			if (!did_apply_rgb && wbuf[i] > MDNIE_SCR_END) {
+				// not all profiles have SCR config, fake it if we have to
+				dev_notice(mdnie->dev, "faking SCR config\n");
+				mdnie_send_rgb(mdnie);
+				did_apply_rgb = true;
+			}
+			mdnie_write(wbuf[i], wbuf[i+1]);
+		}
+#else
 		ret += mdnie_write(wbuf[i], wbuf[i+1]);
+#endif
 		i += 2;
 	}
 

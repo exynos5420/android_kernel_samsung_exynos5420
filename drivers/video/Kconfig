@@ -2061,6 +2061,13 @@ config FB_S3C
 
 	  Currently the support is only for the S3C6400 and S3C6410 SoCs.
 
+config FB_MDNIE_RGB_ADJUST
+	bool "Samsung MDNIE RGB adjustment support"
+	depends on FB_S5P_MDNIE
+	default n
+	---help---
+	This enables support for scaling the display's RGB values in hardware
+
 config FB_MIPI_DSIM
 	bool "Samsung MIPI DSIM"
 	depends on FB_S3C
