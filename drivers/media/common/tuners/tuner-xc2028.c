@@ -260,6 +260,14 @@ static void free_firmware(struct xc2028_data *priv)
 	int i;
 	tuner_dbg("%s called\n", __func__);
 
+	/* free allocated f/w string */
+	if (priv->fname != firmware_name)
+		kfree(priv->fname);
+	priv->fname = NULL;
+
+	priv->state = XC2028_NO_FIRMWARE;
+	memset(&priv->cur_fw, 0, sizeof(priv->cur_fw));
+
 	if (!priv->firm)
 		return;
 
@@ -876,7 +884,9 @@ read_not_reliable:
 	return 0;
 
 fail:
-	memset(&priv->cur_fw, 0, sizeof(priv->cur_fw));
+	free_firmware(priv);
+	priv->state = XC2028_SLEEP;
+
 	if (retry_count < 8) {
 		msleep(50);
 		retry_count++;
@@ -1236,10 +1246,8 @@ static int xc2028_dvb_release(struct dvb_frontend *fe)
 	mutex_lock(&xc2028_list_mutex);
 
 	/* only perform final cleanup if this is the last instance */
-	if (hybrid_tuner_report_instance_count(priv) == 1) {
+	if (hybrid_tuner_report_instance_count(priv) == 1)
 		kfree(priv->ctrl.fname);
-		free_firmware(priv);
-	}
 
 	if (priv)
 		hybrid_tuner_release_state(priv);
@@ -1272,30 +1280,46 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 
 	mutex_lock(&priv->lock);
 
- 	/*
- 	 * Copy the config data.
- 	 * For the firmware name, keep a local copy of the string,
-	 * in order to avoid troubles during device release.
+	/*
+	 * Copy the config data.
 	 */
-	kfree(priv->ctrl.fname);
-	priv->ctrl.fname = NULL;
 	memcpy(&priv->ctrl, p, sizeof(priv->ctrl));
+
+	/*
+	 * If firmware name changed, frees firmware. As free_firmware will
+	 * reset the status to NO_FIRMWARE, this forces a new request_firmware
+	 */
+	if (!firmware_name[0] && p->fname &&
+	    priv->fname && strcmp(p->fname, priv->fname))
+		free_firmware(priv);
+
 	if (priv->ctrl.max_len < 9)
 		priv->ctrl.max_len = 13;
 
-	if (p->fname) {
-		if (priv->ctrl.fname && strcmp(p->fname, priv->ctrl.fname)) {
-			kfree(priv->ctrl.fname);
-			free_firmware(priv);
-		}
+	if (priv->state == XC2028_NO_FIRMWARE) {
+		if (!firmware_name[0])
+			priv->fname = kstrdup(p->fname, GFP_KERNEL);
+		else
+			priv->fname = firmware_name;
 
-		priv->ctrl.fname = kstrdup(p->fname, GFP_KERNEL);
-		if (priv->ctrl.fname == NULL) {
+		if (!priv->fname) {
 			rc = -ENOMEM;
 			goto unlock;
 		}
-	}
 
+		rc = request_firmware_nowait(THIS_MODULE, 1,
+					     priv->fname,
+					     priv->i2c_props.adap->dev.parent,
+					     GFP_KERNEL,
+					     fe, load_firmware_cb);
+		if (rc < 0) {
+			tuner_err("Failed to request firmware %s\n",
+				  priv->fname);
+			priv->state = XC2028_NODEV;
+		} else
+			priv->state = XC2028_WAITING_FIRMWARE;
+	}
+unlock:
 	mutex_unlock(&priv->lock);
 
 	return rc;
