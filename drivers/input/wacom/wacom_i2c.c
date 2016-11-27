@@ -1081,6 +1081,19 @@ static ssize_t epen_saving_mode_store(struct device *dev,
 		wacom_power_on(wac_i2c);
 	return count;
 }
+
+static ssize_t epen_saving_mode_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+
+	struct wacom_i2c *wac_i2c = dev_get_drvdata(dev);
+
+	if (!wac_i2c)
+		return -ENODEV;
+
+	return sprintf(buf, "%d", wac_i2c->battery_saving_mode);
+
+}
 #endif
 
 #ifdef WACOM_BOOSTER
@@ -1150,7 +1163,7 @@ static DEVICE_ATTR(epen_connection,
 
 #ifdef BATTERY_SAVING_MODE
 static DEVICE_ATTR(epen_saving_mode,
-		   S_IWUSR | S_IWGRP, NULL, epen_saving_mode_store);
+		   S_IRUGO|S_IWUSR, epen_saving_mode_show, epen_saving_mode_store);
 #endif
 
 static struct attribute *epen_attributes[] = {
