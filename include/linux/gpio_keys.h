@@ -4,7 +4,7 @@
 struct device;
 
 #ifdef CONFIG_MACH_UNIVERSAL5420
-#if !defined(CONFIG_INPUT_BOOSTER)
+#if !defined(CONFIG_INPUT_BOOSTER) && defined(CONFIG_KEY_BOOSTER)
 #define KEY_BOOSTER
 #endif
 #endif
