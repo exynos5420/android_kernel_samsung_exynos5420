@@ -107,7 +107,7 @@
 #define EPEN_RESUME_DELAY 180
 
 /* Wacom Booster */
-#if !defined(CONFIG_INPUT_BOOSTER)
+#if !defined(CONFIG_INPUT_BOOSTER) && defined(CONFIG_WACOM_BOOSTER)
 #define WACOM_BOOSTER
 #endif
 

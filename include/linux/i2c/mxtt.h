@@ -315,7 +315,11 @@ enum {
 #define TSP_BOOSTER				0
 #define TOUCHKEY_BOOSTER		0
 #else
+#ifdef CONFIG_TSP_BOOSTER
 #define TSP_BOOSTER				1
+#else
+#define TSP_BOOSTER				0
+#endif
 #define TOUCHKEY_BOOSTER		0
 #endif
 
