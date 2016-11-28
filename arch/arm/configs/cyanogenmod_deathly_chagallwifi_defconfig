@@ -1722,6 +1722,10 @@ CONFIG_INPUT_GPIO=y
 # CONFIG_INPUT_ADXL34X is not set
 # CONFIG_INPUT_CMA3000 is not set
 # CONFIG_INPUT_BOOSTER is not set
+# CONFIG_TOUCHKEY_BOOSTER is not set
+# CONFIG_KEY_BOOSTER is not set
+# CONFIG_TSP_BOOSTER is not set
+# CONFIG_WACOM_BOOSTER is not set
 
 #
 # Hardware I/O ports

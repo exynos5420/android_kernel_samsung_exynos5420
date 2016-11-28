@@ -67,7 +67,7 @@
 
 #define SYNAPTICS_DEVICE_NAME	"SYNAPTICS"
 
-#if !defined(CONFIG_INPUT_BOOSTER)
+#if !defined(CONFIG_INPUT_BOOSTER) && defined(CONFIG_TSP_BOOSTER)
 #define TSP_BOOSTER
 #endif
 
