@@ -315,8 +315,16 @@ enum {
 #define TSP_BOOSTER				0
 #define TOUCHKEY_BOOSTER		0
 #else
+#ifdef CONFIG_TSP_BOOSTER
 #define TSP_BOOSTER				1
+#else
+#define TSP_BOOSTER				0
+#endif
+#ifdef CONFIG_TOUCHKEY_BOOSTER
 #define TOUCHKEY_BOOSTER		1
+#else
+#define TOUCHKEY_BOOSTER		0
+#endif
 #endif
 #define TSP_SEC_FACTORY			1
 #define TSP_INFORM_CHARGER		1
@@ -328,7 +336,11 @@ enum {
 #define TSP_CHANGE_CONFIG_FOR_INPUT    1
 #define USE_FOR_SUFACE			1
 #elif defined(CONFIG_N1A)
+#ifdef CONFIG_TSP_BOOSTER
 #define TSP_BOOSTER			1
+#else
+#define TSP_BOOSTER			0
+#endif
 #define TSP_SEC_FACTORY			1
 #define TSP_INFORM_CHARGER		1
 #define TSP_USE_SHAPETOUCH		1
