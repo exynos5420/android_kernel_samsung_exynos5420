@@ -1912,7 +1912,7 @@ void __init s3c64xx_spi3_set_platdata(struct s3c64xx_spi_info *pd,
 }
 #endif /* CONFIG_S3C64XX_DEV_SPI3 */
 
-#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04) || defined(CONFIG_MALI_T6XX_R7P0)
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04)
 static struct resource g3d_resource[] = {
 	[0] = DEFINE_RES_MEM(EXYNOS5_PA_G3D, (SZ_4K * 5)),
 	[1] = DEFINE_RES_IRQ(JOB_IRQ_NUMBER),
