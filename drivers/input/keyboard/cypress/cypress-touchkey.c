@@ -1814,6 +1814,17 @@ static ssize_t glove_mode_enable(struct device *dev,
 
 	return size;
 }
+
+static ssize_t glove_mode_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct touchkey_i2c *tkey_i2c = dev_get_drvdata(dev);
+
+	if (!tkey_i2c)
+		return -ENODEV;
+
+	return sprintf(buf, "%d", tkey_i2c->tsk_glove_mode_status);
+}
 #endif
 
 #ifdef TKEY_FLIP_MODE
@@ -2022,7 +2033,7 @@ static DEVICE_ATTR(autocal_stat, S_IRUGO | S_IWUSR | S_IWGRP,
 		   autocalibration_status, NULL);
 #endif
 #if defined(CONFIG_GLOVE_TOUCH)
-static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
+static DEVICE_ATTR(glove_mode, S_IRUGO|S_IWUSR, glove_mode_show,
 		   glove_mode_enable);
 #endif
 #ifdef TKEY_FLIP_MODE
