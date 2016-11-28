@@ -312,10 +312,14 @@ enum {
 
 /************** Feature + **************/
 #ifdef CONFIG_INPUT_BOOSTER
-#define TSP_BOOSTER				0
+#define TSP_BOOSTER			0
 #define TOUCHKEY_BOOSTER		0
 #else
-#define TSP_BOOSTER				1
+#ifdef CONFIG_TSP_BOOSTER
+#define TSP_BOOSTER			1
+#else
+#define TSP_BOOSTER			0
+#endif
 #define TOUCHKEY_BOOSTER		0
 #endif
 
@@ -324,13 +328,13 @@ enum {
 #define TSP_USE_SHAPETOUCH		0
 #define ENABLE_TOUCH_KEY		0
 #define TSP_CHECK_ATCH			0
-#define TSP_PATCH				1
+#define TSP_PATCH			1
 #define TSP_USE_PALM_FLAG		0
-#define TSP_CHANGE_CONFIG_FOR_INPUT  0
+#define TSP_CHANGE_CONFIG_FOR_INPUT  	0
 #define USE_FOR_SUFACE			0
-#define TSP_HOVER_WORKAROUND	0
+#define TSP_HOVER_WORKAROUND		0
 
-#define FOR_BRINGUP				0
+#define FOR_BRINGUP			0
 
 /* TSP_USE_ATMELDBG feature just for atmel tunning app
 * so it should be disabled after finishing tunning

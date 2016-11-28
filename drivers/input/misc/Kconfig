@@ -615,4 +615,33 @@ config INPUT_BOOSTER
 	  To compile this driver as a module, choose M here: the
 	  module will be called input_booster.
 
+config TOUCHKEY_BOOSTER
+	tristate "Capacitive Keys Input booster"
+	default n        
+	help
+	  Capavitive Keys input booster used if INPUT_BOOSTER flag is not set.
+	  Say Y if you want to enable it. If INPUT_BOOSTER flag is set, this flag won't have any effect.
+
+config KEY_BOOSTER
+	tristate "Hard Keys Input booster"
+	default n
+	help
+	  Hard Keys input booster used if INPUT_BOOSTER flag is not set.
+	  Say Y if you want to enable it. If INPUT_BOOSTER flag is set, this flag won't have any effect.
+
+config TSP_BOOSTER
+	tristate "Touchscreen Input booster"
+	default n
+	help
+	  Touchscreen input booster used if INPUT_BOOSTER flag is not set.
+	  Say Y if you want to enable it. If INPUT_BOOSTER flag is set, this flag won't have any effect.
+
+config WACOM_BOOSTER
+	tristate "Wacom epen Input booster"
+	depends on INPUT_WACOM
+	default n
+	help
+	  Wacom epen input booster used if INPUT_BOOSTER flag is not set.
+	  Say Y if you want to enable it. If INPUT_BOOSTER flag is set, this flag won't have any effect.
+
 endif
