@@ -312,11 +312,19 @@ enum {
 /************** Feature + **************/
 #if defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_CHAGALL) || defined (CONFIG_N2A)
 #ifdef CONFIG_INPUT_BOOSTER
-#define TSP_BOOSTER				0
+#define TSP_BOOSTER			0
 #define TOUCHKEY_BOOSTER		0
 #else
-#define TSP_BOOSTER				1
+#ifdef CONFIG_TSP_BOOSTER
+#define TSP_BOOSTER			1
+#else
+#define TSP_BOOSTER			0
+#endif
+#ifdef CONFIG_TOUCHKEY_BOOSTER
 #define TOUCHKEY_BOOSTER		1
+#else
+#define TOUCHKEY_BOOSTER		0
+#endif
 #endif
 #define TSP_SEC_FACTORY			1
 #define TSP_INFORM_CHARGER		1
@@ -325,10 +333,14 @@ enum {
 #define TSP_CHECK_ATCH			1
 #define TSP_PATCH			1
 #define TSP_USE_PALM_FLAG		1
-#define TSP_CHANGE_CONFIG_FOR_INPUT    1
+#define TSP_CHANGE_CONFIG_FOR_INPUT    	1
 #define USE_FOR_SUFACE			1
 #elif defined(CONFIG_N1A)
+#ifdef CONFIG_TSP_BOOSTER
 #define TSP_BOOSTER			1
+#else
+#define TSP_BOOSTER			0
+#endif
 #define TSP_SEC_FACTORY			1
 #define TSP_INFORM_CHARGER		1
 #define TSP_USE_SHAPETOUCH		1
@@ -341,19 +353,19 @@ enum {
 #else
 #define TSP_USE_PALM_FLAG		1
 #endif
-#define TSP_CHANGE_CONFIG_FOR_INPUT    1
+#define TSP_CHANGE_CONFIG_FOR_INPUT    	1
 #define USE_FOR_SUFACE			1
 #else
-#define TSP_BOOSTER				0
+#define TSP_BOOSTER			0
 #define TSP_SEC_FACTORY			1
 #define TSP_INFORM_CHARGER		1
 #define TSP_USE_SHAPETOUCH		1
 #define ENABLE_TOUCH_KEY		0
 #define TOUCHKEY_BOOSTER		0
 #define TSP_CHECK_ATCH			0
-#define TSP_PATCH               0
+#define TSP_PATCH               	0
 #define TSP_USE_PALM_FLAG		0
-#define TSP_CHANGE_CONFIG_FOR_INPUT    0
+#define TSP_CHANGE_CONFIG_FOR_INPU	0
 #define USE_FOR_SUFACE			0
 #endif
 /* TODO TEMP_HOVER : Need to check and modify
