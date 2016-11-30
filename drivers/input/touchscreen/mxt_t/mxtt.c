@@ -41,6 +41,12 @@
 #include <asm/bug.h>
 #endif
 
+#ifdef CONFIG_INPUT_BOOSTER || TSP_BOOSTER
+static unsigned int TSP_BOOSTER_ENABLED = 1;
+
+module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
+
 static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
 {
 	int ret = 0, i = 0;
@@ -690,6 +696,7 @@ static void mxt_report_input_data(struct mxt_data *data)
 #endif
 
 #ifdef CONFIG_INPUT_BOOSTER
+		
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH,
 			BOOSTER_MODE_OFF);
 #elif TSP_BOOSTER
@@ -697,10 +704,11 @@ static void mxt_report_input_data(struct mxt_data *data)
 #endif
 	} else {
 #ifdef CONFIG_INPUT_BOOSTER
-		if (booster_restart)
+		if (booster_restart && TSP_BOOSTER_ENABLED == 1)
 			INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH,
 				BOOSTER_MODE_ON);
 #elif TSP_BOOSTER
+		if (TSP_BOOSTER_ENABLED == 1)
 		mxt_set_dvfs_lock(data, TSP_BOOSTER_ON, booster_restart);
 #endif
 	}
