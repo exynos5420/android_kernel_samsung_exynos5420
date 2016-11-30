@@ -12,6 +12,7 @@
  *
  */
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <asm/unaligned.h>
 #include <mach/cpufreq.h>
@@ -27,6 +28,12 @@
 #include <linux/earlysuspend.h>
 #endif
 #include "synaptics_i2c_rmi.h"
+
+#ifdef TSP_BOOSTER
+static unsigned int TSP_BOOSTER_ENABLED = 1;
+
+module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short addr, unsigned char *data,
@@ -510,7 +517,7 @@ static void synaptics_change_dvfs_lock(struct work_struct *work)
 				struct synaptics_rmi4_data, work_dvfs_chg.work);
 
 	mutex_lock(&rmi4_data->dvfs_lock);
-
+	
 	switch (rmi4_data->boost_level) {
 	case TSP_BOOSTER_LEVEL1:
 	case TSP_BOOSTER_LEVEL3:
@@ -1545,7 +1552,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	input_sync(rmi4_data->input_dev);
 
 #ifdef TSP_BOOSTER
-	if (touch_count)
+	if (touch_count && TSP_BOOSTER_ENABLED == 1)
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_ON, booster_restart);
 	else
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_OFF, false);
