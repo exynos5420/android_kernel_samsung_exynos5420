@@ -30,6 +30,12 @@
 #include <linux/earlysuspend.h>
 #endif
 
+#ifdef TOUCHKEY_BOOSTER
+static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
+
+module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
+
 static bool tsp_keys_enabled = true;
 
 static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
@@ -928,6 +934,7 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 					tsp_debug_info(true, &data->client->dev,"[TSP_KEY] %d %s\n", code, !!key_state ? "P" : "R");
 
 #if TOUCHKEY_BOOSTER
+				if (TOUCHKEY_BOOSTER_ENABLED == 1)
 					touchkey_set_dvfs_lock(data, !!key_state);
 #endif
 			}
