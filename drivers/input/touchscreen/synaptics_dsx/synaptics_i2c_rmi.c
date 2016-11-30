@@ -17,6 +17,7 @@
  * GNU General Public License for more details.
  */
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <asm/unaligned.h>
 #include <mach/cpufreq.h>
@@ -37,6 +38,12 @@
 #include <plat/gpio-cfg.h>
 
 #include "synaptics_i2c_rmi.h"
+
+#ifdef TSP_BOOSTER
+static unsigned int TSP_BOOSTER_ENABLED = 1;
+
+module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short addr, unsigned char *data,
@@ -1033,7 +1040,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	input_sync(rmi4_data->input_dev);
 
 #ifdef TSP_BOOSTER
-	if (new_finger_pressed)
+	if (new_finger_pressed && TSP_BOOSTER_ENABLED == 1)
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH, BOOSTER_MODE_ON);
 	if (!touch_count)
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH, BOOSTER_MODE_OFF);
