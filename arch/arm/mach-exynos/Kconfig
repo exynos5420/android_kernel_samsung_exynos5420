@@ -1003,18 +1003,6 @@ config KLIMT_TD
 	help
 	  Support KLIMT TD Board
 endchoice
-config HAVE_3G
-	bool "HA VE 3G Board"
-	help
-	  Support HA VE 3G Board
-config HAVE_LTE
-	bool "HA VE LTE Board"
-	help
-	  Support HA VE LTE Board
-config HA3G_DS
-	bool "HA 3G DS Board"
-	help
-	  Support HA 3G DS Board
 config IPC_DS_DN
 	bool "HA 3G DS Board"
 	help
