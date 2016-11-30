@@ -9,6 +9,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 
 #include <linux/init.h>
 #include <linux/fs.h>
@@ -38,6 +39,12 @@
 
 #include "issp_extern.h"
 #include "cypress_touchkey.h"
+
+#if defined(TOUCHKEY_BOOSTER)
+static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
+
+module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
 
 #ifdef TK_HAS_FIRMWARE_UPDATE
 u8 *tk_fw_name = FW_PATH;
@@ -1180,6 +1187,7 @@ static irqreturn_t touchkey_interrupt(int irq, void *dev_id)
 		pressed, tkey_i2c->tsk_glove_mode_status);
 #endif
 #ifdef TOUCHKEY_BOOSTER
+if (TOUCHKEY_BOOSTER_ENABLED == 1)
 	touchkey_set_dvfs_lock(tkey_i2c, !!pressed);
 #endif
 	return IRQ_HANDLED;
@@ -1224,6 +1232,7 @@ static int touchkey_stop(struct touchkey_i2c *tkey_i2c)
 	tkey_i2c->enabled = false;
 	tkey_i2c->status_update = false;
 #ifdef TOUCHKEY_BOOSTER
+if (TOUCHKEY_BOOSTER_ENABLED == 1)
 	touchkey_set_dvfs_lock(tkey_i2c, 2);
 #endif
 
