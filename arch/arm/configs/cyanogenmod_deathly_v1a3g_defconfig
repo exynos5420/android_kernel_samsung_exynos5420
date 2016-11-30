@@ -459,7 +459,7 @@ CONFIG_V1A=y
 # CONFIG_CHAGALL is not set
 # CONFIG_KLIMT is not set
 # CONFIG_HA_3G is not set
-CONFIG_V1A_3G = y
+CONFIG_V1A_3G=y
 # CONFIG_V2A_3G is not set
 # CONFIG_V1A_WIFI is not set
 # CONFIG_V2A_WIFI is not set
