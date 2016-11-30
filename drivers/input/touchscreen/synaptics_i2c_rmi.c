@@ -12,6 +12,7 @@
  *
  */
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <asm/unaligned.h>
 #include <mach/cpufreq.h>
@@ -27,6 +28,12 @@
 #include <linux/earlysuspend.h>
 #endif
 #include "synaptics_i2c_rmi.h"
+
+#if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+static unsigned int TSP_BOOSTER_ENABLED = 1;
+
+module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short addr, unsigned char *data,
@@ -1545,13 +1552,13 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	input_sync(rmi4_data->input_dev);
 
 #ifdef TSP_BOOSTER
-	if (touch_count)
+	if (touch_count && TSP_BOOSTER_ENABLED == 1)
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_ON, booster_restart);
 	else
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_OFF, false);
 #endif
 #if defined(CONFIG_INPUT_BOOSTER)
-	if (booster_restart) {
+	if (booster_restart && TSP_BOOSTER_ENABLED == 1) {
 		INPUT_BOOSTER_REPORT_KEY_EVENT(rmi4_data->input_dev, KEY_BOOSTER_TOUCH, 0);
 		INPUT_BOOSTER_REPORT_KEY_EVENT(rmi4_data->input_dev, KEY_BOOSTER_TOUCH, 1);
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH,

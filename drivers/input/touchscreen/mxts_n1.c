@@ -14,6 +14,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
@@ -28,6 +29,12 @@
 #include <linux/string.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#endif
+
+#ifdef TSP_BOOSTER
+static unsigned int TSP_BOOSTER_ENABLED = 1;
+
+module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
 #endif
 
 static bool tsp_keys_enabled = true;
@@ -735,7 +742,7 @@ static void mxt_report_input_data(struct mxt_data *data)
 	/* all fingers are released */
 	if (count == 0) {
 		mxt_set_dvfs_lock(data, TSP_BOOSTER_OFF, false);
-	} else {
+	} else if (TSP_BOOSTER_ENABLED == 1) {
 		mxt_set_dvfs_lock(data, TSP_BOOSTER_ON, booster_restart);
 	}
 #endif
