@@ -47,7 +47,11 @@
 	pm_qos_remove_request(req); \
 }
 
-#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+#ifdef WACOM_BOOSTER
+static unsigned int WACOM_BOOSTER_ENABLED = 1;
+
+module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#elif CONFIG_INPUT_BOOSTER
 static unsigned int WACOM_BOOSTER_ENABLED = 1;
 
 module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
