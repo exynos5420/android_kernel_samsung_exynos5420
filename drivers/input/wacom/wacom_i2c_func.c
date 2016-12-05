@@ -34,6 +34,12 @@
 #define CONFIG_SAMSUNG_KERNEL_DEBUG_USER
 #endif
 
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+static unsigned int WACOM_BOOSTER_ENABLED = 1;
+
+module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#endif
+
 #ifdef WACOM_BOOSTER
 #define set_qos(req, pm_qos_class, value) { \
 	if (pm_qos_request_active(req)) \
@@ -46,12 +52,6 @@
 	if (pm_qos_request_active(req)) \
 	pm_qos_remove_request(req); \
 }
-
-#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
-static unsigned int WACOM_BOOSTER_ENABLED = 1;
-
-module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
-#endif
 
 void wacom_change_dvfs_lock(struct work_struct *work)
 {
