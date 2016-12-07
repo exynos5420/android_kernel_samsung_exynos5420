@@ -1119,6 +1119,11 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 		nla_nest_end(msg, nested);
 	}
 
+		if (nla_put(msg, NL80211_ATTR_EXT_FEATURES,
+			    sizeof(*dev->wiphy.ext_features),
+			    dev->wiphy.ext_features))
+			goto nla_put_failure;
+
 	return genlmsg_end(msg, hdr);
 
  nla_put_failure:
