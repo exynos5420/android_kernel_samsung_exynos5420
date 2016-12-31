@@ -111,13 +111,11 @@ static ssize_t synaptics_rmi4_0dbutton_show(struct device *dev,
 static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
 static ssize_t synaptics_rmi4_wake_gesture_show(struct device *dev,
 		struct device_attribute *attr, char *buf);
 
 static ssize_t synaptics_rmi4_wake_gesture_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
-#endif
 
 static struct device_attribute attrs[] = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -361,7 +359,6 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 	return count;
 }
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
 static ssize_t synaptics_rmi4_wake_gesture_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -388,7 +385,6 @@ static ssize_t synaptics_rmi4_wake_gesture_store(struct device *dev,
 
 	return count;
 }
-#endif
 
 /**
  * synaptics_rmi4_set_page()
@@ -868,9 +864,7 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
 	static unsigned long oldJiffies = 0;
-#endif
 	int retval;
 	unsigned char touch_count = 0;
 	unsigned char finger;
@@ -1089,7 +1083,6 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH, BOOSTER_MODE_OFF);
 #endif
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
 	if (rmi4_data->wake_gesture_enabled == 1 && touch_count == 1 && new_finger_pressed) {
 		unsigned long newJiffies = jiffies;
 
@@ -1106,7 +1099,6 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		}
 		oldJiffies = newJiffies;
 	}
-#endif
 
 	return touch_count;
 }
@@ -3481,9 +3473,7 @@ static int synaptics_rmi4_set_input_device(struct synaptics_rmi4_data *rmi4_data
 #ifdef INPUT_PROP_DIRECT
 	set_bit(INPUT_PROP_DIRECT, rmi4_data->input_dev->propbit);
 #endif
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_WAKE_GESTURES
 	set_bit(KEY_POWER, rmi4_data->input_dev->keybit);
-#endif
 
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_POSITION_X, 0,
