@@ -469,6 +469,7 @@ struct synaptics_rmi4_data {
 
 	unsigned char current_page;
 	unsigned char button_0d_enabled;
+	unsigned char wake_gesture_enabled;
 	unsigned char full_pm_cycle;
 	unsigned char num_of_rx;
 	unsigned char num_of_tx;
