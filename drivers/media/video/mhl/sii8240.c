@@ -353,8 +353,7 @@ static int tmds_control(struct sii8240_data *sii8240, bool tmds_on)
 	ret = mhl_modify_reg(hdmi, 0x81, 0x3F, 0x3C);
 	ret = mhl_modify_reg(hdmi, 0x87, 0x07, 0x03);
 
-	switch (tmds_on) {
-	case true:
+	if (tmds_on) {
 #ifdef SFEATURE_HDCP_SUPPORT
 		if (sii8240->hdcp_support) {
 			ret = mhl_read_byte_reg(tpi, 0x1A, &value);
@@ -386,8 +385,7 @@ static int tmds_control(struct sii8240_data *sii8240, bool tmds_on)
 		if (ret < 0)
 			pr_info("sii8240: send AVIF fail %d\n", __LINE__);
 #endif
-		break;
-	case false:
+	} else {
 #ifdef SFEATURE_HDCP_SUPPORT
 		if (sii8240->hdcp_support)
 			sii8240_hdcp_on(sii8240, false);
@@ -405,10 +403,6 @@ static int tmds_control(struct sii8240_data *sii8240, bool tmds_on)
 					__func__, __LINE__);
 			return ret;
 		}
-		break;
-	default:
-		pr_warn("sii8240: default option @tmds _control\n");
-		break;
 	}
 	return ret;
 }
