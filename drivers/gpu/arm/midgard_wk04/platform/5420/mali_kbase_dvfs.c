@@ -76,11 +76,17 @@
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_90_95 533
-#define GPU_THROTTLING_95_100 500
-#define GPU_THROTTLING_100_105 420
-#define GPU_THROTTLING_105_110 177
-#define GPU_TRIPPING_110 100
+static int GPU_THROTTLING_90_95 = 533;
+static int GPU_THROTTLING_95_100 = 480;
+static int GPU_THROTTLING_100_105 = 420;
+static int GPU_THROTTLING_105_110 = 177;
+static int GPU_TRIPPING_110 = 100;
+
+module_param_named(tmu_gpu_freq1, GPU_THROTTLING_90_95, uint, S_IWUSR | S_IRUGO);
+module_param_named(tmu_gpu_freq2, GPU_THROTTLING_95_100, uint, S_IWUSR | S_IRUGO);
+module_param_named(tmu_gpu_freq3, GPU_THROTTLING_100_105, uint, S_IWUSR | S_IRUGO);
+module_param_named(tmu_gpu_freq4, GPU_THROTTLING_105_110, uint, S_IWUSR | S_IRUGO);
+module_param_named(tmu_gpu_freq5, GPU_TRIPPING_110, uint, S_IWUSR | S_IRUGO);
 #endif
 
 #define COLD_MINIMUM_VOL 950000
