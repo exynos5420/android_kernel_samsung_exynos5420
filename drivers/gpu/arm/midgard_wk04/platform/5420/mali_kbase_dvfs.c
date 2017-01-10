@@ -135,12 +135,8 @@ typedef struct _mali_dvfs_info{
 
 static mali_dvfs_info mali_dvfs_infotbl[] = {
 #if !defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-#ifndef CONFIG_SUPPORT_WQXGA
 	{812500, 100, 0, 90, 0, 160000, 83000, 250000},
-	{812500, 177, 53, 90, 0, 160000, 83000, 250000},
-#else
 	{812500, 177, 0, 90, 0, 160000, 83000, 250000},
-#endif /* CONFIG_SUPPORT_WQXGA */
 	{862500, 266, 60, 90, 0, 400000, 222000, 250000},
 	{912500, 350, 70, 90, 0, 667000, 333000, 250000},
 	{962500, 420, 78, 99, 0, 800000, 400000, 250000},
@@ -149,12 +145,10 @@ static mali_dvfs_info mali_dvfs_infotbl[] = {
 	{1050000, 600, 91, 95, 0, 800000, 400000, 1400000},
     {1075000, 667, 96, 99, 0, 800000, 400000, 1600000},
 #else
-#ifndef CONFIG_SUPPORT_WQXGA
 	{812500, 100, 0, 90, 0, 160000, 83000, 0, 500000},
 	{812500, 177, 53, 90, 0, 160000, 83000, 0, 500000},
-#else
+	{812500, 100, 0, 90, 0, 160000, 83000, 0, 500000},
 	{812500, 177, 0, 90, 0, 160000, 83000, 0, 500000},
-#endif /* CONFIG_SUPPORT_WQXGA */
 	{862500, 266, 60, 90, 0, 400000, 222000, 0, 500000},
 	{912500, 350, 70, 90, 0, 667000, 333000, 0, 500000},
 	{962500, 420, 78, 99, 0, 800000, 400000, 0, 500000},
@@ -304,11 +298,7 @@ static int mali_dvfs_update_asv(int cmd)
 
 	if (cmd == ASV_CMD_DISABLE) {
 		for (i = 0; i < MALI_DVFS_STEP; i++) {
-#ifdef CONFIG_SUPPORT_WQXGA
-			mali_dvfs_infotbl[i].voltage = mali_dvfs_vol_default[i+1];
-#else
 			mali_dvfs_infotbl[i].voltage = mali_dvfs_vol_default[i];
-#endif  /* CONFIG_SUPPORT_WQXGA */
 		}
 		printk("mali_dvfs_update_asv use default table\n");
 		return ASV_STATUS_INIT;
