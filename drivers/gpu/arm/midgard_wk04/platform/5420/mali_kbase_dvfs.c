@@ -287,6 +287,16 @@ void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 	
 }
 
+unsigned int hlpr_get_min_clock(void)
+{
+	return 	mali_dvfs_infotbl[dvfs_step_min].clock;
+}
+
+unsigned int hlpr_get_max_clock(void)
+{
+	return 	mali_dvfs_infotbl[dvfs_step_max-1].clock;
+}
+
 static int mali_dvfs_update_asv(int cmd)
 {
 	int i;
@@ -375,8 +385,6 @@ skip:
 	}
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
-	
-	hlpr_set_min_max_G3D(MALI_DVFS_START_FREQ, MALI_DVFS_BL_CONFIG_FREQ);
 
 }
 
@@ -601,6 +609,8 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 	mali_dvfs_status_current.asv_status = ASV_STATUS_NOT_INIT;
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+
+	hlpr_set_min_max_G3D(MALI_DVFS_START_FREQ, MALI_DVFS_BL_CONFIG_FREQ);
 
 	return MALI_TRUE;
 }
@@ -1311,7 +1321,7 @@ int mali_get_dvfs_table(char *buf, size_t buf_size)
 	if (buf == NULL)
 		return 0;
 
-	for (i = MALI_DVFS_STEP-1; i >= 0; i--)
+	for (i = dvfs_step_max-1; i >= 0; i--)
 		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", mali_dvfs_infotbl[i].clock);
 	return cnt;
 }
