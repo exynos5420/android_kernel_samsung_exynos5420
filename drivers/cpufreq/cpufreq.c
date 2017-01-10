@@ -70,13 +70,15 @@ static DEFINE_SPINLOCK(cpufreq_driver_lock);
 static DEFINE_PER_CPU(int, cpufreq_policy_cpu);
 static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
 
-static unsigned int gpu_min = 100;
-static unsigned int gpu_max = 533;
 extern unsigned int get_cur_gpu_freq(void);
+extern unsigned int hlpr_get_min_clock(void);
+extern unsigned int hlpr_get_max_clock(void);
 extern ssize_t hlpr_get_gpu_gov_table(char *buf);
 extern void hlpr_set_gpu_gov_table(int gpu_table[]);
 extern ssize_t hlpr_get_gpu_volt_table(char *buf);
 extern void hlpr_set_gpu_volt_table(int gpu_table[]);
+static unsigned int gpu_min = 0;
+static unsigned int gpu_max = 0;
 
 #define lock_policy_rwsem(mode, cpu)					\
 static int lock_policy_rwsem_##mode					\
@@ -446,7 +448,7 @@ extern void hlpr_set_min_max_G3D(unsigned int min, unsigned int max);
 
 static ssize_t show_scaling_min_freq_gpu(struct cpufreq_policy *policy,	char *buf)
 {
-	return sprintf(buf, "%u\n", gpu_min);
+	return sprintf(buf, "%u\n", hlpr_get_min_clock());
 }
 
 static ssize_t store_scaling_min_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
@@ -470,7 +472,7 @@ static ssize_t store_scaling_min_freq_gpu(struct cpufreq_policy *policy, const c
 
 static ssize_t show_scaling_max_freq_gpu(struct cpufreq_policy *policy,	char *buf)
 {
-	return sprintf(buf, "%u\n", gpu_max);
+	return sprintf(buf, "%u\n", hlpr_get_max_clock());
 }
 
 static ssize_t store_scaling_max_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
