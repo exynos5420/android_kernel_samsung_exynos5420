@@ -677,7 +677,7 @@ ssize_t store_GPU_volt_table(struct cpufreq_policy *policy, const char *buf, siz
 {
         unsigned int ret = -EINVAL;
         int u[FREQ_STEPS_GPU];
-        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9]);
+        ret = sscanf(buf, "%d %d", &u[0], &u[1]);
 
         hlpr_set_gpu_volt_table(u);
         return count;

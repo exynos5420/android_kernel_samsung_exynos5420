@@ -207,12 +207,13 @@ ssize_t hlpr_get_gpu_volt_table(char *buf)
 void hlpr_set_gpu_volt_table(int gpu_table[])
 {
         int i;
-        int u = 0;
         for (i = 0; i < MALI_DVFS_STEP; i++)
         {
-                mali_dvfs_infotbl[i].voltage = gpu_table[u];
-                pr_alert("SET GPU VOLTAGE TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
-                u++;
+			if (mali_dvfs_infotbl[i].clock == gpu_table[0])
+			{
+				mali_dvfs_infotbl[i].voltage = gpu_table[1];
+				pr_alert("SET GPU VOLTAGE TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
+			}              
 	}
 }
 
