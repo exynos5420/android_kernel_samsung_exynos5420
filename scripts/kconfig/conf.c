@@ -559,6 +559,22 @@ int main(int ac, char **av)
 				"***\n"), defconfig_file);
 			exit(1);
 		}
+		name = getenv("KCONFIG_VARIANT");
+			printf("KCONFIG_VARIANT(%s)\n", name);
+			if (name) {
+				if (conf_read_simple(name, S_DEF_USER, false)) {
+					printf(_("***\n"
+						"*** Can't find variant configuration \"%s\"!\n"
+						"***\n"), name);
+					exit(1);
+				}
+			} else {
+				printf(_("***\n"
+					"***  You must specify VARIANT_DEFCONFIG !\n"
+					"***\n"));
+			//VARIANT_DEFCONFIG temp should be fixed;exit(1);
+			}
+		}
 		break;
 	case savedefconfig:
 	case silentoldconfig:
