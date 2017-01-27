@@ -647,10 +647,7 @@ static ssize_t sensorRGB_store(struct device *dev,
 	if (ret < 0)
 		return ret;
 
-	if (mdnie->enable && (mdnie->accessibility == ACCESSIBILITY_OFF)
-		&& (mdnie->mode == AUTO)
-		&& ((mdnie->scenario == BROWSER_MODE)
-		|| (mdnie->scenario == EBOOK_MODE))) {
+	if (mdnie->enable) {
 		dev_info(dev, "%s, white_r %d, white_g %d, white_b %d\n",
 			__func__, white_red, white_green, white_blue);
 
