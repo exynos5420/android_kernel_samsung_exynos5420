@@ -237,7 +237,7 @@ static ssize_t show_volt_table(struct device *dev, struct device_attribute *attr
 		return -ENODEV;
 
 	max = 0; /* max DVFS level (100MHz) */
-	min = 6; /* min DVFS level (533MHz) */
+	min = 7; /* min DVFS level (600MHz) */
 	pr_len = (size_t)((PAGE_SIZE - 2) / (min-max));
 
 	for (i = max; i <= min; i++) {
@@ -347,7 +347,7 @@ static int gpu_get_freqs_table(struct exynos_context *platform, char *buf, size_
 	if (buf == NULL)
 		return 0;
 
-	for (i = 0; i <= 6; i++)
+	for (i = 0; i <= 7; i++)
 		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
 
 	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
@@ -387,7 +387,7 @@ static ssize_t show_time_in_state(struct device *dev, struct device_attribute *a
 
 	gpu_dvfs_update_time_in_state(gpu_control_is_power_on(pkbdev) * platform->cur_clock);
 
-	for (i = 6; i >= 0; i--) {
+	for (i = 7; i >= 0; i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				platform->table[i].clock,
 				platform->table[i].time);
