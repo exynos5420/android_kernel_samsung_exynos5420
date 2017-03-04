@@ -1487,6 +1487,10 @@ static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 		tc300k_glove_mode_show, tc300k_glove_mode);
 static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
+#if defined(CONFIG_PM)
+static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+	   show_touchkey_enabled, touchkey_enabled_store);
+#endif
 
 static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_touchkey_threshold.attr,
@@ -1510,6 +1514,7 @@ static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_touchkey_factory_mode.attr,
 	&dev_attr_glove_mode.attr,
 	&dev_attr_modecheck.attr,
+    &dev_attr_touchkey_enabled.attr,
 	NULL,
 };
 
@@ -1842,6 +1847,38 @@ static int tc300k_input_open(struct input_dev *dev)
 
 	return 0;
 }
+
+static ssize_t touchkey_enabled_store(struct device *dev,
+                                      struct device_attribute *attr,
+                                      const char *buf, size_t size)
+{
+	struct tc300k_data *data = input_get_drvdata(dev);
+
+	dev_info(&data->client->dev, "%s: users=%d\n", __func__,
+		   data->input_dev->users);
+
+    dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
+
+    if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+	if (input == 0)
+        tc300k_suspend(&data->client->dev);
+	if (input == 1)
+	    tc300k_resume(&data->client->dev);
+
+	return size;
+
+}
+
+static ssize_t show_touchkey_enabled(struct device *dev,
+			     struct device_attribute *attr,
+				     char *buf)
+{
+	struct tc300k_data *data = input_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
+}
+
 #endif /* CONFIG_PM */
 
 #if 0
