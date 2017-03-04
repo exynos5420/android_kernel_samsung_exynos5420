@@ -174,6 +174,10 @@ int get_tsp_status(void)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int tc300k_suspend(struct device *dev);
+static int tc300k_resume(struct device *dev);
+#endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void tc300k_early_suspend(struct early_suspend *h);
 static void tc300k_late_resume(struct early_suspend *h);
@@ -1459,6 +1463,34 @@ static ssize_t tc300k_modecheck_show(struct device *dev,
 	return sprintf(buf, "glove:%d, factory:%d\n", glove, factory);
 }
 
+#if defined(CONFIG_PM)
+static ssize_t touchkey_enabled_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t size)
+{
+	unsigned int input;
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	if (input == 0)
+		tc300k_suspend(dev);
+	if (input == 1)
+		tc300k_resume(dev);
+
+	return size;
+}
+
+static ssize_t show_touchkey_enabled(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
+}
+#endif
+
 static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
 static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
 		tc300k_led_control);
@@ -1487,6 +1519,10 @@ static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 		tc300k_glove_mode_show, tc300k_glove_mode);
 static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
+#if defined(CONFIG_PM)
+static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		show_touchkey_enabled, touchkey_enabled_store);
+#endif
 
 static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_touchkey_threshold.attr,
@@ -1510,6 +1546,9 @@ static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_touchkey_factory_mode.attr,
 	&dev_attr_glove_mode.attr,
 	&dev_attr_modecheck.attr,
+#if defined(CONFIG_PM)
+	&dev_attr_touchkey_enabled.attr,
+#endif
 	NULL,
 };
 
