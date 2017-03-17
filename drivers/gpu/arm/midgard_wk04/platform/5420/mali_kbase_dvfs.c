@@ -254,23 +254,21 @@ void hlpr_set_gpu_gov_table(int gpu_table[])
 	}
 }
 
-static int gov_table[11][11] = {
-	{ 100 },
-	{ 100, 50 },
-	{ 100, 67, 30 },
-	{ 100, 90, 70, 40 },
-	{ 100, 90, 70, 60, 40 },
-	{ 100, 90, 80, 70, 55, 40 },
-	{ 100, 90, 80, 70, 60, 50, 40 },
-	{ 100, 90, 85, 75, 65, 55, 50, 40 },
-	{ 100, 90, 80, 70, 65, 60, 55, 50, 40 },
-	{ 100, 90, 80, 70, 65, 60, 55, 50, 45, 40 },
-};
 
 void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 {
 	int i;
-
+	int tbl0[1] = { 100 };
+	int tbl1[2] = { 100, 50 };
+	int tbl2[3] = { 100, 67, 30 };
+	int tbl3[4] = { 100, 90, 70, 40 };
+	int tbl4[5] = { 100, 90, 70, 60, 40 };
+	int tbl5[6] = { 100, 90, 80, 70, 55, 40 };
+	int tbl6[7] = { 100, 90, 80, 70, 60, 50, 40 };
+	int tbl7[8] = { 100, 90, 85, 75, 65, 55, 50, 40 };
+	int tbl8[9] = { 100, 90, 80, 70, 65, 60, 55, 50, 40 };
+	int tbl9[10] = { 100, 90, 80, 70, 65, 60, 55, 50, 45, 40 };
+	
 	for (i = 0; i < MALI_DVFS_STEP; i++)
 	{
 		if (mali_dvfs_infotbl[i].clock == min)
@@ -281,9 +279,27 @@ void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 			dvfs_step_max_minus1 = mali_dvfs_infotbl[i-1].clock;
 		}
 	}
-
-	hlpr_set_gpu_gov_table(gov_table[dvfs_step_max - dvfs_step_min - 1]);
-
+	
+	if (dvfs_step_max - dvfs_step_min == 1)
+		hlpr_set_gpu_gov_table(tbl0);
+	else if (dvfs_step_max - dvfs_step_min == 2)
+		hlpr_set_gpu_gov_table(tbl1);
+	else if (dvfs_step_max - dvfs_step_min == 3)
+		hlpr_set_gpu_gov_table(tbl2);
+	else if (dvfs_step_max - dvfs_step_min == 4)
+		hlpr_set_gpu_gov_table(tbl3);
+	else if (dvfs_step_max - dvfs_step_min == 5)
+		hlpr_set_gpu_gov_table(tbl4);
+	else if (dvfs_step_max - dvfs_step_min == 6)
+		hlpr_set_gpu_gov_table(tbl5);
+	else if (dvfs_step_max - dvfs_step_min == 7)
+		hlpr_set_gpu_gov_table(tbl6);
+	else if (dvfs_step_max - dvfs_step_min == 8)
+		hlpr_set_gpu_gov_table(tbl7);
+	else if (dvfs_step_max - dvfs_step_min == 9)
+		hlpr_set_gpu_gov_table(tbl8);
+	else if (dvfs_step_max - dvfs_step_min == 10)
+		hlpr_set_gpu_gov_table(tbl9);
 }
 
 static int mali_dvfs_update_asv(int cmd)
@@ -598,8 +614,6 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 	mali_dvfs_status_current.asv_status = ASV_STATUS_NOT_INIT;
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
-
-	hlpr_set_min_max_G3D(MALI_DVFS_START_FREQ, MALI_DVFS_BL_CONFIG_FREQ);
 
 	return MALI_TRUE;
 }
