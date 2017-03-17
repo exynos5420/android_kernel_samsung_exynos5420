@@ -168,8 +168,8 @@ static mali_dvfs_info mali_dvfs_infotbl[] = {
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
 
 unsigned int dvfs_step_min = 0;
-unsigned int dvfs_step_max = ARRAY_SIZE(mali_dvfs_infotbl);
-unsigned int dvfs_step_max_minus1 = 600;
+unsigned int dvfs_step_max = 9;
+unsigned int dvfs_step_max_minus1 = 480;
 unsigned int cur_gpu_freq = 0;
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -285,16 +285,6 @@ void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 
 	hlpr_set_gpu_gov_table(gov_table[dvfs_step_max - dvfs_step_min - 1]);
 
-}
-
-unsigned int hlpr_get_min_clock(void)
-{
-	return 	mali_dvfs_infotbl[dvfs_step_min].clock;
-}
-
-unsigned int hlpr_get_max_clock(void)
-{
-	return 	mali_dvfs_infotbl[dvfs_step_max-1].clock;
 }
 
 static int mali_dvfs_update_asv(int cmd)
@@ -1321,8 +1311,8 @@ int mali_get_dvfs_table(char *buf, size_t buf_size)
 	if (buf == NULL)
 		return 0;
 
-	for (i = dvfs_step_max-1; i >= 0; i--)
-		cnt += snprintf(buf+cnt, buf_size-cnt, " %u", mali_dvfs_infotbl[i].clock);
+	for (i = MALI_DVFS_STEP-1; i >= 0; i--)
+		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", mali_dvfs_infotbl[i].clock);
 	return cnt;
 }
 #endif
