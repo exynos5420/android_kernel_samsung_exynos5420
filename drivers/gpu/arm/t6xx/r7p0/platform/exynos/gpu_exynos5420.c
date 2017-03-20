@@ -43,6 +43,7 @@ extern struct kbase_device *pkbdev;
 /*  clk,vol,abb,min,max,down stay,time_in_state,pm_qos mem,pm_qos int,pm_qos cpu_kfc_min,pm_qos cpu_egl_max */
 static gpu_dvfs_info gpu_dvfs_table_default[] = {
 #if !defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	{600, 1050000, 0, 98, 100, 1, 0, 800000, 400000, 1400000, CPU_MAX},
 	{533, 1037500, 0, 96,  99, 1, 0, 800000, 400000, 1200000, CPU_MAX},
 	{480, 1000000, 0, 91,  95, 1, 0, 800000, 400000,  650000, CPU_MAX},
 	{420,  962500, 0, 78,  99, 1, 0, 800000, 400000,  250000, CPU_MAX},
@@ -56,6 +57,7 @@ static gpu_dvfs_info gpu_dvfs_table_default[] = {
 	{100,  812500, 0,  0,  90, 3, 0, 160000,  83000,  250000, CPU_MAX},
 #endif
 #else
+	{600, 1050000, 0, 98, 100, 1, 0, 800000, 400000, 1400000, CPU_MAX, 1300000},
 	{533, 1037500, 0, 96,  99, 1, 0, 800000, 400000, 1200000, CPU_MAX, 1300000},
 	{480, 1000000, 0, 91,  95, 1, 0, 800000, 400000,  650000, CPU_MAX, 1300000},
 	{420,  962500, 0, 78,  99, 1, 0, 800000, 400000,  250000, CPU_MAX, 500000},
@@ -80,8 +82,8 @@ static int mif_min_table[] = {
 //static int available_max_clock[] = {GPU_L2, GPU_L2, GPU_L0, GPU_L0, GPU_L0};
 
 static gpu_attribute gpu_config_attributes[] = {
-	{GPU_MAX_CLOCK, 533},
-	{GPU_MAX_CLOCK_LIMIT, 533},
+	{GPU_MAX_CLOCK, 600},
+	{GPU_MAX_CLOCK_LIMIT, 600},
 #ifdef CONFIG_SUPPORT_WQXGA
 	{GPU_MIN_CLOCK, 100},
 	{GPU_MIN_CLOCK_LIMIT, 100},
