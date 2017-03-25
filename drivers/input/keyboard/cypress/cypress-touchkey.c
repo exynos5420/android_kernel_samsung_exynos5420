@@ -46,6 +46,8 @@ static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
 module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
 #endif
 
+static int touchkey_enabled_flag = 1;
+
 #ifdef TK_HAS_FIRMWARE_UPDATE
 u8 *tk_fw_name = FW_PATH;
 
@@ -1498,11 +1500,13 @@ static void touchkey_open_work(struct work_struct *work)
 		dev_err(&tkey_i2c->client->dev, "Touch key already enabled\n");
 		return;
 	}
-
+    
+    if (touchkey_enabled_flag == 1){
 	retval = touchkey_start(tkey_i2c);
 	if (retval < 0)
 		dev_err(&tkey_i2c->client->dev,
 				"%s: Failed to start device\n", __func__);
+    }
 }
 #endif
 
@@ -1579,7 +1583,9 @@ static int sec_touchkey_late_resume(struct early_suspend *h)
 
 	dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
 
+    if (touchkey_enabled_flag == 1){
 	touchkey_start(tkey_i2c);
+    }
 
 	return 0;
 }
@@ -1616,7 +1622,7 @@ static int touchkey_resume(struct device *dev)
 	}
 	mutex_lock(&tkey_i2c->input_dev->mutex);
 
-	if (tkey_i2c->input_dev->users)
+	if (tkey_i2c->input_dev->users && touchkey_enabled_flag == 1)
 		touchkey_start(tkey_i2c);
 
 	mutex_unlock(&tkey_i2c->input_dev->mutex);
@@ -1954,8 +1960,10 @@ static ssize_t touchkey_enabled_store(struct device *dev,
 		return -EINVAL;
 
 	if (input == 0)
+            touchkey_enabled_flag = 0;
         	touchkey_stop(tkey_i2c);
 	if (input == 1)
+            touchkey_enabled_flag = 1;
         	touchkey_start(tkey_i2c);
 
 	return size;
