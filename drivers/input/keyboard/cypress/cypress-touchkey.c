@@ -46,6 +46,8 @@ static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
 module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
 #endif
 
+static int touchkey_enabled_flag = 1;
+
 #ifdef TK_HAS_FIRMWARE_UPDATE
 u8 *tk_fw_name = FW_PATH;
 
@@ -1424,6 +1426,10 @@ static int touchkey_start(struct touchkey_i2c *tkey_i2c)
 	unsigned char get_touch = 0x40;
 #endif
 
+	if (touchkey_enabled_flag == 0) {
+		return 0;
+	}
+
 	mutex_lock(&tkey_i2c->lock);
 
 	if (tkey_i2c->enabled) {
@@ -1953,10 +1959,16 @@ static ssize_t touchkey_enabled_store(struct device *dev,
 	if (sscanf(buf, "%u", &input) != 1)
 		return -EINVAL;
 
-	if (input == 0)
-        	touchkey_stop(tkey_i2c);
-	if (input == 1)
-        	touchkey_start(tkey_i2c);
+	if (input == 0) {
+		touchkey_enabled_flag = 0;
+		touchkey_stop(tkey_i2c);
+	}
+	else if (input == 1) {
+		touchkey_enabled_flag = 1;
+		touchkey_start(tkey_i2c);
+	} else{
+		return -EINVAL;
+	}
 
 	return size;
 }
