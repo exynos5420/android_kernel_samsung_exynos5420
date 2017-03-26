@@ -1464,6 +1464,121 @@ static ssize_t tc300k_modecheck_show(struct device *dev,
 }
 
 #if defined(CONFIG_PM)
+static int tc300k_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
+
+	mutex_lock(&data->lock);
+
+	if (!data->enabled) {
+		mutex_unlock(&data->lock);
+		return 0;
+	}
+
+	dev_notice(&data->client->dev, "%s: users=%d\n",
+		__func__, data->input_dev->users);
+
+	disable_irq(data->irq);
+	data->enabled = false;
+	release_all_fingers(data);
+	data->pdata->keyled(false);
+	data->pdata->power(false);
+	data->led_on = false;
+
+	mutex_unlock(&data->lock);
+
+	return 0;
+}
+
+static int tc300k_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
+	int ret;
+	u8 cmd;
+
+	mutex_lock(&data->lock);
+
+	if (data->enabled) {
+		mutex_unlock(&data->lock);
+		return 0;
+	}
+
+	dev_notice(&data->client->dev, "%s: users=%d\n",
+		__func__, data->input_dev->users);
+
+	data->pdata->power(true);
+	msleep(70);
+	data->pdata->keyled(true);
+	msleep(130);
+	enable_irq(data->irq);
+
+	data->enabled = true;
+	if (data->led_on == true) {
+		data->led_on = false;
+		dev_notice(&client->dev, "led on(resume)\n");
+		cmd = TC300K_CMD_LED_ON;
+		ret = i2c_smbus_write_byte_data(client, TC300K_CMD_ADDR, cmd);
+		if (ret < 0)
+			dev_err(&client->dev, "%s led on fail(%d)\n", __func__, ret);
+		else
+			msleep(TC300K_CMD_DELAY);
+	}
+
+	if (data->glove_mode) {
+		ret = tc300k_glove_mode_enable(client, TC300K_CMD_GLOVE_ON);
+		if (ret < 0)
+			dev_err(&client->dev, "%s glovemode fail(%d)\n", __func__, ret);
+	}
+
+	if (data->factory_mode) {
+		ret = tc300k_factory_mode_enable(client, TC300K_CMD_FAC_ON);
+		if (ret < 0)
+			dev_err(&client->dev, "%s factorymode fail(%d)\n", __func__, ret);
+	}
+	mutex_unlock(&data->lock);
+
+	return 0;
+}
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void tc300k_early_suspend(struct early_suspend *h)
+{
+	struct tc300k_data *data;
+	data = container_of(h, struct tc300k_data, early_suspend);
+	tc300k_suspend(&data->client->dev);
+}
+
+static void tc300k_late_resume(struct early_suspend *h)
+{
+	struct tc300k_data *data;
+	data = container_of(h, struct tc300k_data, early_suspend);
+	tc300k_resume(&data->client->dev);
+}
+#endif
+
+static void tc300k_input_close(struct input_dev *dev)
+{
+	struct tc300k_data *data = input_get_drvdata(dev);
+	dev_info(&data->client->dev, "%s: users=%d\n", __func__,
+		   data->input_dev->users);
+
+	tc300k_suspend(&data->client->dev);
+}
+
+static int tc300k_input_open(struct input_dev *dev)
+{
+	struct tc300k_data *data = input_get_drvdata(dev);
+
+	dev_info(&data->client->dev, "%s: users=%d\n", __func__,
+		   data->input_dev->users);
+
+	tc300k_resume(&data->client->dev);
+
+	return 0;
+}
+
 static ssize_t touchkey_enabled_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t size)
@@ -1489,7 +1604,7 @@ static ssize_t show_touchkey_enabled(struct device *dev,
 
 	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
 }
-#endif
+#endif /* CONFIG_PM */
 
 static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
 static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
@@ -1765,123 +1880,6 @@ static void tc300k_shutdown(struct i2c_client *client)
 	data->pdata->keyled(false);
 	data->pdata->power(false);
 }
-
-#if defined(CONFIG_PM)
-static int tc300k_suspend(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct tc300k_data *data = i2c_get_clientdata(client);
-
-	mutex_lock(&data->lock);
-
-	if (!data->enabled) {
-		mutex_unlock(&data->lock);
-		return 0;
-	}
-
-	dev_notice(&data->client->dev, "%s: users=%d\n",
-		__func__, data->input_dev->users);
-
-	disable_irq(data->irq);
-	data->enabled = false;
-	release_all_fingers(data);
-	data->pdata->keyled(false);
-	data->pdata->power(false);
-	data->led_on = false;
-
-	mutex_unlock(&data->lock);
-
-	return 0;
-}
-
-static int tc300k_resume(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct tc300k_data *data = i2c_get_clientdata(client);
-	int ret;
-	u8 cmd;
-
-	mutex_lock(&data->lock);
-
-	if (data->enabled) {
-		mutex_unlock(&data->lock);
-		return 0;
-	}
-
-	dev_notice(&data->client->dev, "%s: users=%d\n",
-		__func__, data->input_dev->users);
-
-	data->pdata->power(true);
-	msleep(70);
-	data->pdata->keyled(true);
-	msleep(130);
-	enable_irq(data->irq);
-
-	data->enabled = true;
-	if (data->led_on == true) {
-		data->led_on = false;
-		dev_notice(&client->dev, "led on(resume)\n");
-		cmd = TC300K_CMD_LED_ON;
-		ret = i2c_smbus_write_byte_data(client, TC300K_CMD_ADDR, cmd);
-		if (ret < 0)
-			dev_err(&client->dev, "%s led on fail(%d)\n", __func__, ret);
-		else
-			msleep(TC300K_CMD_DELAY);
-	}
-
-	if (data->glove_mode) {
-		ret = tc300k_glove_mode_enable(client, TC300K_CMD_GLOVE_ON);
-		if (ret < 0)
-			dev_err(&client->dev, "%s glovemode fail(%d)\n", __func__, ret);
-	}
-
-	if (data->factory_mode) {
-		ret = tc300k_factory_mode_enable(client, TC300K_CMD_FAC_ON);
-		if (ret < 0)
-			dev_err(&client->dev, "%s factorymode fail(%d)\n", __func__, ret);
-	}
-	mutex_unlock(&data->lock);
-
-	return 0;
-}
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void tc300k_early_suspend(struct early_suspend *h)
-{
-	struct tc300k_data *data;
-	data = container_of(h, struct tc300k_data, early_suspend);
-	tc300k_suspend(&data->client->dev);
-}
-
-static void tc300k_late_resume(struct early_suspend *h)
-{
-	struct tc300k_data *data;
-	data = container_of(h, struct tc300k_data, early_suspend);
-	tc300k_resume(&data->client->dev);
-}
-#endif
-
-static void tc300k_input_close(struct input_dev *dev)
-{
-	struct tc300k_data *data = input_get_drvdata(dev);
-	dev_info(&data->client->dev, "%s: users=%d\n", __func__,
-		   data->input_dev->users);
-
-	tc300k_suspend(&data->client->dev);
-}
-
-static int tc300k_input_open(struct input_dev *dev)
-{
-	struct tc300k_data *data = input_get_drvdata(dev);
-
-	dev_info(&data->client->dev, "%s: users=%d\n", __func__,
-		   data->input_dev->users);
-
-	tc300k_resume(&data->client->dev);
-
-	return 0;
-}
-#endif /* CONFIG_PM */
 
 #if 0
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
