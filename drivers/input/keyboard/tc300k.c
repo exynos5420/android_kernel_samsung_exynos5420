@@ -174,10 +174,6 @@ int get_tsp_status(void)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int tc300k_suspend(struct device *dev);
-static int tc300k_resume(struct device *dev);
-#endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void tc300k_early_suspend(struct early_suspend *h);
 static void tc300k_late_resume(struct early_suspend *h);
@@ -1463,95 +1459,6 @@ static ssize_t tc300k_modecheck_show(struct device *dev,
 	return sprintf(buf, "glove:%d, factory:%d\n", glove, factory);
 }
 
-#if defined(CONFIG_PM)
-static ssize_t touchkey_enabled_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf, size_t size)
-{
-	unsigned int input;
-	if (sscanf(buf, "%u", &input) != 1)
-		return -EINVAL;
-
-	if (input == 0)
-		tc300k_suspend(dev);
-	if (input == 1)
-		tc300k_resume(dev);
-
-	return size;
-}
-
-static ssize_t show_touchkey_enabled(struct device *dev,
-				struct device_attribute *attr,
-				char *buf)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct tc300k_data *data = i2c_get_clientdata(client);
-
-	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
-}
-#endif
-
-static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
-static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
-		tc300k_led_control);
-static DEVICE_ATTR(touchkey_firm_update, S_IRUGO | S_IWUSR | S_IWGRP,
-		NULL, tc300k_update_store);
-static DEVICE_ATTR(touchkey_firm_update_status, S_IRUGO,
-		tc300k_firm_status_show, NULL);
-static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO,
-		tc300k_firm_version_show, NULL);
-static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO,
-		tc300k_firm_version_read_show, NULL);
-static DEVICE_ATTR(touchkey_recent, S_IRUGO, recent_key_show, NULL);
-static DEVICE_ATTR(touchkey_recent_ref, S_IRUGO, recent_key_ref_show, NULL);
-static DEVICE_ATTR(touchkey_back, S_IRUGO, back_key_show, NULL);
-static DEVICE_ATTR(touchkey_back_ref, S_IRUGO, back_key_ref_show, NULL);
-static DEVICE_ATTR(touchkey_d_menu, S_IRUGO, dummy_recent_show, NULL);
-static DEVICE_ATTR(touchkey_d_back, S_IRUGO, dummy_back_show, NULL);
-static DEVICE_ATTR(touchkey_recent_raw, S_IRUGO, recent_key_raw, NULL);
-static DEVICE_ATTR(touchkey_recent_raw_ref, S_IRUGO, recent_key_raw_ref, NULL);
-static DEVICE_ATTR(touchkey_back_raw, S_IRUGO, back_key_raw, NULL);
-static DEVICE_ATTR(touchkey_back_raw_ref, S_IRUGO, back_key_raw_ref, NULL);
-static DEVICE_ATTR(touchkey_d_menu_raw, S_IRUGO, dummy_recent_raw, NULL);
-static DEVICE_ATTR(touchkey_d_back_raw, S_IRUGO, dummy_back_raw, NULL);
-static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
-		tc300k_factory_mode_show, tc300k_factory_mode);
-static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
-		tc300k_glove_mode_show, tc300k_glove_mode);
-static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
-#if defined(CONFIG_PM)
-static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
-		show_touchkey_enabled, touchkey_enabled_store);
-#endif
-
-static struct attribute *sec_touchkey_attributes[] = {
-	&dev_attr_touchkey_threshold.attr,
-	&dev_attr_brightness.attr,
-	&dev_attr_touchkey_firm_update.attr,
-	&dev_attr_touchkey_firm_update_status.attr,
-	&dev_attr_touchkey_firm_version_phone.attr,
-	&dev_attr_touchkey_firm_version_panel.attr,
-	&dev_attr_touchkey_recent.attr,
-	&dev_attr_touchkey_recent_ref.attr,
-	&dev_attr_touchkey_back.attr,
-	&dev_attr_touchkey_back_ref.attr,
-	&dev_attr_touchkey_d_menu.attr,
-	&dev_attr_touchkey_d_back.attr,
-	&dev_attr_touchkey_recent_raw.attr,
-	&dev_attr_touchkey_recent_raw_ref.attr,
-	&dev_attr_touchkey_back_raw.attr,
-	&dev_attr_touchkey_back_raw_ref.attr,
-	&dev_attr_touchkey_d_menu_raw.attr,
-	&dev_attr_touchkey_d_back_raw.attr,
-	&dev_attr_touchkey_factory_mode.attr,
-	&dev_attr_glove_mode.attr,
-	&dev_attr_modecheck.attr,
-#if defined(CONFIG_PM)
-	&dev_attr_touchkey_enabled.attr,
-#endif
-	NULL,
-};
-
 static struct attribute_group sec_touchkey_attr_group = {
 	.attrs = sec_touchkey_attributes,
 };
@@ -1923,6 +1830,95 @@ static void __exit tc300k_exit(void)
 {
 	i2c_del_driver(&tc300k_driver);
 }
+
+#if defined(CONFIG_PM)
+static ssize_t touchkey_enabled_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t size)
+{
+	unsigned int input;
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	if (input == 0)
+		tc300k_suspend(dev);
+	if (input == 1)
+		tc300k_resume(dev);
+
+	return size;
+}
+
+static ssize_t show_touchkey_enabled(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
+}
+#endif
+
+static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
+static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
+		tc300k_led_control);
+static DEVICE_ATTR(touchkey_firm_update, S_IRUGO | S_IWUSR | S_IWGRP,
+		NULL, tc300k_update_store);
+static DEVICE_ATTR(touchkey_firm_update_status, S_IRUGO,
+		tc300k_firm_status_show, NULL);
+static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO,
+		tc300k_firm_version_show, NULL);
+static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO,
+		tc300k_firm_version_read_show, NULL);
+static DEVICE_ATTR(touchkey_recent, S_IRUGO, recent_key_show, NULL);
+static DEVICE_ATTR(touchkey_recent_ref, S_IRUGO, recent_key_ref_show, NULL);
+static DEVICE_ATTR(touchkey_back, S_IRUGO, back_key_show, NULL);
+static DEVICE_ATTR(touchkey_back_ref, S_IRUGO, back_key_ref_show, NULL);
+static DEVICE_ATTR(touchkey_d_menu, S_IRUGO, dummy_recent_show, NULL);
+static DEVICE_ATTR(touchkey_d_back, S_IRUGO, dummy_back_show, NULL);
+static DEVICE_ATTR(touchkey_recent_raw, S_IRUGO, recent_key_raw, NULL);
+static DEVICE_ATTR(touchkey_recent_raw_ref, S_IRUGO, recent_key_raw_ref, NULL);
+static DEVICE_ATTR(touchkey_back_raw, S_IRUGO, back_key_raw, NULL);
+static DEVICE_ATTR(touchkey_back_raw_ref, S_IRUGO, back_key_raw_ref, NULL);
+static DEVICE_ATTR(touchkey_d_menu_raw, S_IRUGO, dummy_recent_raw, NULL);
+static DEVICE_ATTR(touchkey_d_back_raw, S_IRUGO, dummy_back_raw, NULL);
+static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
+		tc300k_factory_mode_show, tc300k_factory_mode);
+static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
+		tc300k_glove_mode_show, tc300k_glove_mode);
+static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
+#if defined(CONFIG_PM)
+static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		show_touchkey_enabled, touchkey_enabled_store);
+#endif
+
+static struct attribute *sec_touchkey_attributes[] = {
+	&dev_attr_touchkey_threshold.attr,
+	&dev_attr_brightness.attr,
+	&dev_attr_touchkey_firm_update.attr,
+	&dev_attr_touchkey_firm_update_status.attr,
+	&dev_attr_touchkey_firm_version_phone.attr,
+	&dev_attr_touchkey_firm_version_panel.attr,
+	&dev_attr_touchkey_recent.attr,
+	&dev_attr_touchkey_recent_ref.attr,
+	&dev_attr_touchkey_back.attr,
+	&dev_attr_touchkey_back_ref.attr,
+	&dev_attr_touchkey_d_menu.attr,
+	&dev_attr_touchkey_d_back.attr,
+	&dev_attr_touchkey_recent_raw.attr,
+	&dev_attr_touchkey_recent_raw_ref.attr,
+	&dev_attr_touchkey_back_raw.attr,
+	&dev_attr_touchkey_back_raw_ref.attr,
+	&dev_attr_touchkey_d_menu_raw.attr,
+	&dev_attr_touchkey_d_back_raw.attr,
+	&dev_attr_touchkey_factory_mode.attr,
+	&dev_attr_glove_mode.attr,
+	&dev_attr_modecheck.attr,
+#if defined(CONFIG_PM)
+	&dev_attr_touchkey_enabled.attr,
+#endif
+	NULL,
+};
 
 late_initcall(tc300k_init);
 module_exit(tc300k_exit);
