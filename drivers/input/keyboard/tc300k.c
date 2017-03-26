@@ -174,10 +174,6 @@ int get_tsp_status(void)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int tc300k_suspend(struct device *dev);
-static int tc300k_resume(struct device *dev);
-#endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void tc300k_early_suspend(struct early_suspend *h);
 static void tc300k_late_resume(struct early_suspend *h);
@@ -1463,99 +1459,6 @@ static ssize_t tc300k_modecheck_show(struct device *dev,
 	return sprintf(buf, "glove:%d, factory:%d\n", glove, factory);
 }
 
-#if defined(CONFIG_PM)
-static ssize_t touchkey_enabled_store(struct device *dev,
-				struct device_attribute *attr,
-				const char *buf, size_t size)
-{
-	unsigned int input;
-	if (sscanf(buf, "%u", &input) != 1)
-		return -EINVAL;
-
-	if (input == 0)
-		tc300k_suspend(dev);
-	if (input == 1)
-		tc300k_resume(dev);
-
-	return size;
-}
-
-static ssize_t show_touchkey_enabled(struct device *dev,
-				struct device_attribute *attr,
-				char *buf)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct tc300k_data *data = i2c_get_clientdata(client);
-
-	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
-}
-#endif
-
-static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
-static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
-		tc300k_led_control);
-static DEVICE_ATTR(touchkey_firm_update, S_IRUGO | S_IWUSR | S_IWGRP,
-		NULL, tc300k_update_store);
-static DEVICE_ATTR(touchkey_firm_update_status, S_IRUGO,
-		tc300k_firm_status_show, NULL);
-static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO,
-		tc300k_firm_version_show, NULL);
-static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO,
-		tc300k_firm_version_read_show, NULL);
-static DEVICE_ATTR(touchkey_recent, S_IRUGO, recent_key_show, NULL);
-static DEVICE_ATTR(touchkey_recent_ref, S_IRUGO, recent_key_ref_show, NULL);
-static DEVICE_ATTR(touchkey_back, S_IRUGO, back_key_show, NULL);
-static DEVICE_ATTR(touchkey_back_ref, S_IRUGO, back_key_ref_show, NULL);
-static DEVICE_ATTR(touchkey_d_menu, S_IRUGO, dummy_recent_show, NULL);
-static DEVICE_ATTR(touchkey_d_back, S_IRUGO, dummy_back_show, NULL);
-static DEVICE_ATTR(touchkey_recent_raw, S_IRUGO, recent_key_raw, NULL);
-static DEVICE_ATTR(touchkey_recent_raw_ref, S_IRUGO, recent_key_raw_ref, NULL);
-static DEVICE_ATTR(touchkey_back_raw, S_IRUGO, back_key_raw, NULL);
-static DEVICE_ATTR(touchkey_back_raw_ref, S_IRUGO, back_key_raw_ref, NULL);
-static DEVICE_ATTR(touchkey_d_menu_raw, S_IRUGO, dummy_recent_raw, NULL);
-static DEVICE_ATTR(touchkey_d_back_raw, S_IRUGO, dummy_back_raw, NULL);
-static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
-		tc300k_factory_mode_show, tc300k_factory_mode);
-static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
-		tc300k_glove_mode_show, tc300k_glove_mode);
-static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
-#if defined(CONFIG_PM)
-static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
-		show_touchkey_enabled, touchkey_enabled_store);
-#endif
-
-static struct attribute *sec_touchkey_attributes[] = {
-	&dev_attr_touchkey_threshold.attr,
-	&dev_attr_brightness.attr,
-	&dev_attr_touchkey_firm_update.attr,
-	&dev_attr_touchkey_firm_update_status.attr,
-	&dev_attr_touchkey_firm_version_phone.attr,
-	&dev_attr_touchkey_firm_version_panel.attr,
-	&dev_attr_touchkey_recent.attr,
-	&dev_attr_touchkey_recent_ref.attr,
-	&dev_attr_touchkey_back.attr,
-	&dev_attr_touchkey_back_ref.attr,
-	&dev_attr_touchkey_d_menu.attr,
-	&dev_attr_touchkey_d_back.attr,
-	&dev_attr_touchkey_recent_raw.attr,
-	&dev_attr_touchkey_recent_raw_ref.attr,
-	&dev_attr_touchkey_back_raw.attr,
-	&dev_attr_touchkey_back_raw_ref.attr,
-	&dev_attr_touchkey_d_menu_raw.attr,
-	&dev_attr_touchkey_d_back_raw.attr,
-	&dev_attr_touchkey_factory_mode.attr,
-	&dev_attr_glove_mode.attr,
-	&dev_attr_modecheck.attr,
-#if defined(CONFIG_PM)
-	&dev_attr_touchkey_enabled.attr,
-#endif
-	NULL,
-};
-
-static struct attribute_group sec_touchkey_attr_group = {
-	.attrs = sec_touchkey_attributes,
-};
-
 static int tc300k_fw_check(struct tc300k_data *data)
 {
 	struct i2c_client *client = data->client;
@@ -1598,143 +1501,6 @@ static int tc300k_fw_check(struct tc300k_data *data)
 	}
 
 	return 0;
-}
-
-static int __devinit tc300k_probe(struct i2c_client *client,
-		const struct i2c_device_id *id)
-{
-	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-	struct input_dev *input_dev;
-	struct tc300k_data *data;
-	int ret;
-	int i;
-
-	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		dev_err(&client->dev,
-			"i2c_check_functionality fail\n");
-		return -EIO;
-	}
-
-	data = kzalloc(sizeof(struct tc300k_data), GFP_KERNEL);
-	if (!data) {
-		dev_err(&client->dev, "Failed to allocate memory\n");
-		ret = -ENOMEM;
-		goto err_alloc_data;
-	}
-
-	input_dev = input_allocate_device();
-	if (!input_dev) {
-		dev_err(&client->dev,
-			"Failed to allocate memory for input device\n");
-		ret = -ENOMEM;
-		goto err_alloc_input;
-	}
-
-	data->client = client;
-	data->input_dev = input_dev;
-	data->pdata = client->dev.platform_data;
-	if (data->pdata == NULL) {
-		pr_err("failed to get platform data\n");
-		ret = -EINVAL;
-		goto err_platform_data;
-	}
-	data->irq = -1;
-	mutex_init(&data->lock);
-
-	data->key_num = data->pdata->key_num;
-	dev_info(&client->dev, "number of keys = %d\n", data->key_num);
-	data->keycode = data->pdata->keycode;
-	dev_err(&client->dev, "fw_ver_bin = 0x%x\n", data->pdata->fw_version);
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-	for (i = 1; i < data->key_num; i++)
-		dev_info(&client->dev, "keycode[%d]= %3d\n", i, data->keycode[i]);
-#endif
-	i2c_set_clientdata(client, data);
-
-	data->pdata->power(true);
-	msleep(70);
-	data->pdata->keyled(true);
-	msleep(130);
-	data->enabled = true;
-
-	ret = tc300k_fw_check(data);
-	if (ret) {
-		dev_err(&client->dev,
-			"failed to firmware check(%d)\n", ret);
-		goto err_fw_check;
-	}
-
-	snprintf(data->phys, sizeof(data->phys),
-		"%s/input0", dev_name(&client->dev));
-	input_dev->name = "sec_touchkey";
-	input_dev->phys = data->phys;
-	input_dev->id.bustype = BUS_I2C;
-	input_dev->dev.parent = &client->dev;
-	input_dev->open = tc300k_input_open;
-	input_dev->close = tc300k_input_close;
-
-	set_bit(EV_KEY, input_dev->evbit);
-	set_bit(EV_LED, input_dev->evbit);
-	set_bit(LED_MISC, input_dev->ledbit);
-	for (i = 1; i < data->key_num; i++)
-		set_bit(data->keycode[i], input_dev->keybit);
-	input_set_drvdata(input_dev, data);
-
-	ret = input_register_device(input_dev);
-	if (ret) {
-		dev_err(&client->dev, "fail to register input_dev (%d)\n",
-			ret);
-		goto err_register_input_dev;
-	}
-
-	ret = request_threaded_irq(client->irq, NULL, tc300k_interrupt,
-				IRQF_TRIGGER_FALLING, TC300K_NAME, data);
-	if (ret < 0) {
-		dev_err(&client->dev, "fail to request irq (%d).\n",
-			client->irq);
-		goto err_request_irq;
-	}
-	data->irq = client->irq;
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	data->early_suspend.suspend = tc300k_early_suspend;
-	data->early_suspend.resume = tc300k_late_resume;
-	register_early_suspend(&data->early_suspend);
-#endif
-
-	data->sec_touchkey = device_create(sec_class,
-		NULL, 0, data, "sec_touchkey");
-	if (IS_ERR(data->sec_touchkey))
-		dev_err(&client->dev,
-			"Failed to create device for the touchkey sysfs\n");
-
-	ret = sysfs_create_group(&data->sec_touchkey->kobj,
-		&sec_touchkey_attr_group);
-	if (ret)
-		dev_err(&client->dev, "Failed to create sysfs group\n");
-
-	ret = sysfs_create_link(&data->sec_touchkey->kobj,
-		&data->input_dev->dev.kobj, "input");
-	if (ret)
-		dev_err(&client->dev, "Failed to connect link\n");
-
-	dev_info(&client->dev, "%s done\n", __func__);
-	return 0;
-
-err_request_irq:
-	input_unregister_device(input_dev);
-err_register_input_dev:
-err_fw_check:
-	mutex_destroy(&data->lock);
-	data->pdata->keyled(false);
-	data->pdata->power(false);
-err_platform_data:
-	input_free_device(input_dev);
-err_alloc_input:
-	kfree(data);
-err_alloc_data:
-	return ret;
 }
 
 static int __devexit tc300k_remove(struct i2c_client *client)
@@ -1891,6 +1657,236 @@ static const struct dev_pm_ops tc300k_pm_ops = {
 };
 #endif
 #endif
+
+#if defined(CONFIG_PM)
+static ssize_t touchkey_enabled_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t size)
+{
+	unsigned int input;
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	if (input == 0)
+		tc300k_suspend(dev);
+	if (input == 1)
+		tc300k_resume(dev);
+
+	return size;
+}
+
+static ssize_t show_touchkey_enabled(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", data->enabled);
+}
+#endif
+
+static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
+static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
+		tc300k_led_control);
+static DEVICE_ATTR(touchkey_firm_update, S_IRUGO | S_IWUSR | S_IWGRP,
+		NULL, tc300k_update_store);
+static DEVICE_ATTR(touchkey_firm_update_status, S_IRUGO,
+		tc300k_firm_status_show, NULL);
+static DEVICE_ATTR(touchkey_firm_version_phone, S_IRUGO,
+		tc300k_firm_version_show, NULL);
+static DEVICE_ATTR(touchkey_firm_version_panel, S_IRUGO,
+		tc300k_firm_version_read_show, NULL);
+static DEVICE_ATTR(touchkey_recent, S_IRUGO, recent_key_show, NULL);
+static DEVICE_ATTR(touchkey_recent_ref, S_IRUGO, recent_key_ref_show, NULL);
+static DEVICE_ATTR(touchkey_back, S_IRUGO, back_key_show, NULL);
+static DEVICE_ATTR(touchkey_back_ref, S_IRUGO, back_key_ref_show, NULL);
+static DEVICE_ATTR(touchkey_d_menu, S_IRUGO, dummy_recent_show, NULL);
+static DEVICE_ATTR(touchkey_d_back, S_IRUGO, dummy_back_show, NULL);
+static DEVICE_ATTR(touchkey_recent_raw, S_IRUGO, recent_key_raw, NULL);
+static DEVICE_ATTR(touchkey_recent_raw_ref, S_IRUGO, recent_key_raw_ref, NULL);
+static DEVICE_ATTR(touchkey_back_raw, S_IRUGO, back_key_raw, NULL);
+static DEVICE_ATTR(touchkey_back_raw_ref, S_IRUGO, back_key_raw_ref, NULL);
+static DEVICE_ATTR(touchkey_d_menu_raw, S_IRUGO, dummy_recent_raw, NULL);
+static DEVICE_ATTR(touchkey_d_back_raw, S_IRUGO, dummy_back_raw, NULL);
+static DEVICE_ATTR(touchkey_factory_mode, S_IRUGO | S_IWUSR | S_IWGRP,
+		tc300k_factory_mode_show, tc300k_factory_mode);
+static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
+		tc300k_glove_mode_show, tc300k_glove_mode);
+static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
+#if defined(CONFIG_PM)
+static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		show_touchkey_enabled, touchkey_enabled_store);
+#endif
+
+static struct attribute *sec_touchkey_attributes[] = {
+	&dev_attr_touchkey_threshold.attr,
+	&dev_attr_brightness.attr,
+	&dev_attr_touchkey_firm_update.attr,
+	&dev_attr_touchkey_firm_update_status.attr,
+	&dev_attr_touchkey_firm_version_phone.attr,
+	&dev_attr_touchkey_firm_version_panel.attr,
+	&dev_attr_touchkey_recent.attr,
+	&dev_attr_touchkey_recent_ref.attr,
+	&dev_attr_touchkey_back.attr,
+	&dev_attr_touchkey_back_ref.attr,
+	&dev_attr_touchkey_d_menu.attr,
+	&dev_attr_touchkey_d_back.attr,
+	&dev_attr_touchkey_recent_raw.attr,
+	&dev_attr_touchkey_recent_raw_ref.attr,
+	&dev_attr_touchkey_back_raw.attr,
+	&dev_attr_touchkey_back_raw_ref.attr,
+	&dev_attr_touchkey_d_menu_raw.attr,
+	&dev_attr_touchkey_d_back_raw.attr,
+	&dev_attr_touchkey_factory_mode.attr,
+	&dev_attr_glove_mode.attr,
+	&dev_attr_modecheck.attr,
+#if defined(CONFIG_PM)
+	&dev_attr_touchkey_enabled.attr,
+#endif
+	NULL,
+};
+
+static struct attribute_group sec_touchkey_attr_group = {
+	.attrs = sec_touchkey_attributes,
+};
+
+static int __devinit tc300k_probe(struct i2c_client *client,
+		const struct i2c_device_id *id)
+{
+	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+	struct input_dev *input_dev;
+	struct tc300k_data *data;
+	int ret;
+	int i;
+
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+		dev_err(&client->dev,
+			"i2c_check_functionality fail\n");
+		return -EIO;
+	}
+
+	data = kzalloc(sizeof(struct tc300k_data), GFP_KERNEL);
+	if (!data) {
+		dev_err(&client->dev, "Failed to allocate memory\n");
+		ret = -ENOMEM;
+		goto err_alloc_data;
+	}
+
+	input_dev = input_allocate_device();
+	if (!input_dev) {
+		dev_err(&client->dev,
+			"Failed to allocate memory for input device\n");
+		ret = -ENOMEM;
+		goto err_alloc_input;
+	}
+
+	data->client = client;
+	data->input_dev = input_dev;
+	data->pdata = client->dev.platform_data;
+	if (data->pdata == NULL) {
+		pr_err("failed to get platform data\n");
+		ret = -EINVAL;
+		goto err_platform_data;
+	}
+	data->irq = -1;
+	mutex_init(&data->lock);
+
+	data->key_num = data->pdata->key_num;
+	dev_info(&client->dev, "number of keys = %d\n", data->key_num);
+	data->keycode = data->pdata->keycode;
+	dev_err(&client->dev, "fw_ver_bin = 0x%x\n", data->pdata->fw_version);
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	for (i = 1; i < data->key_num; i++)
+		dev_info(&client->dev, "keycode[%d]= %3d\n", i, data->keycode[i]);
+#endif
+	i2c_set_clientdata(client, data);
+
+	data->pdata->power(true);
+	msleep(70);
+	data->pdata->keyled(true);
+	msleep(130);
+	data->enabled = true;
+
+	ret = tc300k_fw_check(data);
+	if (ret) {
+		dev_err(&client->dev,
+			"failed to firmware check(%d)\n", ret);
+		goto err_fw_check;
+	}
+
+	snprintf(data->phys, sizeof(data->phys),
+		"%s/input0", dev_name(&client->dev));
+	input_dev->name = "sec_touchkey";
+	input_dev->phys = data->phys;
+	input_dev->id.bustype = BUS_I2C;
+	input_dev->dev.parent = &client->dev;
+	input_dev->open = tc300k_input_open;
+	input_dev->close = tc300k_input_close;
+
+	set_bit(EV_KEY, input_dev->evbit);
+	set_bit(EV_LED, input_dev->evbit);
+	set_bit(LED_MISC, input_dev->ledbit);
+	for (i = 1; i < data->key_num; i++)
+		set_bit(data->keycode[i], input_dev->keybit);
+	input_set_drvdata(input_dev, data);
+
+	ret = input_register_device(input_dev);
+	if (ret) {
+		dev_err(&client->dev, "fail to register input_dev (%d)\n",
+			ret);
+		goto err_register_input_dev;
+	}
+
+	ret = request_threaded_irq(client->irq, NULL, tc300k_interrupt,
+				IRQF_TRIGGER_FALLING, TC300K_NAME, data);
+	if (ret < 0) {
+		dev_err(&client->dev, "fail to request irq (%d).\n",
+			client->irq);
+		goto err_request_irq;
+	}
+	data->irq = client->irq;
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	data->early_suspend.suspend = tc300k_early_suspend;
+	data->early_suspend.resume = tc300k_late_resume;
+	register_early_suspend(&data->early_suspend);
+#endif
+
+	data->sec_touchkey = device_create(sec_class,
+		NULL, 0, data, "sec_touchkey");
+	if (IS_ERR(data->sec_touchkey))
+		dev_err(&client->dev,
+			"Failed to create device for the touchkey sysfs\n");
+
+	ret = sysfs_create_group(&data->sec_touchkey->kobj,
+		&sec_touchkey_attr_group);
+	if (ret)
+		dev_err(&client->dev, "Failed to create sysfs group\n");
+
+	ret = sysfs_create_link(&data->sec_touchkey->kobj,
+		&data->input_dev->dev.kobj, "input");
+	if (ret)
+		dev_err(&client->dev, "Failed to connect link\n");
+
+	dev_info(&client->dev, "%s done\n", __func__);
+	return 0;
+
+err_request_irq:
+	input_unregister_device(input_dev);
+err_register_input_dev:
+err_fw_check:
+	mutex_destroy(&data->lock);
+	data->pdata->keyled(false);
+	data->pdata->power(false);
+err_platform_data:
+	input_free_device(input_dev);
+err_alloc_input:
+	kfree(data);
+err_alloc_data:
+	return ret;
+}
 
 static const struct i2c_device_id tc300k_id[] = {
 	{TC300K_NAME, 0},
