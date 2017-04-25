@@ -128,7 +128,13 @@ struct extended_perms {
 };
 
 /* definitions of av_decision.flags */
+// START_SEC_SELINUX_PORTING_COMMON
+#ifdef SELINUX_ALWAYS_ENFORCE
+#define AVD_FLAGS_PERMISSIVE	0x0000
+#else
 #define AVD_FLAGS_PERMISSIVE	0x0001
+#endif
+// END_SEC_SELINUX_PORTING_COMMON
 
 void security_compute_av(u32 ssid, u32 tsid,
 			 u16 tclass, struct av_decision *avd,

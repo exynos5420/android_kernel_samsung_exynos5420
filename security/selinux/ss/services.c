@@ -772,9 +772,12 @@ out:
 	kfree(n);
 	kfree(t);
 
-#ifdef CONFIG_ALWAYS_ENFORCE
+#if defined(SELINUX_ALWAYS_ENFORCE)
 	selinux_enforcing = 1;
+#elif defined(SELINUX_ALWAYS_PERMISSIVE)
+	selinux_enforcing = 0;
 #endif
+
 	if (!selinux_enforcing)
 		return 0;
 	return -EPERM;
@@ -1534,9 +1537,18 @@ out:
 	kfree(s);
 	kfree(t);
 	kfree(n);
+<<<<<<< HEAD
 #ifdef CONFIG_ALWAYS_ENFORCE
         selinux_enforcing = 1;
+=======
+
+#if defined(SELINUX_ALWAYS_ENFORCE)
+	selinux_enforcing = 1;
+#elif defined(SELINUX_ALWAYS_PERMISSIVE)
+	selinux_enforcing = 0;
+>>>>>>> 69db61c934e... [TEMP] selinux: enforce permissive
 #endif
+
 	if (!selinux_enforcing)
 		return 0;
 	return -EACCES;
@@ -1827,9 +1839,13 @@ static inline int convert_context_handle_invalid_context(struct context *context
 {
 	char *s;
 	u32 len;
-#ifdef CONFIG_ALWAYS_ENFORCE
-        selinux_enforcing = 1;
+
+#if defined(SELINUX_ALWAYS_ENFORCE)
+	selinux_enforcing = 1;
+#elif defined(SELINUX_ALWAYS_PERMISSIVE)
+	selinux_enforcing = 0;
 #endif
+
 	if (selinux_enforcing)
 		return -EINVAL;
 
