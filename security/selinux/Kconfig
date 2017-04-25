@@ -138,3 +138,39 @@ config SEC_SELINUX
 	help
 	  This option adds sec selinux feature
 
+config SECURITY_SELINUX_DEFAULT_ENFORCE
+	bool "NSA SELinux use Enforced as default"
+	depends on SECURITY_SELINUX
+	default n
+	help
+	  Uses "Enforced" as the state while initializing
+
+config SECURITY_SELINUX_ALWAYS_ENFORCE
+	bool "NSA SELinux always use Enforced"
+	depends on SECURITY_SELINUX
+	default n
+	help
+	  Always use the "Enforced"-state, ignoring any changes requested
+	  by the user or the kernel
+
+config SECURITY_SELINUX_DEFAULT_PERMISSIVE
+	bool "NSA SELinux use Permissive as default"
+	depends on SECURITY_SELINUX
+	default n
+	help
+	  Uses "Permissive" as the state while initializing
+
+config SECURITY_SELINUX_ALWAYS_PERMISSIVE
+	bool "NSA SELinux always use Permissive"
+	depends on SECURITY_SELINUX
+	default n
+	help
+	  Always use the "Permissive"-state, ignoring any changes requested
+	  by the user or the kernel
+
+config SECURITY_SELINUX_PRETEND_ENFORCE
+	bool "NSA SELinux pretend to be Enforced"
+	depends on SECURITY_SELINUX
+	default n
+	help
+	  Pretends to use the "Enforced"-state, regarding the current state
