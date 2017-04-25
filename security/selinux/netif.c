@@ -284,7 +284,8 @@ static __init int sel_netif_init(void)
 {
 	int i, err;
 
-#ifdef CONFIG_ALWAYS_ENFORCE
+#if defined(SELINUX_ALWAYS_ENFORCE) || \
+	defined(SELINUX_ALWAYS_PERMISSIVE)
 	selinux_enabled = 1;
 #endif
 	if (!selinux_enabled)
