@@ -408,6 +408,14 @@ enum {
 #define TSP_CMD_RESULT_STR_LEN	512
 #define TSP_CMD_PARAM_NUM		8
 
+#define DEBUG_RESULT_STR_LEN	1024
+
+#define DEBUG_PRNT_SCREEN(_dest, _temp, _length, fmt, ...)	\
+({	\
+	snprintf(_temp, _length, fmt, ## __VA_ARGS__);	\
+	strcat(_dest, _temp);	\
+})
+
 /* Related Golden Reference */
 #define MXT_FCALCMD(x)			((x) << 2)
 #define MXT_FCALCMD_NONE		0
