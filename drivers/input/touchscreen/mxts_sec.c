@@ -1719,6 +1719,25 @@ err_out:
 	return count;
 }
 
+static char debug_buffer[DEBUG_RESULT_STR_LEN];
+
+static ssize_t show_cmd_list(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int ii = 0;
+	char buffer_name[TSP_CMD_STR_LEN] = {0,};
+
+	memset(debug_buffer, 0, DEBUG_RESULT_STR_LEN);
+
+	DEBUG_PRNT_SCREEN(debug_buffer, buffer_name, TSP_CMD_STR_LEN, "++factory command list++\n");
+	while (strncmp(tsp_cmds[ii].cmd_name, "not_support_cmd", 16) != 0) {
+		DEBUG_PRNT_SCREEN(debug_buffer, buffer_name, TSP_CMD_STR_LEN, "%s\n", tsp_cmds[ii].cmd_name);
+		ii++;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%s\n", debug_buffer);
+}
+
 static ssize_t show_cmd_status(struct device *dev,
 		struct device_attribute *devattr, char *buf)
 {
@@ -1857,6 +1876,7 @@ static ssize_t tsp_booster_enabled_store(struct device *dev,
 #endif
 
 static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, store_cmd);
+static DEVICE_ATTR(cmd_list, S_IRUGO, show_cmd_list, NULL);
 static DEVICE_ATTR(cmd_status, S_IRUGO, show_cmd_status, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, show_cmd_result, NULL);
 static DEVICE_ATTR(set_tsp_for_inputmethod, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -1868,6 +1888,7 @@ static DEVICE_ATTR(tsp_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
 
 static struct attribute *touchscreen_factory_attributes[] = {
 	&dev_attr_cmd.attr,
+	&dev_attr_cmd_list.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
 #if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
