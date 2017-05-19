@@ -229,6 +229,7 @@ static void pen_insert_work(struct work_struct *work)
 		wacom_power_on(wac_i2c);
 #endif
 }
+
 static irqreturn_t wacom_pen_detect(int irq, void *dev_id)
 {
 	struct wacom_i2c *wac_i2c = dev_id;
@@ -263,7 +264,6 @@ static int init_pen_insert(struct wacom_i2c *wac_i2c)
 
 	return 0;
 }
-
 #endif
 
 static int wacom_i2c_input_open(struct input_dev *dev)
@@ -970,6 +970,15 @@ static ssize_t epen_checksum_result_show(struct device *dev,
 	}
 }
 
+static ssize_t epen_insert_state_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct wacom_i2c *wac_i2c = dev_get_drvdata(dev);
+	return sprintf(buf, "%d\n",
+		wac_i2c->pen_insert ?
+		1 : 0);
+}
+
 #ifdef WACOM_CONNECTION_CHECK
 static void wacom_open_test(struct wacom_i2c *wac_i2c)
 {
@@ -1206,6 +1215,9 @@ static DEVICE_ATTR(wacom_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
 		   wacom_booster_enabled_show, wacom_booster_enabled_store);
 #endif
 
+static DEVICE_ATTR(epen_insert_state,
+		   S_IRUGO, epen_insert_state_show, NULL);
+
 static struct attribute *epen_attributes[] = {
 	&dev_attr_epen_firm_update.attr,
 	&dev_attr_epen_firm_update_status.attr,
@@ -1230,11 +1242,12 @@ static struct attribute *epen_attributes[] = {
 	&dev_attr_epen_saving_mode.attr,
 #endif
 #ifdef WACOM_BOOSTER
-	&dev_attr_boost_level.attr,	
+	&dev_attr_boost_level.attr,
 #endif
 #if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 	&dev_attr_wacom_booster_enabled.attr,
 #endif
+	&dev_attr_epen_insert_state.attr,
 	NULL,
 };
 
@@ -1258,7 +1271,7 @@ static void wacom_init_abs_params(struct wacom_i2c *wac_i2c)
 #elif defined(WACOM_USE_PDATA)
 	min_x = wac_i2c->wac_pdata->min_x;
 	max_x = wac_i2c->wac_pdata->max_x;
-	min_y = wac_i2c->wac_pdata->min_y;	
+	min_y = wac_i2c->wac_pdata->min_y;
 	max_y = wac_i2c->wac_pdata->max_y;
 	pressure = wac_i2c->wac_pdata->max_pressure;
 #endif
