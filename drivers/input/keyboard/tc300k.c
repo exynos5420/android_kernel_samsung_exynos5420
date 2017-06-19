@@ -175,6 +175,7 @@ int get_tsp_status(void)
 }
 
 #ifdef CONFIG_PM
+static int tc300k_tk_enabled = 1;
 static int tc300k_suspend(struct device *dev);
 static int tc300k_resume(struct device *dev);
 #endif
@@ -1464,23 +1465,31 @@ static ssize_t tc300k_modecheck_show(struct device *dev,
 }
 
 #if defined(CONFIG_PM)
-static ssize_t touchkey_enabled_store(struct device *dev,
+static ssize_t tc300k_enabled_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t size)
 {
+	struct i2c_client *client = to_i2c_client(dev);
+	struct tc300k_data *data = i2c_get_clientdata(client);
 	unsigned int input;
 	if (sscanf(buf, "%u", &input) != 1)
 		return -EINVAL;
 
-	if (input == 0)
-		tc300k_suspend(dev);
-	if (input == 1)
-		tc300k_resume(dev);
+	if (input == 0){
+		tc300k_tk_enabled = 0;
+		tc300k_suspend(&data->client->dev);
+	}
+	else if (input == 1){
+		tc300k_tk_enabled = 1;
+		tc300k_resume(&data->client->dev);
+        } else {
+		return -EINVAL;
+        }
 
 	return size;
 }
 
-static ssize_t show_touchkey_enabled(struct device *dev,
+static ssize_t tc300k_enabled_show(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
 {
@@ -1521,7 +1530,7 @@ static DEVICE_ATTR(glove_mode, S_IRUGO | S_IWUSR | S_IWGRP,
 static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
 #if defined(CONFIG_PM)
 static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
-		show_touchkey_enabled, touchkey_enabled_store);
+		tc300k_enabled_show, tc300k_enabled_store);
 #endif
 
 static struct attribute *sec_touchkey_attributes[] = {
@@ -1803,7 +1812,7 @@ static int tc300k_resume(struct device *dev)
 
 	mutex_lock(&data->lock);
 
-	if (data->enabled) {
+	if (data->enabled || tc300k_tk_enabled == 0) {
 		mutex_unlock(&data->lock);
 		return 0;
 	}
