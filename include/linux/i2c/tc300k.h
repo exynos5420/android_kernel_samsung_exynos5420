@@ -20,6 +20,13 @@
 
 #define TC300K_NAME "tc300k"
 
+/* LED LDO Regulator */
+#if defined(CONFIG_CHAGALL)
+#define	TK_LED_REGULATOR_NAME	"key_led_3.3v"
+/* LED LDO Type*/
+#define LED_LDO_WITH_REGULATOR
+#endif
+
 struct tc300k_platform_data {
 	int gpio_int;
 	int gpio_sda;
