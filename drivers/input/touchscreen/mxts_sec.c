@@ -1972,6 +1972,13 @@ static ssize_t touchkey_led_control(struct device *dev,
 		return size;
 	}
 
+#ifdef LED_LDO_WITH_REGULATOR
+	if (input > 1 && tsp_keys_enabled) {
+		update_touchkey_brightness(input);
+	}
+	input = input ? 1 : 0;
+#endif
+
 	if (input != 0 && input != 1) {
 		printk(KERN_DEBUG "[TouchKey] %s wrong cmd %x\n",
 			__func__, input);

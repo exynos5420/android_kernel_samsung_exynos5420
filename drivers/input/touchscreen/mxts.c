@@ -52,6 +52,43 @@ module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_I
 
 static bool tsp_keys_enabled = true;
 
+#ifdef LED_LDO_WITH_REGULATOR
+#include <linux/regulator/consumer.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/machine.h>
+
+#define BL_STANDARD	3000
+#define BL_MIN		2500
+#define BL_MAX		3300
+
+static unsigned int touchkey_voltage_brightness = BL_STANDARD;
+
+static void change_touch_key_led_voltage(int vol_mv)
+{
+	struct regulator *tled_regulator;
+
+	tled_regulator = regulator_get(NULL, TK_LED_REGULATOR_NAME);
+	if (IS_ERR(tled_regulator)) {
+		pr_err("%s: failed to get resource %s\n", __func__,
+		       "touchkey_led");
+		return;
+	}
+	regulator_set_voltage(tled_regulator, vol_mv * 1000, vol_mv * 1000);
+	regulator_put(tled_regulator);
+}
+
+void update_touchkey_brightness(unsigned int level)
+{
+	if (level > 0 && level < 256) {
+		printk(KERN_DEBUG "[TouchKey-LED] %s: %d\n", __func__, level);
+		touchkey_voltage_brightness = BL_MIN + ((((level * 100 / 255) * (BL_MAX - BL_MIN)) / 100) / 50) * 50;
+		change_touch_key_led_voltage(touchkey_voltage_brightness);
+	} else {
+		printk(KERN_DEBUG "[TouchKey-LED] %s: Ignoring brightness : %d\n", __func__, level);
+	}
+}
+#endif
+
 static int mxt_read_mem(struct mxt_data *data, u16 reg, u8 len, void *buf)
 {
 	int ret = 0, i = 0;
@@ -1944,8 +1981,12 @@ static int mxt_start(struct mxt_data *data)
 	error = mxt_power_on(data);
 	if (error)
 		tsp_debug_err(true, &data->client->dev, "Fail to start touch\n");
-	else
+	else{
+#ifdef LED_LDO_WITH_REGULATOR
+    	change_touch_key_led_voltage(touchkey_voltage_brightness);
+#endif
 		enable_irq(data->client->irq);
+    }
 
 	return error;
 }
