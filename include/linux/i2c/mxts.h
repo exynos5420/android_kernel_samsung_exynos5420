@@ -16,6 +16,13 @@
 #ifndef __MXT_H__
 #define __MXT_H__
 
+/* LED LDO Regulator */
+#if defined(CONFIG_N1A) || defined(CONFIG_V1A) || defined(CONFIG_N1A) || defined(CONFIG_V1A)
+#define	TK_LED_REGULATOR_NAME	"key_led_3.3v"
+/* LED LDO Type*/
+#define LED_LDO_WITH_REGULATOR
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
