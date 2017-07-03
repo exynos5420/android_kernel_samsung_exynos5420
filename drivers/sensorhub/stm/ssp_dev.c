@@ -13,9 +13,8 @@
  *
  */
 #include "ssp.h"
-#if SSP_SEC_DEBUG
 #include <mach/sec_debug.h>
-#endif
+
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void ssp_early_suspend(struct early_suspend *handler);
@@ -125,9 +124,7 @@ static void initialize_variable(struct ssp_data *data)
 	data->ges_device = NULL;
 
 	data->voice_device = NULL;
-#if SSP_SEC_DEBUG
 	data->bMcuDumpMode = ssp_check_sec_dump_mode();
-#endif
 	INIT_LIST_HEAD(&data->pending_list);
 
 	data->sealevelpressure = 0;

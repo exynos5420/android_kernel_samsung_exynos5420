@@ -14,9 +14,8 @@
  */
 #include "ssp.h"
 #include <linux/fs.h>
-#if SSP_SEC_DEBUG
 #include <mach/sec_debug.h>
-#endif
+
 
 
 #define SSP_DEBUG_TIMER_SEC		(10 * HZ)
@@ -30,7 +29,6 @@
 #define DUMP_FILE_PATH "/data/log/MCU_DUMP"
 
 void ssp_dump_task(struct work_struct *work) {
-#if SSP_SEC_DEBUG
 	struct ssp_big *big;
 	struct file *dump_file;
 	struct ssp_msg *msg;
@@ -120,7 +118,6 @@ void ssp_dump_task(struct work_struct *work) {
 	kfree(buffer);
 	kfree(big);
 
-#endif
 	pr_err("[SSP]: %s done\n", __func__);
 }
 
@@ -193,10 +190,11 @@ int print_mcu_debug(char *pchRcvDataFrame, int *pDataIdx,
 		int iRcvDataFrameLength)
 {
 	int iLength = pchRcvDataFrame[(*pDataIdx)++];
+	int cur = *pDataIdx;
 
 	if (iLength > iRcvDataFrameLength - *pDataIdx || iLength <= 0) {
 		ssp_dbg("[SSP]: MSG From MCU - invalid debug length(%d/%d/%d)\n",
-			iLength, iRcvDataFrameLength, *pDataIdx);
+			iLength, iRcvDataFrameLength, cur);
 		return iLength ? iLength : ERROR;
 	}
 
@@ -265,13 +263,11 @@ void sync_sensor_state(struct ssp_data *data)
 
 	set_proximity_threshold(data, data->uProxHiThresh,data->uProxLoThresh);
 
-#if SSP_SEC_DEBUG
 	data->bMcuDumpMode = ssp_check_sec_dump_mode();
 	iRet = ssp_send_cmd(data, MSG2SSP_AP_MCU_SET_DUMPMODE,data->bMcuDumpMode);
 	if (iRet < 0) {
 		pr_err("[SSP]: %s - MSG2SSP_AP_MCU_SET_DUMPMODE failed\n", __func__);
 	}
-#endif
 }
 
 static void print_sensordata(struct ssp_data *data, unsigned int uSensor)
@@ -456,10 +452,8 @@ int initialize_debug_timer(struct ssp_data *data)
 
 unsigned int  ssp_check_sec_dump_mode()   // if returns true dump mode on
 {
-#if SSP_SEC_DEBUG
 	if (sec_debug_level.en.kernel_fault == 1)
 		return 1;
 	else
-#endif
 		return 0;
 }
