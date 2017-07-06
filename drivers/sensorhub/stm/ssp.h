@@ -52,7 +52,7 @@
 #define SSP_DBG		0
 #define SSP_DATA_DBG 0
 #define SSP_FUNC_DBG 0
-#define SSP_SEC_DEBUG	0
+
 #define SUCCESS		1
 #define FAIL		0
 #define ERROR		-1
