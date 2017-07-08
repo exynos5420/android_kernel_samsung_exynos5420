@@ -34,12 +34,6 @@
 #define CONFIG_SAMSUNG_KERNEL_DEBUG_USER
 #endif
 
-#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
-static unsigned int WACOM_BOOSTER_ENABLED = 1;
-
-module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
-#endif
-
 #ifdef WACOM_BOOSTER
 #define set_qos(req, pm_qos_class, value) { \
 	if (pm_qos_request_active(req)) \
@@ -52,6 +46,10 @@ module_param_named(wacom_booster_enabled, WACOM_BOOSTER_ENABLED, uint, S_IWUSR |
 	if (pm_qos_request_active(req)) \
 	pm_qos_remove_request(req); \
 }
+
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+unsigned int wacom_booster_enabled = 1;
+#endif
 
 void wacom_change_dvfs_lock(struct work_struct *work)
 {
@@ -100,10 +98,9 @@ void wacom_set_dvfs_off(struct work_struct *work)
 void wacom_set_dvfs_lock(struct wacom_i2c *wac_i2c,
 	uint32_t on)
 {
-	if (WACOM_BOOSTER_DISABLE == wac_i2c->boost_level)
+	if (WACOM_BOOSTER_DISABLE == wac_i2c->boost_level || wacom_booster_enabled == 0)
 		return;
 
-	if (WACOM_BOOSTER_ENABLED == 1){
 	mutex_lock(&wac_i2c->dvfs_lock);
 	if (on == 0) {
 		if (wac_i2c->dvfs_lock_status) {
@@ -137,7 +134,6 @@ void wacom_set_dvfs_lock(struct wacom_i2c *wac_i2c,
 		}
 	}
 	mutex_unlock(&wac_i2c->dvfs_lock);
-	}
 }
 
 void wacom_init_dvfs(struct wacom_i2c *wac_i2c)
@@ -920,7 +916,7 @@ int wacom_i2c_coord(struct wacom_i2c *wac_i2c)
 			wacom_set_dvfs_lock(wac_i2c, 1);
 #endif
 #ifdef CONFIG_INPUT_BOOSTER
-			if (WACOM_BOOSTER_ENABLED == 1){
+			if (wacom_booster_enabled == 1){
 			INPUT_BOOSTER_REPORT_KEY_EVENT(wac_i2c->input_dev, KEY_BOOSTER_PEN, 1);
 			INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_PEN, BOOSTER_MODE_ON);
 			}

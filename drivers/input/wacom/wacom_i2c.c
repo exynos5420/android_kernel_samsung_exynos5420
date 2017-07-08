@@ -1118,6 +1118,37 @@ static ssize_t epen_boost_level(struct device *dev,
 }
 #endif
 
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+static ssize_t wacom_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", wacom_booster_enabled);
+}
+
+static ssize_t wacom_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		wacom_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		wacom_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
+#endif
+
 /* firmware update */
 static DEVICE_ATTR(epen_firm_update,
 		   S_IWUSR | S_IWGRP, NULL, epen_firmware_update_store);
@@ -1166,6 +1197,11 @@ static DEVICE_ATTR(epen_saving_mode,
 		   S_IRUGO|S_IWUSR, epen_saving_mode_show, epen_saving_mode_store);
 #endif
 
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+static DEVICE_ATTR(wacom_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   wacom_booster_enabled_show, wacom_booster_enabled_store);
+#endif
+
 static struct attribute *epen_attributes[] = {
 	&dev_attr_epen_firm_update.attr,
 	&dev_attr_epen_firm_update_status.attr,
@@ -1191,6 +1227,9 @@ static struct attribute *epen_attributes[] = {
 #endif
 #ifdef WACOM_BOOSTER
 	&dev_attr_boost_level.attr,	
+#endif
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+	&dev_attr_wacom_booster_enabled.attr,
 #endif
 	NULL,
 };

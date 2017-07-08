@@ -54,4 +54,8 @@ extern void wacom_init_dvfs(struct wacom_i2c *wac_i2c);
 extern void wacom_set_dvfs_lock(struct wacom_i2c *wac_i2c,
 	uint32_t on);
 #endif
+
+#if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+extern unsigned int wacom_booster_enabled;
+#endif
 #endif	/* _LINUX_WACOM_I2C_FUNC_H */
