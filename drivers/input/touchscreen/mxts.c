@@ -45,9 +45,7 @@ module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_I
 #endif
 
 #if defined(CONFIG_INPUT_BOOSTER) || defined(TOUCHKEY_BOOSTER)
-static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
-
-module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+static unsigned int tk_booster_enabled = 1;
 #endif
 
 static bool tsp_keys_enabled = true;
@@ -1046,12 +1044,11 @@ static void mxt_treat_T15_object(struct mxt_data *data,
 			if (code) {
 				input_sync(data->input_dev);
 #if TOUCHKEY_BOOSTER
-			if (TOUCHKEY_BOOSTER_ENABLED == 1)
 				touchkey_set_dvfs_lock(data, !!key_state);
 #endif
 
 #ifdef CONFIG_INPUT_BOOSTER
-			if (TOUCHKEY_BOOSTER_ENABLED == 1)
+			if (tk_booster_enabled == 1)
 				INPUT_BOOSTER_SEND_EVENT(code, !!key_state);
 #endif
 			}
