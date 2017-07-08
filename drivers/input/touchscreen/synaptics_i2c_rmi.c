@@ -30,9 +30,7 @@
 #include "synaptics_i2c_rmi.h"
 
 #if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
-static unsigned int TSP_BOOSTER_ENABLED = 1;
-
-module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+unsigned int tsp_booster_enabled = 1;
 #endif
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
@@ -655,7 +653,7 @@ static void synaptics_init_dvfs_level(struct synaptics_rmi4_data *rmi4_data)
 
 static void synaptics_set_dvfs_lock(struct synaptics_rmi4_data *rmi4_data, unsigned int mode, bool restart)
 {
-	if (rmi4_data->boost_level == TSP_BOOSTER_DISABLE)
+	if (rmi4_data->boost_level == TSP_BOOSTER_DISABLE || tsp_booster_enabled == 0)
 		return;
 
 	mutex_lock(&rmi4_data->dvfs_lock);
@@ -1552,13 +1550,13 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	input_sync(rmi4_data->input_dev);
 
 #ifdef TSP_BOOSTER
-	if (touch_count && TSP_BOOSTER_ENABLED == 1)
+	if (touch_count)
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_ON, booster_restart);
 	else
 		synaptics_set_dvfs_lock(rmi4_data, TSP_BOOSTER_OFF, false);
 #endif
 #if defined(CONFIG_INPUT_BOOSTER)
-	if (booster_restart && TSP_BOOSTER_ENABLED == 1) {
+	if (booster_restart && tsp_booster_enabled == 1) {
 		INPUT_BOOSTER_REPORT_KEY_EVENT(rmi4_data->input_dev, KEY_BOOSTER_TOUCH, 0);
 		INPUT_BOOSTER_REPORT_KEY_EVENT(rmi4_data->input_dev, KEY_BOOSTER_TOUCH, 1);
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH,

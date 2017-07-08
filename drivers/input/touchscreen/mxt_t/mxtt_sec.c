@@ -1799,6 +1799,37 @@ static ssize_t set_tsp_for_inputmethod_store(struct device *dev,
 #endif
 #endif
 
+#if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
+static ssize_t tsp_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", tsp_booster_enabled);
+}
+
+static ssize_t tsp_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		tsp_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		tsp_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
+#endif
+
 static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, store_cmd);
 static DEVICE_ATTR(cmd_status, S_IRUGO, show_cmd_status, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, show_cmd_result, NULL);
@@ -1806,10 +1837,18 @@ static DEVICE_ATTR(cmd_result, S_IRUGO, show_cmd_result, NULL);
 static DEVICE_ATTR(set_tsp_for_inputmethod, S_IRUGO | S_IWUSR | S_IWGRP,
 	set_tsp_for_inputmethod_show, set_tsp_for_inputmethod_store);
 #endif
+#if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
+static DEVICE_ATTR(tsp_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   tsp_booster_enabled_show, tsp_booster_enabled_store);
+#endif
+
 static struct attribute *touchscreen_factory_attributes[] = {
 	&dev_attr_cmd.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
+#if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
+	&dev_attr_tsp_booster_enabled.attr,
+#endif
 	NULL,
 };
 
@@ -2833,7 +2872,7 @@ static void mxt_init_dvfs_level(struct mxt_data *data)
 
 static void mxt_set_dvfs_lock(struct mxt_data *data, unsigned int on, bool booster_restart)
 {
-	if (data->booster.boost_level == TSP_BOOSTER_DISABLE)
+	if (data->booster.boost_level == TSP_BOOSTER_DISABLE || tsp_booster_enabled == 0)
 		return;
 
 	mutex_lock(&data->booster.dvfs_lock);
