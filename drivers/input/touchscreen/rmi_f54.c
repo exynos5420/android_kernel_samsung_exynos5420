@@ -1030,17 +1030,54 @@ static ssize_t cmd_result_show(struct device *dev,
 static ssize_t cmd_list_show(struct device *dev,
 		struct device_attribute *attr, char *buf);
 
+#if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
+static ssize_t tsp_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", tsp_booster_enabled);
+}
+
+static ssize_t tsp_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		tsp_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		tsp_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
+#endif
+
 static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, cmd_store);
 static DEVICE_ATTR(cmd_status, S_IRUGO, cmd_status_show, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, cmd_result_show, NULL);
 static DEVICE_ATTR(cmd_list, S_IRUGO, cmd_list_show, NULL);
-
+#if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
+static DEVICE_ATTR(tsp_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   tsp_booster_enabled_show, tsp_booster_enabled_store);
+#endif
 
 static struct attribute *cmd_attributes[] = {
 	&dev_attr_cmd.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
 	&dev_attr_cmd_list.attr,
+#if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+	&dev_attr_tsp_booster_enabled.attr,
+#endif
 	NULL,
 };
 
