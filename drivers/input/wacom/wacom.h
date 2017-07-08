@@ -428,4 +428,7 @@ struct wacom_i2c {
 	struct fw_update_info update_info;
 };
 
+#if defined(CONFIG_INPUT_BOOSTER) || defined(WACOM_BOOSTER)
+extern unsigned int wacom_booster_enabled;
+#endif
 #endif /* _LINUX_WACOM_H */
