@@ -168,6 +168,10 @@ struct tc300k_data {
 
 extern struct class *sec_class;
 
+#ifdef CONFIG_INPUT_BOOSTER
+static unsigned int tk_booster_enabled = 1;
+#endif
+
 /*temporary*/
 int get_tsp_status(void)
 {
@@ -364,7 +368,8 @@ static irqreturn_t tc300k_interrupt(int irq, void *dev_id)
 				"key P : %d(%d)\n", data->keycode[index], key_val);
 #endif
 #ifdef CONFIG_INPUT_BOOSTER
-			INPUT_BOOSTER_SEND_EVENT(data->keycode[index], BOOSTER_MODE_ON);
+			if (tk_booster_enabled == 1)
+				INPUT_BOOSTER_SEND_EVENT(data->keycode[index], BOOSTER_MODE_ON);
 #endif
 		}
 		input_sync(data->input_dev);
@@ -1544,6 +1549,37 @@ static ssize_t tc300k_enabled_show(struct device *dev,
 }
 #endif
 
+#ifdef CONFIG_INPUT_BOOSTER
+static ssize_t tk_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", tk_booster_enabled);
+}
+
+static ssize_t tk_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		tk_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		tk_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
+#endif
+
 static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tc300k_threshold_show, NULL);
 static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
 		tc300k_led_control);
@@ -1576,6 +1612,10 @@ static DEVICE_ATTR(modecheck, S_IRUGO, tc300k_modecheck_show, NULL);
 static DEVICE_ATTR(touchkey_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
 		tc300k_enabled_show, tc300k_enabled_store);
 #endif
+#if defined(CONFIG_INPUT_BOOSTER)
+static DEVICE_ATTR(touchkey_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   tk_booster_enabled_show, tk_booster_enabled_store);
+#endif
 
 static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_touchkey_threshold.attr,
@@ -1601,6 +1641,9 @@ static struct attribute *sec_touchkey_attributes[] = {
 	&dev_attr_modecheck.attr,
 #if defined(CONFIG_PM)
 	&dev_attr_touchkey_enabled.attr,
+#endif
+#if defined(CONFIG_INPUT_BOOSTER)
+	&dev_attr_touchkey_booster_enabled.attr,
 #endif
 	NULL,
 };

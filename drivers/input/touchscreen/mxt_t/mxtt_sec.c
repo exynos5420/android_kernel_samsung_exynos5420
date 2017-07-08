@@ -1993,7 +1993,7 @@ static ssize_t touchkey_report_dummy_key_store(struct device *dev,
 	return size;
 }
 
-#if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+#if defined(TOUCHKEY_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 static ssize_t touchkey_boost_level(struct device *dev,
 						struct device_attribute *attr, const char *buf,
 						size_t count)
@@ -2017,6 +2017,35 @@ static ssize_t touchkey_boost_level(struct device *dev,
 
 	return count;
 }
+
+static ssize_t tk_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", tk_booster_enabled);
+}
+
+static ssize_t tk_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		tk_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		tk_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
 #endif
 
 static DEVICE_ATTR(touchkey_d_menu, S_IRUGO | S_IWUSR | S_IWGRP, touchkey_d_menu_show, NULL);
@@ -2033,8 +2062,10 @@ static DEVICE_ATTR(touchkey_threshold, S_IRUGO | S_IWUSR | S_IWGRP, get_touchkey
 static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL, touchkey_led_control);
 static DEVICE_ATTR(extra_button_event, S_IRUGO | S_IWUSR | S_IWGRP,
 					touchkey_report_dummy_key_show, touchkey_report_dummy_key_store);
-#if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+#if defined(TOUCHKEY_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 static DEVICE_ATTR(boost_level, S_IWUSR | S_IWGRP, NULL, touchkey_boost_level);
+static DEVICE_ATTR(touchkey_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   tk_booster_enabled_show, tk_booster_enabled_store);
 #endif
 
 static struct attribute *touchkey_attributes[] = {
@@ -2051,8 +2082,9 @@ static struct attribute *touchkey_attributes[] = {
 	&dev_attr_touchkey_threshold.attr,
 	&dev_attr_brightness.attr,
 	&dev_attr_extra_button_event.attr,
-#if defined(TSP_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
+#if defined(TOUCHKEY_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 	&dev_attr_boost_level.attr,
+	&dev_attr_touchkey_booster_enabled.attr,
 #endif
 	NULL,
 };
@@ -2914,7 +2946,7 @@ static void touchkey_set_dvfs_off(struct work_struct *work)
 
 static void touchkey_set_dvfs_lock(struct mxt_data *data, uint32_t on)
 {
-	if (TOUCHKEY_BOOSTER_DISABLE == data->tsk_booster.boost_level)
+	if (TOUCHKEY_BOOSTER_DISABLE == data->tsk_booster.boost_level || tk_booster_enabled == 0)
 		return;
 
 	mutex_lock(&data->tsk_booster.tsk_dvfs_lock);
