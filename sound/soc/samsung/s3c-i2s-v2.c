@@ -469,7 +469,7 @@ static int s3c2412_i2s_set_clkdiv(struct snd_soc_dai *cpu_dai,
 	struct s3c_i2sv2_info *i2s = to_info(cpu_dai);
 	u32 reg;
 
-	pr_debug("%s(%p, %d, %d)\n", __func__, cpu_dai, div_id, div);
+	pr_debug("%s(%pK, %d, %d)\n", __func__, cpu_dai, div_id, div);
 
 	switch (div_id) {
 	case S3C_I2SV2_DIV_BCLK:
