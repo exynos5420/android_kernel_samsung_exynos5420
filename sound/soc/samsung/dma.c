@@ -181,7 +181,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 		/* prepare DMA */
 		prtd->params = dma;
 
-		pr_debug("params %p, client %p, channel %d\n", prtd->params,
+		pr_debug("params %pK, client %pK, channel %d\n", prtd->params,
 			prtd->params->client, prtd->params->channel);
 
 		prtd->params->ops = samsung_dma_get_ops();

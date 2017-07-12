@@ -554,7 +554,7 @@ static int i2s_set_fmt(struct snd_soc_dai *dai,
 	if (i2s == NULL) {
 		pr_err("######### %s: soc_dai_drvdata is NULL\n", __func__);
 	} else if (i2s->addr != i2s0_addr) {
-		pr_err("######### %s: i2s->addr = %p, i2s0_addr = %p\n",
+		pr_err("######### %s: i2s->addr = %pK, i2s0_addr = %pK\n",
 					__func__, i2s->addr, i2s0_addr);
 	}
 

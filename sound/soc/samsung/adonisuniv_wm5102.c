@@ -612,7 +612,7 @@ static int set_lhpf2_coeff(struct snd_kcontrol *kcontrol,
 
 	lhpf2_coeff = ucontrol->value.integer.value[0];
 
-	dev_info(codec->dev, "%s: lhpf2 mode=%d, val=0x%x (%p)\n", __func__,
+	dev_info(codec->dev, "%s: lhpf2 mode=%d, val=0x%x (%pK)\n", __func__,
 			lhpf2_coeff, lhpf_filter_values[lhpf2_coeff], codec);
 
 	regmap_update_bits(regmap, ARIZONA_HPLPF2_2, ARIZONA_LHPF2_COEFF_MASK,

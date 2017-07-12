@@ -1042,13 +1042,13 @@ static void srp_get_buf_info(void)
 	/* Get Data offset */
 	srp.data_offset = (obuf.size * 2) + obuf.offset;
 
-	srp_info("[VA]IBUF0[0x%p], [PA]IBUF0[0x%x]\n",
+	srp_info("[VA]IBUF0[0x%pK], [PA]IBUF0[0x%x]\n",
 						srp.ibuf0, srp.ibuf0_pa);
-	srp_info("[VA]IBUF1[0x%p], [PA]IBUF1[0x%x]\n",
+	srp_info("[VA]IBUF1[0x%pK], [PA]IBUF1[0x%x]\n",
 						srp.ibuf1, srp.ibuf1_pa);
-	srp_info("[VA]OBUF0[0x%p], [PA]OBUF0[0x%x]\n",
+	srp_info("[VA]OBUF0[0x%pK], [PA]OBUF0[0x%x]\n",
 						srp.obuf0, srp.obuf0_pa);
-	srp_info("[VA]OBUF1[0x%p], [PA]OBUF1[0x%x]\n",
+	srp_info("[VA]OBUF1[0x%pK], [PA]OBUF1[0x%x]\n",
 						srp.obuf1, srp.obuf1_pa);
 	srp_info("IBUF SIZE [%ld]Bytes, OBUF SIZE [%ld]Bytes\n",
 						ibuf.size, obuf.size);
