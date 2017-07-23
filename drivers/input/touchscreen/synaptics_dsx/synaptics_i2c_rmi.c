@@ -39,10 +39,8 @@
 
 #include "synaptics_i2c_rmi.h"
 
-#ifdef TSP_BOOSTER
-static unsigned int TSP_BOOSTER_ENABLED = 1;
-
-module_param_named(tsp_booster_enabled, TSP_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+#if defined(TSP_BOOSTER)
+unsigned int tsp_booster_enabled = 1;
 #endif
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
@@ -1083,7 +1081,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	input_sync(rmi4_data->input_dev);
 
 #ifdef TSP_BOOSTER
-	if (new_finger_pressed && TSP_BOOSTER_ENABLED == 1)
+	if (new_finger_pressed && tsp_booster_enabled == 1)
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH, BOOSTER_MODE_ON);
 	if (!touch_count)
 		INPUT_BOOSTER_SEND_EVENT(KEY_BOOSTER_TOUCH, BOOSTER_MODE_OFF);

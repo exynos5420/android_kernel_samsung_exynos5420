@@ -9,7 +9,6 @@
  */
 
 #include <linux/module.h>
-#include <linux/moduleparam.h>
 
 #include <linux/init.h>
 #include <linux/fs.h>
@@ -41,9 +40,7 @@
 #include "cypress_touchkey.h"
 
 #if defined(CONFIG_INPUT_BOOSTER) || defined(TOUCHKEY_BOOSTER)
-static unsigned int TOUCHKEY_BOOSTER_ENABLED = 1;
-
-module_param_named(touchkey_booster_enabled, TOUCHKEY_BOOSTER_ENABLED, uint, S_IWUSR | S_IRUGO);
+static unsigned int tk_booster_enabled = 1;
 #endif
 
 static int touchkey_enabled_flag = 1;
@@ -905,7 +902,7 @@ static void touchkey_set_dvfs_off(struct work_struct *work)
 static void touchkey_set_dvfs_lock(struct touchkey_i2c *tkey_i2c,
 					uint32_t on)
 {
-	if (TKEY_BOOSTER_DISABLE == tkey_i2c->boost_level)
+	if (TKEY_BOOSTER_DISABLE == tkey_i2c->boost_level || tk_booster_enabled == 0)
 		return;
 
 	mutex_lock(&tkey_i2c->tsk_dvfs_lock);
@@ -1369,13 +1366,12 @@ static irqreturn_t touchkey_interrupt(int irq, void *dev_id)
 	}
 
 #ifdef TOUCHKEY_BOOSTER
-if (TOUCHKEY_BOOSTER_ENABLED == 1)
 	touchkey_set_dvfs_lock(tkey_i2c, !!pressed);
 #endif
 #ifdef CONFIG_INPUT_BOOSTER
-if (TOUCHKEY_BOOSTER_ENABLED == 1)
-	INPUT_BOOSTER_SEND_EVENT(tkey_code[1],
-		!!pressed);
+	if (tk_booster_enabled == 1)
+		INPUT_BOOSTER_SEND_EVENT(tkey_code[1],
+			!!pressed);
 #endif
 	return IRQ_HANDLED;
 }
@@ -1428,7 +1424,6 @@ static int touchkey_stop(struct touchkey_i2c *tkey_i2c)
 	tkey_i2c->enabled = false;
 	tkey_i2c->status_update = false;
 #ifdef TOUCHKEY_BOOSTER
-if (TOUCHKEY_BOOSTER_ENABLED == 1)
 	touchkey_set_dvfs_lock(tkey_i2c, 2);
 #endif
 
@@ -2024,6 +2019,36 @@ static ssize_t touchkey_boost_level(struct device *dev,
 	return count;
 }
 #endif
+#if defined (TOUCHKEY_BOOSTER) || defined (CONFIG_INPUT_BOOSTER)
+static ssize_t tk_booster_enabled_show(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", tk_booster_enabled);
+}
+
+static ssize_t tk_booster_enabled_store(struct device *dev,
+						struct device_attribute *attr, const char *buf,
+						size_t count)
+{
+	int enabled;
+
+	if (sscanf(buf, "%u", &enabled) != 1)
+		return -EINVAL;
+
+	if (enabled == 1) {
+		tk_booster_enabled = 1;
+	}
+	else if (enabled == 0) {
+		tk_booster_enabled = 0;
+	}
+	else {
+		return -EINVAL;
+	}
+
+	return count;
+}
+#endif
 
 static DEVICE_ATTR(brightness, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
 		   touchkey_led_control);
@@ -2085,6 +2110,10 @@ static DEVICE_ATTR(flip_mode, S_IRUGO | S_IWUSR | S_IWGRP, NULL,
 #ifdef TOUCHKEY_BOOSTER
 static DEVICE_ATTR(boost_level, S_IWUSR | S_IWGRP, NULL, touchkey_boost_level);
 #endif
+#if defined (TOUCHKEY_BOOSTER) || defined (CONFIG_INPUT_BOOSTER)
+static DEVICE_ATTR(touchkey_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
+		   tk_booster_enabled_show, tk_booster_enabled_store);
+#endif
 
 static struct attribute *touchkey_attributes[] = {
         &dev_attr_touchkey_enabled.attr,
@@ -2128,6 +2157,9 @@ static struct attribute *touchkey_attributes[] = {
 #endif
 #ifdef TOUCHKEY_BOOSTER
 	&dev_attr_boost_level.attr,
+#endif
+#if defined (TOUCHKEY_BOOSTER) || defined (CONFIG_INPUT_BOOSTER)
+	&dev_attr_touchkey_booster_enabled.attr,
 #endif
 	NULL,
 };
