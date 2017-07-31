@@ -21,6 +21,7 @@
 #include <linux/diagchar.h>
 #include <linux/delay.h>
 #include <linux/reboot.h>
+#include <linux/ratelimit.h>
 #include <linux/of.h>
 #include <linux/spinlock.h>
 #ifdef CONFIG_DIAG_OVER_USB
