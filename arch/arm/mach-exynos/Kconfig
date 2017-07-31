@@ -1033,6 +1033,10 @@ config TARGET_LOCALE_USA
 	bool "Locale USA support"
 	help
 	  Enable universal5420 LOCALE USA.
+config TARGET_LOCALE_CHN
+	bool "Locale CHN support"
+	help
+	  Enable universal5420 LOCALE CHN.
 config TARGET_LOCALE_BMC
 	bool "Locale BMC support"
 	help
