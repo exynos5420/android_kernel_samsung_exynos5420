@@ -716,8 +716,13 @@ static int exynos5_usb_phy_host_resume(struct platform_device *pdev)
 		hsic_ctrl |= HSIC_CTRL_FORCESLEEP;
 #endif
 		writel(hsic_ctrl, EXYNOS5_PHY_HSIC_CTRL2);
-#if defined(CONFIG_PHY_HSIC_TUNE1)
-		writel(CONFIG_PHY_HSIC_TUNE1_REG, EXYNOS5_PHY_HSIC_TUNE1);
+#if defined(CONFIG_N1A_3G) || defined(CONFIG_N2A_3G)
+		writel(0xF0, EXYNOS5_PHY_HSIC_TUNE1);
+		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
+			readl(EXYNOS5_PHY_HSIC_TUNE1));
+#endif
+#if defined(CONFIG_KLIMT)
+		writel(0xFC, EXYNOS5_PHY_HSIC_TUNE1);
 		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
 			readl(EXYNOS5_PHY_HSIC_TUNE1));
 #endif
@@ -817,10 +822,16 @@ static int exynos5_usb_phy20_init(struct platform_device *pdev)
 	hsic_ctrl |= HSIC_CTRL_FORCESLEEP;
 #endif
 	writel(hsic_ctrl, EXYNOS5_PHY_HSIC_CTRL2);
-#if defined(CONFIG_PHY_HSIC_TUNE1)
-	writel(CONFIG_PHY_HSIC_TUNE1_REG, EXYNOS5_PHY_HSIC_TUNE1);
+
+#if defined(CONFIG_N1A_3G) || defined(CONFIG_N2A_3G)
+	writel(0xF0, EXYNOS5_PHY_HSIC_TUNE1);
 	pr_info("%s: HSIC phy tune 0x%x\n", __func__,
 		readl(EXYNOS5_PHY_HSIC_TUNE1));
+#endif
+#if defined(CONFIG_KLIMT)
+		writel(0xFC, EXYNOS5_PHY_HSIC_TUNE1);
+		pr_info("%s: HSIC phy tune 0x%x\n", __func__,
+			readl(EXYNOS5_PHY_HSIC_TUNE1));
 #endif
 	udelay(80);
 
