@@ -264,13 +264,17 @@ ehci_urb_done(struct ehci_hcd *ehci, struct urb *urb, int status)
 __releases(ehci->lock)
 __acquires(ehci->lock)
 {
-	if (usb_pipetype(urb->pipe) == PIPE_INTERRUPT) {
-		/* ... update hc-wide periodic stats */
-		ehci_to_hcd(ehci)->self.bandwidth_int_reqs--;
-	}
+	if (likely (urb->hcpriv != NULL)) {
+		struct ehci_qh	*qh = (struct ehci_qh *) urb->hcpriv;
 
-	if (usb_pipetype(urb->pipe) != PIPE_ISOCHRONOUS)
-		qh_put((struct ehci_qh *) urb->hcpriv);
+		/* S-mask in a QH means it's an interrupt urb */
+		if ((qh->hw->hw_info2 & cpu_to_hc32(ehci, QH_SMASK)) != 0) {
+
+			/* ... update hc-wide periodic stats (for usbfs) */
+			ehci_to_hcd(ehci)->self.bandwidth_int_reqs--;
+		}
+		qh_put (qh);
+	}
 
 	if (unlikely(urb->unlinked)) {
 		COUNT(ehci->stats.unlink);
@@ -289,6 +293,16 @@ __acquires(ehci->lock)
 		usb_pipein (urb->pipe) ? "in" : "out",
 		status,
 		urb->actual_length, urb->transfer_buffer_length);
+#endif
+#if defined(CONFIG_MDM_HSIC_PM)
+	if (usb_pipeint(urb->pipe) && usb_pipein(urb->pipe))
+		ehci_dbg (ehci,
+				"%s %s urb %p ep%d%s status %d len %d/%d\n",
+				__func__, urb->dev->devpath, urb,
+				usb_pipeendpoint (urb->pipe),
+				usb_pipein (urb->pipe) ? "in" : "out",
+				status,
+				urb->actual_length, urb->transfer_buffer_length);
 #endif
 
 #ifdef CONFIG_HOST_COMPLIANT_TEST

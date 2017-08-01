@@ -304,10 +304,13 @@ $(firmware-dirs):
 obj-y				 += $(patsubst %,%.gen.o, $(fw-external-y))
 obj-$(CONFIG_FIRMWARE_IN_KERNEL) += $(patsubst %,%.gen.o, $(fw-shipped-y))
 
-# Remove .S files and binaries created from ihex
+# Remove .S files and .fw binaries created from ihex
 # (during 'make clean' .config isn't included so they're all in $(fw-shipped-))
 targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
 				$(shell find $(obj) -name \*.gen.S 2>/dev/null))
+
+targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
+				$(shell find $(obj) -name \*.fw 2>/dev/null))
 
 # Without this, built-in.o won't be created when it's empty, and the
 # final vmlinux link will fail.
