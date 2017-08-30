@@ -250,8 +250,7 @@ static inline void ip_route_connect_init(struct flowi4 *fl4, __be32 dst, __be32 
 		flow_flags |= FLOWI_FLAG_CAN_SLEEP;
 
 	flowi4_init_output(fl4, oif, sk->sk_mark, tos, RT_SCOPE_UNIVERSE,
-						protocol, flow_flags, dst, src, dport, sport,
-						sock_i_uid(sk));
+						protocol, flow_flags, dst, src, dport, sport);
 }
 
 static inline struct rtable *ip_route_connect(struct flowi4 *fl4,
