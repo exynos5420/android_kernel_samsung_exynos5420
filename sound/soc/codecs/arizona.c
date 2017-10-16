@@ -1082,7 +1082,7 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 	int bclk, lrclk, wl, frame, bclk_target;
 	unsigned int aif_tx_state, aif_rx_state;
 
-	if (params_rate(params) % 8000)
+	if (params_rate(params) % 4000)
 		rates = &arizona_44k1_bclk_rates[0];
 	else
 		rates = &arizona_48k_bclk_rates[0];
