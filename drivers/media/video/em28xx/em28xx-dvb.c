@@ -1071,6 +1071,8 @@ static int em28xx_dvb_fini(struct em28xx *dev)
 	if (dev->dvb) {
 		struct em28xx_dvb *dvb = dev->dvb;
 
+		em28xx_unregister_dvb(dvb);
+
 		if (dev->state & DEV_DISCONNECTED) {
 			/* We cannot tell the device to sleep
 			 * once it has been unplugged. */
@@ -1080,7 +1082,6 @@ static int em28xx_dvb_fini(struct em28xx *dev)
 				prevent_sleep(&dvb->fe[1]->ops);
 		}
 
-		em28xx_unregister_dvb(dvb);
 		kfree(dvb);
 		dev->dvb = NULL;
 	}
