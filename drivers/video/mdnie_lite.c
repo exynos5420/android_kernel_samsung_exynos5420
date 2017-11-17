@@ -673,6 +673,13 @@ static ssize_t sensorRGB_store(struct device *dev,
 		mdnie->white_b = white_blue;
 
 		mdnie_update_sequence(mdnie, &(mdnie->table_buffer));
+
+		store_ascr(table, MDNIE_WHITE_R,
+				(unsigned char)white_red);
+		store_ascr(table, MDNIE_WHITE_G,
+				(unsigned char)white_green);
+		store_ascr(table, MDNIE_WHITE_B,
+				(unsigned char)white_blue);
 	}
 
 	return count;
