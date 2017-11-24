@@ -328,6 +328,11 @@ static void wacom_i2c_set_input_values(struct i2c_client *client,
 #ifdef CONFIG_INPUT_BOOSTER
 	__set_bit(KEY_BOOSTER_PEN, input_dev->keybit);
 #endif
+	__set_bit(KEY_PEN_UTD, input_dev->keybit);
+	__set_bit(KEY_PEN_DTU, input_dev->keybit);
+	__set_bit(KEY_PEN_RTL, input_dev->keybit);
+	__set_bit(KEY_PEN_LTR, input_dev->keybit);
+	__set_bit(KEY_PEN_LP, input_dev->keybit);
 #ifdef WACOM_USE_GAIN
 	__set_bit(ABS_DISTANCE, input_dev->absbit);
 #endif
@@ -607,6 +612,35 @@ struct device_attribute *attr, const char *buf,
 	return count;
 }
 #endif
+
+static ssize_t epen_gestures_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct wacom_i2c *wac_i2c = dev_get_drvdata(dev);
+
+	dev_info(&wac_i2c->client->dev,
+			"%s: enabled_gestures=%d\n", __func__,
+			wac_i2c->enabled_gestures);
+
+	return sprintf(buf, "%d\n", wac_i2c->enabled_gestures);
+}
+
+static ssize_t epen_gestures_store(struct device *dev,
+				   struct device_attribute *attr, const char *buf,
+				   size_t count)
+{
+	struct wacom_i2c *wac_i2c = dev_get_drvdata(dev);
+	int val;
+
+	sscanf(buf, "%d", &val);
+
+	wac_i2c->enabled_gestures = val;
+
+	dev_info(&wac_i2c->client->dev,
+			"%s: enabled_gestures=%d\n", __func__, val);
+
+	return count;
+}
 
 static ssize_t epen_firmware_update_store(struct device *dev,
 					  struct device_attribute *attr,
@@ -1201,11 +1235,20 @@ static DEVICE_ATTR(epen_saving_mode,
 		   S_IRUGO|S_IWUSR, epen_saving_mode_show, epen_saving_mode_store);
 #endif
 
+static DEVICE_ATTR(epen_insert_state,
+		   S_IRUGO, epen_insert_state_show, NULL);
+
 #if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 static DEVICE_ATTR(wacom_booster_enabled, S_IRUGO | S_IWUSR | S_IWGRP,
 		   wacom_booster_enabled_show, wacom_booster_enabled_store);
 #endif
 
+<<<<<<< HEAD   (7b3647 usb: gadget: f_fs: Allow only one adb daemon perform device )
+=======
+static DEVICE_ATTR(epen_gestures, S_IWUSR | S_IWGRP | S_IRUGO,
+		   epen_gestures_show, epen_gestures_store);
+
+>>>>>>> CHANGE (355276 wacom: Send custom keycodes when gestures are detected)
 static struct attribute *epen_attributes[] = {
 	&dev_attr_epen_firm_update.attr,
 	&dev_attr_epen_firm_update_status.attr,
@@ -1232,9 +1275,14 @@ static struct attribute *epen_attributes[] = {
 #ifdef WACOM_BOOSTER
 	&dev_attr_boost_level.attr,	
 #endif
+	&dev_attr_epen_insert_state.attr,
 #if defined(WACOM_BOOSTER) || defined(CONFIG_INPUT_BOOSTER)
 	&dev_attr_wacom_booster_enabled.attr,
 #endif
+<<<<<<< HEAD   (7b3647 usb: gadget: f_fs: Allow only one adb daemon perform device )
+=======
+	&dev_attr_epen_gestures.attr,
+>>>>>>> CHANGE (355276 wacom: Send custom keycodes when gestures are detected)
 	NULL,
 };
 

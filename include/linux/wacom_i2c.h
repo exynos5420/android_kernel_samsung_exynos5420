@@ -50,13 +50,15 @@
 #define WACOM_XY_SWITCH 1
 #endif
 
-
 /*sec_class sysfs*/
 extern struct class *sec_class;
 
 struct wacom_g5_callbacks {
 	int (*check_prox)(struct wacom_g5_callbacks *);
 };
+
+#define LONG_PRESS_TIME 500
+#define MIN_GEST_DIST 384
 
 struct wacom_g5_platform_data {
 	char *name;
