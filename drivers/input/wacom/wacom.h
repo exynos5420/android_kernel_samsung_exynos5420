@@ -426,6 +426,12 @@ struct wacom_i2c {
 #endif
 	struct work_struct update_work;
 	struct fw_update_info update_info;
+
+	int enabled_gestures;
+	int gesture_key;
+	int gesture_start_x;
+	int gesture_start_y;
+	ktime_t gesture_start_time;
 };
 
 #if defined(CONFIG_INPUT_BOOSTER) || defined(WACOM_BOOSTER)
