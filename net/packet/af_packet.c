@@ -2544,6 +2544,10 @@ static int packet_do_bind(struct sock *sk, const char *name, int ifindex,
 
 	if (po->running) {
 		rcu_read_unlock();
+		/* prevents packet_notifier() from calling
+		 * register_prot_hook()
+		 */
+		po->num = 0;
 		__unregister_prot_hook(sk, true);
 		rcu_read_lock();
 		dev_curr = po->prot_hook.dev;
@@ -2551,6 +2555,7 @@ static int packet_do_bind(struct sock *sk, const char *name, int ifindex,
 			unlisted = !dev_get_by_index_rcu(sock_net(sk),
 							 dev->ifindex);
 	}
+	BUG_ON(po->running);
 	po->num = protocol;
 	po->prot_hook.type = protocol;
 	if (unlikely(unlisted)) {
