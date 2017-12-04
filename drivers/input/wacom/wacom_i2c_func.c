@@ -818,6 +818,30 @@ u32 wacom_i2c_get_lcd_freq(u32 freq_cnt)
 }
 #endif
 
+static void handle_gestures(int x, int y, ktime_t end, struct wacom_i2c *wac_i2c)
+{
+	int dx = x - wac_i2c->gesture_start_x;
+	int dy = y - wac_i2c->gesture_start_y;
+	int dt = ktime_to_ms(ktime_sub(end, wac_i2c->gesture_start_time));
+
+	if (abs(dy) > abs(dx)) {
+		if (abs(dy) > MIN_GEST_DIST) {
+			wac_i2c->gesture_key = dy < 0 ? KEY_PEN_DTU : KEY_PEN_UTD;
+			return;
+		}
+	} else {
+		if (abs(dx) > MIN_GEST_DIST) {
+			wac_i2c->gesture_key = dx < 0 ? KEY_PEN_RTL : KEY_PEN_LTR;
+			return;
+		}
+	}
+
+	if (dt >= LONG_PRESS_TIME) {
+		wac_i2c->gesture_key = KEY_PEN_LP;
+		return;
+	}
+}
+
 int wacom_i2c_coord(struct wacom_i2c *wac_i2c)
 {
 	bool prox = false;
