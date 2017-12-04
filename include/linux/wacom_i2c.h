@@ -58,6 +58,9 @@ struct wacom_g5_callbacks {
 	int (*check_prox)(struct wacom_g5_callbacks *);
 };
 
+#define LONG_PRESS_TIME 500
+#define MIN_GEST_DIST 384
+
 struct wacom_g5_platform_data {
 	char *name;
 	int x_invert;
