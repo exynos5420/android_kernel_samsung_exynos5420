@@ -1505,9 +1505,8 @@ out:
 	return err;
 }
 
-static int lo_release(struct gendisk *disk, fmode_t mode)
+static void __lo_release(struct loop_device *lo)
 {
-	struct loop_device *lo = disk->private_data;
 	int err;
 
 	mutex_lock(&lo->lo_ctl_mutex);
@@ -1522,7 +1521,7 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
 		 */
 		err = loop_clr_fd(lo);
 		if (!err)
-			goto out_unlocked;
+			return;
 	} else {
 		/*
 		 * Otherwise keep thread (if running) and config,
@@ -1533,7 +1532,13 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
 
 out:
 	mutex_unlock(&lo->lo_ctl_mutex);
-out_unlocked:
+}
+
+static int lo_release(struct gendisk *disk, fmode_t mode)
+{
+	mutex_lock(&loop_index_mutex);
+	__lo_release(disk->private_data);
+	mutex_unlock(&loop_index_mutex);
 	return 0;
 }
 
