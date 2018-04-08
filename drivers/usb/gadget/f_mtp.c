@@ -529,6 +529,9 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	if (dev == NULL || dev->ep_out == NULL)
 		return -ENODEV;
 
+	if (dev == NULL || dev->ep_out == NULL)
+		 return -ENODEV;
+
 	if (count > MTP_BULK_BUFFER_SIZE)
 		return -EINVAL;
 
