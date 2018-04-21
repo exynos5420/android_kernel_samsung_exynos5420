@@ -78,7 +78,7 @@ struct sec_battery_info {
 	int current_avg;		/* average current (mA) */
 	int current_max;		/* input current limit (mA) */
 	int current_adc;
-
+	unsigned int input_voltage; 	/* CHGIN/WCIN input voltage (V) */
 	unsigned int capacity;			/* SOC (%) */
 
 	struct mutex adclock;
