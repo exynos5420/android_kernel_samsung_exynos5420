@@ -6,6 +6,7 @@
 #include <asm/memory.h>
 #include <asm/suspend.h>
 #include <asm/tlbflush.h>
+#include <asm/bugs.h>
 
 extern int __cpu_suspend(unsigned long, int (*)(unsigned long));
 extern void cpu_resume_mmu(void);
@@ -65,6 +66,7 @@ int cpu_suspend(unsigned long arg, int (*fn)(unsigned long))
 	if (ret == 0) {
 		cpu_switch_mm(mm->pgd, mm);
 		local_flush_tlb_all();
+		check_other_bugs();
 	}
 
 	return ret;
