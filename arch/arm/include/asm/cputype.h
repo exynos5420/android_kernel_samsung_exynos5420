@@ -25,6 +25,29 @@
 #define CPUID_EXT_ISAR4	"c2, 4"
 #define CPUID_EXT_ISAR5	"c2, 5"
 
+/* ARM implemented processors */
+#define ARM_CPU_PART_ARM1136		0x4100b360
+#define ARM_CPU_PART_ARM1156		0x4100b560
+#define ARM_CPU_PART_ARM1176		0x4100b760
+#define ARM_CPU_PART_ARM11MPCORE	0x4100b020
+#define ARM_CPU_PART_CORTEX_A8		0x4100c080
+#define ARM_CPU_PART_CORTEX_A9		0x4100c090
+#define ARM_CPU_PART_CORTEX_A5		0x4100c050
+#define ARM_CPU_PART_CORTEX_A7		0x4100c070
+#define ARM_CPU_PART_CORTEX_A12		0x4100c0d0
+#define ARM_CPU_PART_CORTEX_A17		0x4100c0e0
+#define ARM_CPU_PART_CORTEX_A15		0x4100c0f0
+#define ARM_CPU_PART_CORTEX_A53		0x4100d030
+#define ARM_CPU_PART_CORTEX_A57		0x4100d070
+#define ARM_CPU_PART_CORTEX_A72		0x4100d080
+#define ARM_CPU_PART_CORTEX_A73		0x4100d090
+#define ARM_CPU_PART_CORTEX_A75		0x4100d0a0
+#define ARM_CPU_PART_MASK		0xff00fff0
+
+/* Broadcom implemented processors */
+#define ARM_CPU_PART_BRAHMA_B15		0x420000f0
+#define ARM_CPU_PART_BRAHMA_B53		0x42001000
+
 extern unsigned int processor_id;
 
 #ifdef CONFIG_CPU_CP15
@@ -74,6 +97,16 @@ static inline unsigned int __attribute_const__ read_cpuid_tcmstatus(void)
 static inline unsigned int __attribute_const__ read_cpuid_mpidr(void)
 {
 	return read_cpuid(CPUID_MPIDR);
+}
+
+/*
+ * The CPU part number is meaningless without referring to the CPU
+ * implementer: implementers are free to define their own part numbers
+ * which are permitted to clash with other implementer part numbers.
+ */
+static inline unsigned int __attribute_const__ read_cpuid_part(void)
+{
+	return read_cpuid_id() & ARM_CPU_PART_MASK;
 }
 
 /*
