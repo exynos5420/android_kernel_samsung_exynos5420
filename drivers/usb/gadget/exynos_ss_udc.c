@@ -545,6 +545,8 @@ static void exynos_ss_udc_start_req(struct exynos_ss_udc *udc,
 	int rem;
 	int res;
 
+	BUG_ON(udc_req == NULL);
+
 	dev_vdbg(udc->dev, "%s: %s, req %p\n", __func__, udc_ep->name, ureq);
 
 	if (!udc->pullup_state) {
