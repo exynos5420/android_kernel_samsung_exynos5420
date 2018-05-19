@@ -778,7 +778,8 @@ static void exynos_ss_udc_complete_request(struct exynos_ss_udc *udc,
 		restart = !list_empty(&udc_ep->req_queue);
 		if (restart) {
 			udc_req = get_ep_head(udc_ep);
-			exynos_ss_udc_start_req(udc, udc_ep, udc_req);
+			if (udc_req)
+				exynos_ss_udc_start_req(udc, udc_ep, udc_req);
 		}
 	}
 }
@@ -1148,6 +1149,9 @@ static int exynos_ss_udc_ep_queue(struct usb_ep *ep,
 					break;
 
 				udc_req = get_ep_head(udc_ep);
+				if (!udc_req)
+					break;
+
 				exynos_ss_udc_start_req(udc, udc_ep, udc_req);
 			}
 		}
@@ -1684,8 +1688,9 @@ static int exynos_ss_udc_process_clr_feature(struct exynos_ss_udc *udc,
 					   list_empty(&udc_ep->req_started);
 				if (restart) {
 					udc_req = get_ep_head(udc_ep);
-					exynos_ss_udc_start_req(udc, udc_ep,
-								udc_req);
+					if (udc_req)
+						exynos_ss_udc_start_req(udc,
+							udc_ep, udc_req);
 				}
 
 				spin_unlock(&udc_ep->lock);
@@ -2136,7 +2141,9 @@ static void exynos_ss_udc_ep_cmd_complete(struct exynos_ss_udc *udc,
 			restart = !list_empty(&udc_ep->req_queue);
 			if (restart) {
 				udc_req = get_ep_head(udc_ep);
-				exynos_ss_udc_start_req(udc, udc_ep, udc_req);
+				if (udc_req)
+					exynos_ss_udc_start_req(udc,
+						udc_ep, udc_req);
 			}
 		}
 
@@ -2357,7 +2364,9 @@ static void exynos_ss_udc_xfer_notready(struct exynos_ss_udc *udc,
 				spin_lock_irqsave(&udc_ep->lock, irqflags);
 
 				udc_req = get_ep_head(udc_ep);
-				exynos_ss_udc_start_req(udc, udc_ep, udc_req);
+				if (udc_req)
+					exynos_ss_udc_start_req(udc, udc_ep,
+						udc_req);
 
 				spin_unlock_irqrestore(&udc_ep->lock, irqflags);
 			}
@@ -2422,7 +2431,8 @@ static void exynos_ss_udc_start_isoc_xfer(struct exynos_ss_udc *udc,
 			break;
 
 		udc_req = get_ep_head(udc_ep);
-		exynos_ss_udc_start_req(udc, udc_ep, udc_req);
+		if (udc_req)
+			exynos_ss_udc_start_req(udc, udc_ep, udc_req);
 
 	} while (!list_empty(&udc_ep->req_queue));
 
