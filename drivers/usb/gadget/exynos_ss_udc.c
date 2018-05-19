@@ -547,6 +547,11 @@ static void exynos_ss_udc_start_req(struct exynos_ss_udc *udc,
 
 	dev_vdbg(udc->dev, "%s: %s, req %p\n", __func__, udc_ep->name, ureq);
 
+	if (!udc_req) {
+		dev_err(udc->dev, "%s: nothing to start\n", __func__);
+		return;
+	}
+
 	if (!udc->pullup_state) {
 		dev_warn(udc->dev, "%s: UDC is SW disconnected\n", __func__);
 		return;
@@ -834,6 +839,7 @@ static void exynos_ss_udc_ep_activate(struct exynos_ss_udc *udc,
 	int binterval_m1;
 	int res;
 
+
 	if (!udc->eps_enabled) {
 		udc->eps_enabled = true;
 
@@ -892,7 +898,7 @@ static void exynos_ss_udc_ep_activate(struct exynos_ss_udc *udc,
 			dev_err(udc->dev, "Failed to configure physical EP\n");
 	}
 
-	/* Configure Pysical Endpoint Transfer Resource */
+	/* Configure Physical Endpoint Transfer Resource */
 	if (udc_ep->not_ready) {
 		epcmd = kzalloc(sizeof(struct exynos_ss_udc_ep_command),
 				GFP_ATOMIC);
@@ -1005,6 +1011,11 @@ static int exynos_ss_udc_ep_enable(struct usb_ep *ep,
 static void exynos_ss_udc_ep_deactivate(struct exynos_ss_udc *udc,
 					struct exynos_ss_udc_ep *udc_ep)
 {
+	if (!udc_ep) {
+		dev_err(udc->dev, "%s: invalid parameters\n", __func__);
+		return;
+	}
+
 	int phys_epnum = get_phys_epnum(udc_ep);
 
 	udc->eps_enabled = false;
