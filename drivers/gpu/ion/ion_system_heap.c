@@ -318,8 +318,10 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	return &heap->heap;
 err_create_pool:
 	for (i = 0; i < num_orders; i++)
-		if (heap->pools[i])
+		if (heap->pools[i]) {
 			ion_page_pool_destroy(heap->pools[i]);
+			heap->pools[i] = NULL;
+		}
 	kfree(heap->pools);
 err_alloc_pools:
 	kfree(heap);
@@ -333,8 +335,10 @@ void ion_system_heap_destroy(struct ion_heap *heap)
 							heap);
 	int i;
 
-	for (i = 0; i < num_orders; i++)
+	for (i = 0; i < num_orders; i++) {
 		ion_page_pool_destroy(sys_heap->pools[i]);
+		sys_heap->pools[i] = NULL;
+	}
 	kfree(sys_heap->pools);
 	kfree(sys_heap);
 }
