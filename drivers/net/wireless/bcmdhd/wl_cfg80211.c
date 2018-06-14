@@ -1045,7 +1045,7 @@ wl_ch_host_to_driver(u16 channel)
 		chanspec |= WL_CHANSPEC_BAND_5G;
 
 	chanspec |= WL_CHANSPEC_BW_20;
-	chanspec |= WL_LCHANSPEC_CTL_SB_NONE;
+	chanspec |= WL_CHANSPEC_CTL_SB_NONE;
 
 	return wl_chspec_host_to_driver(chanspec);
 }
@@ -2094,7 +2094,7 @@ static void wl_scan_prep(struct wl_scan_params *params, struct cfg80211_scan_req
 			}
 
 			chanspec |= WL_CHANSPEC_BW_20;
-			chanspec |= WL_LCHANSPEC_CTL_SB_NONE;
+			chanspec |= WL_CHANSPEC_CTL_SB_NONE;
 
 			params->channel_list[j] = channel;
 			params->channel_list[j] &= WL_CHANSPEC_CHAN_MASK;
@@ -2319,6 +2319,15 @@ wl_run_escan(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 #endif
 				list = (wl_uint32_list_t *) chan_buf;
 				n_valid_chan = dtoh32(list->count);
+
+				if (n_valid_chan > WL_NUMCHANNELS) {
+					WL_ERR(("wrong n_valid_chan:%d\n",
+						n_valid_chan));
+					kfree(default_chan_list);
+					err = -EINVAL;
+					goto exit;
+				}
+
 				for (i = 0; i < num_chans; i++)
 				{
 #ifdef WL_HOST_BAND_MGMT
@@ -2359,6 +2368,9 @@ wl_run_escan(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 						/* allows only supported channel on
 						*  current reguatory
 						*/
+						if (n_nodfs >= num_chans)
+							break;
+
 						if (channel == (dtoh32(list->element[j])))
 							default_chan_list[n_nodfs++] =
 								channel;
@@ -3782,6 +3794,9 @@ wl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
 	}
 #endif
 #ifdef WL_SCHED_SCAN
+	/* Locks are taken in wl_cfg80211_sched_scan_stop()
+	 * A start scan occuring during connect is unlikely
+	 */
 	if (cfg->sched_scan_req) {
 		wl_cfg80211_sched_scan_stop(wiphy, bcmcfg_to_prmry_ndev(cfg));
 	}
@@ -4027,7 +4042,7 @@ wl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
 		band = (channel <= CH_MAX_2G_CHANNEL) ? WL_CHANSPEC_BAND_2G
 			: WL_CHANSPEC_BAND_5G;
 		bw = WL_CHANSPEC_BW_20;
-		ctl_sb = WL_LCHANSPEC_CTL_SB_NONE;
+		ctl_sb = WL_CHANSPEC_CTL_SB_NONE;
 		chspec = (channel | band | bw | ctl_sb);
 		ext_join_params->assoc.chanspec_list[0]  &= WL_CHANSPEC_CHAN_MASK;
 		ext_join_params->assoc.chanspec_list[0] |= chspec;
@@ -5909,6 +5924,10 @@ wl_cfg80211_mgmt_tx(struct wiphy *wiphy, bcm_struct_cfgdev *cfgdev,
 
 	WL_DBG(("Enter \n"));
 
+	if (len > (ACTION_FRAME_SIZE + DOT11_MGMT_HDR_LEN)) {
+		WL_ERR(("bad length:%zu\n", len));
+		return BCME_BADARG;
+	}
 	dev = cfgdev_to_wlc_ndev(cfgdev, cfg);
 
 	/* set bsscfg idx for iovar (wlan0: P2PAPI_BSSCFG_PRIMARY, p2p: P2PAPI_BSSCFG_DEVICE)	*/
@@ -7570,6 +7589,7 @@ wl_cfg80211_sched_scan_start(struct wiphy *wiphy,
 	int ssid_count = 0;
 	int i;
 	int ret = 0;
+	unsigned long flags;
 
 	if (!request) {
 		WL_ERR(("Sched scan request was NULL\n"));
@@ -7620,7 +7640,9 @@ wl_cfg80211_sched_scan_start(struct wiphy *wiphy,
 			WL_ERR(("PNO setup failed!! ret=%d \n", ret));
 			return -EINVAL;
 		}
+		spin_lock_irqsave(&cfg->cfgdrv_lock, flags);
 		cfg->sched_scan_req = request;
+		spin_unlock_irqrestore(&cfg->cfgdrv_lock, flags);
 	} else {
 		return -EINVAL;
 	}
@@ -7632,6 +7654,7 @@ static int
 wl_cfg80211_sched_scan_stop(struct wiphy *wiphy, struct net_device *dev)
 {
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
+	unsigned long flags;
 
 	WL_DBG(("Enter \n"));
 	WL_PNO((">>> SCHED SCAN STOP\n"));
@@ -7644,8 +7667,10 @@ wl_cfg80211_sched_scan_stop(struct wiphy *wiphy, struct net_device *dev)
 		wl_notify_escan_complete(cfg, dev, true, true);
 	}
 
-	 cfg->sched_scan_req = NULL;
-	 cfg->sched_scan_running = FALSE;
+	spin_lock_irqsave(&cfg->cfgdrv_lock, flags);
+	cfg->sched_scan_req = NULL;
+	cfg->sched_scan_running = FALSE;
+	spin_unlock_irqrestore(&cfg->cfgdrv_lock, flags);
 
 	return 0;
 }
@@ -9231,6 +9256,32 @@ static s32 wl_get_assoc_ies(struct bcm_cfg80211 *cfg, struct net_device *ndev)
 	assoc_info.req_len = htod32(assoc_info.req_len);
 	assoc_info.resp_len = htod32(assoc_info.resp_len);
 	assoc_info.flags = htod32(assoc_info.flags);
+
+	if (assoc_info.req_len >
+		(MAX_REQ_LINE + sizeof(struct dot11_assoc_req) +
+		((assoc_info.flags & WLC_ASSOC_REQ_IS_REASSOC) ?
+		ETHER_ADDR_LEN : 0))) {
+		err = BCME_BADLEN;
+		goto exit;
+	}
+	if ((assoc_info.req_len > 0) &&
+	    (assoc_info.req_len < (sizeof(struct dot11_assoc_req) +
+		((assoc_info.flags & WLC_ASSOC_REQ_IS_REASSOC) ?
+		ETHER_ADDR_LEN : 0)))) {
+		err = BCME_BADLEN;
+		goto exit;
+	}
+	if (assoc_info.resp_len >
+		(MAX_REQ_LINE + sizeof(struct dot11_assoc_resp))) {
+		err = BCME_BADLEN;
+		goto exit;
+	}
+	if ((assoc_info.resp_len > 0) &&
+		(assoc_info.resp_len < sizeof(struct dot11_assoc_resp))) {
+		err = BCME_BADLEN;
+		goto exit;
+	}
+
 	if (conn_info->req_ie_len) {
 		conn_info->req_ie_len = 0;
 		bzero(conn_info->req_ie, sizeof(conn_info->req_ie));
@@ -9239,41 +9290,29 @@ static s32 wl_get_assoc_ies(struct bcm_cfg80211 *cfg, struct net_device *ndev)
 		conn_info->resp_ie_len = 0;
 		bzero(conn_info->resp_ie, sizeof(conn_info->resp_ie));
 	}
+
 	if (assoc_info.req_len) {
-		err = wldev_iovar_getbuf(ndev, "assoc_req_ies", NULL, 0, cfg->extra_buf,
-			WL_ASSOC_INFO_MAX, NULL);
+		err = wldev_iovar_getbuf(ndev, "assoc_req_ies", NULL, 0,
+				cfg->extra_buf, WL_ASSOC_INFO_MAX, NULL);
 		if (unlikely(err)) {
 			WL_ERR(("could not get assoc req (%d)\n", err));
-			return err;
+			goto exit;
 		}
-		conn_info->req_ie_len = assoc_info.req_len - sizeof(struct dot11_assoc_req);
+		conn_info->req_ie_len = assoc_info.req_len -
+			sizeof(struct dot11_assoc_req);
 		if (assoc_info.flags & WLC_ASSOC_REQ_IS_REASSOC) {
 			conn_info->req_ie_len -= ETHER_ADDR_LEN;
 		}
-		if (conn_info->req_ie_len <= MAX_REQ_LINE)
-			memcpy(conn_info->req_ie, cfg->extra_buf, conn_info->req_ie_len);
-		else {
-			WL_ERR(("IE size %d above max %d size \n",
-				conn_info->req_ie_len, MAX_REQ_LINE));
-			return err;
-		}
-	} else {
-		conn_info->req_ie_len = 0;
+		memcpy(conn_info->req_ie, cfg->extra_buf,
+			conn_info->req_ie_len);
 	}
+
 	if (assoc_info.resp_len) {
-		err = wldev_iovar_getbuf(ndev, "assoc_resp_ies", NULL, 0, cfg->extra_buf,
-			WL_ASSOC_INFO_MAX, NULL);
+		err = wldev_iovar_getbuf(ndev, "assoc_resp_ies", NULL, 0,
+				cfg->extra_buf, WL_ASSOC_INFO_MAX, NULL);
 		if (unlikely(err)) {
 			WL_ERR(("could not get assoc resp (%d)\n", err));
-			return err;
-		}
-		conn_info->resp_ie_len = assoc_info.resp_len -sizeof(struct dot11_assoc_resp);
-		if (conn_info->resp_ie_len <= MAX_REQ_LINE)
-			memcpy(conn_info->resp_ie, cfg->extra_buf, conn_info->resp_ie_len);
-		else {
-			WL_ERR(("IE size %d above max %d size \n",
-				conn_info->resp_ie_len, MAX_REQ_LINE));
-			return err;
+			goto exit;
 		}
 
 #ifdef QOS_MAP_SET
@@ -9292,11 +9331,18 @@ static s32 wl_get_assoc_ies(struct bcm_cfg80211 *cfg, struct net_device *ndev)
 		}
 #endif /* QOS_MAP_SET */
 	} else {
-		conn_info->resp_ie_len = 0;
+		conn_info->resp_ie_len =
+			assoc_info.resp_len - sizeof(struct dot11_assoc_resp);
+		memcpy(conn_info->resp_ie, cfg->extra_buf,
+				conn_info->resp_ie_len);
 	}
-	WL_DBG(("req len (%d) resp len (%d)\n", conn_info->req_ie_len,
-		conn_info->resp_ie_len));
 
+exit:
+	if (err) {
+		WL_ERR(("err:%d assoc-req:%u,resp:%u conn-req:%u,resp:%u\n",
+			err, assoc_info.req_len, assoc_info.resp_len,
+			conn_info->req_ie_len, conn_info->resp_ie_len));
+	}
 	return err;
 }
 
@@ -9325,7 +9371,7 @@ static void wl_ch_to_chanspec(int ch, struct wl_join_params *join_params,
 			chanspec |= WL_CHANSPEC_BAND_5G;
 
 		chanspec |= WL_CHANSPEC_BW_20;
-		chanspec |= WL_LCHANSPEC_CTL_SB_NONE;
+		chanspec |= WL_CHANSPEC_CTL_SB_NONE;
 
 		*join_params_size += WL_ASSOC_PARAMS_FIXED_SIZE +
 			join_params->params.chanspec_num * sizeof(chanspec_t);
@@ -9652,8 +9698,12 @@ wl_notify_pfn_status(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 {
 	struct net_device *ndev = NULL;
 
-	WL_ERR((">>> PNO Event\n"));
+	if (!data) {
+		WL_ERR(("Data is NULL!\n"));
+		return 0;
+	}
 
+	WL_DBG((">>> PNO Event\n"));
 	ndev = cfgdev_to_wlc_ndev(cfgdev, cfg);
 
 #ifndef WL_SCHED_SCAN
@@ -9928,8 +9978,14 @@ wl_notify_rx_mgmt_frame(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 	u32 event = ntoh32(e->event_type);
 	u8 *mgmt_frame;
 	u8 bsscfgidx = e->bsscfgidx;
-	u32 mgmt_frame_len = ntoh32(e->datalen) - sizeof(wl_event_rx_frame_data_t);
+	u32 mgmt_frame_len = ntoh32(e->datalen);
 	u16 channel = ((ntoh16(rxframe->channel) & WL_CHANSPEC_CHAN_MASK));
+
+	if (mgmt_frame_len < sizeof(wl_event_rx_frame_data_t)) {
+		WL_ERR(("wrong datalen:%d\n", mgmt_frame_len));
+		return -EINVAL;
+	}
+	mgmt_frame_len -= sizeof(wl_event_rx_frame_data_t);
 
 	memset(&bssid, 0, ETHER_ADDR_LEN);
 
@@ -10776,11 +10832,13 @@ static s32 wl_notify_escan_complete(struct bcm_cfg80211 *cfg,
 	spin_lock_irqsave(&cfg->cfgdrv_lock, flags);
 #ifdef WL_SCHED_SCAN
 	if (cfg->sched_scan_req && !cfg->scan_request) {
-		WL_PNO((">>> REPORTING SCHED SCAN RESULTS \n"));
-		if (!aborted)
+		int count;
+		count = cfg->bss_list ? cfg->bss_list->count : 0;
+		if (!aborted) {
 			cfg80211_sched_scan_results(cfg->sched_scan_req->wiphy);
+			printk(">> SCHED SCAN RESULT %d\n", count);
+		}
 		cfg->sched_scan_running = FALSE;
-		cfg->sched_scan_req = NULL;
 	}
 #endif /* WL_SCHED_SCAN */
 	if (likely(cfg->scan_request)) {
@@ -10894,6 +10952,13 @@ static s32 wl_escan_handler(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 		WL_INFO(("WLC_E_STATUS_PARTIAL \n"));
 		if (!escan_result) {
 			WL_ERR(("Invalid escan result (NULL pointer)\n"));
+			goto exit;
+		}
+		if ((dtoh32(escan_result->buflen) > ESCAN_BUF_SIZE) ||
+		    (dtoh32(escan_result->buflen) <
+			sizeof(wl_escan_result_t))) {
+			WL_ERR(("Invalid escan buffer len:%d\n",
+				dtoh32(escan_result->buflen)));
 			goto exit;
 		}
 		if (dtoh16(escan_result->bss_count) != 1) {
@@ -13152,7 +13217,7 @@ wl_cfg80211_get_chanspecs_2g(struct net_device *ndev, void *buf, s32 buflen)
 
 	/* Restrict channels to 2.4GHz, 20MHz BW, no SB. */
 	chanspec |= (WL_CHANSPEC_BAND_2G | WL_CHANSPEC_BW_20 |
-		WL_LCHANSPEC_CTL_SB_NONE);
+		WL_CHANSPEC_CTL_SB_NONE);
 	chanspec = wl_chspec_host_to_driver(chanspec);
 
 	ret = wldev_iovar_getbuf_bsscfg(ndev, "chanspecs", (void *)&chanspec,
@@ -13183,7 +13248,7 @@ wl_cfg80211_get_chanspecs_5g(struct net_device *ndev, void *buf, s32 buflen)
 
 	/* Restrict channels to 5GHz, 20MHz BW, no SB. */
 	chanspec |= (WL_CHANSPEC_BAND_5G | WL_CHANSPEC_BW_20 |
-		WL_LCHANSPEC_CTL_SB_NONE);
+		WL_CHANSPEC_CTL_SB_NONE);
 	chanspec = wl_chspec_host_to_driver(chanspec);
 
 	ret = wldev_iovar_getbuf_bsscfg(ndev, "chanspecs", (void *)&chanspec,
@@ -13683,6 +13748,10 @@ wl_cfg80211_add_iw_ie(struct bcm_cfg80211 *cfg, struct net_device *ndev, s32 bss
 		return BCME_BADARG;
 	}
 
+	if (data_len > IW_IES_MAX_BUF_LEN) {
+		WL_ERR(("wrong data_len:%d\n", data_len));
+		return BCME_BADARG;
+	}
 	/* Validate the pktflag parameter */
 	if ((pktflag & ~(VNDR_IE_BEACON_FLAG | VNDR_IE_PRBRSP_FLAG |
 			VNDR_IE_ASSOCRSP_FLAG | VNDR_IE_AUTHRSP_FLAG |

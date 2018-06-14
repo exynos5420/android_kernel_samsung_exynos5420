@@ -1574,8 +1574,7 @@ wls_parse_batching_cmd(struct net_device *dev, char *command, int total_len)
 					" <> params\n", __FUNCTION__));
 					goto exit;
 				}
-					while ((token2 = strsep(&pos2,
-					PNO_PARAM_CHANNEL_DELIMETER)) != NULL) {
+					while ((token2 = strsep(&pos2, PNO_PARAM_CHANNEL_DELIMETER)) != NULL) {
 					if (token2 == NULL || !*token2)
 						break;
 					if (*token2 == '\0')
@@ -1586,13 +1585,20 @@ wls_parse_batching_cmd(struct net_device *dev, char *command, int total_len)
 						DHD_PNO(("band : %s\n",
 							(*token2 == 'A')? "A" : "B"));
 					} else {
+						if ((batch_params.nchan >= WL_NUMCHANNELS) ||
+						    (i >= WL_NUMCHANNELS)) {
+							DHD_ERROR(("Too many nchan %d\n",
+								batch_params.nchan));
+							err = BCME_BUFTOOSHORT;
+							goto exit;
+						}
 						batch_params.chan_list[i++] =
 						simple_strtol(token2, NULL, 0);
 						batch_params.nchan++;
-						DHD_PNO(("channel :%d\n",
-						batch_params.chan_list[i-1]));
+						DHD_PNO(("channel : %d\n",
+							    batch_params.chan_list[i-1]));
 					}
-				 }
+				}
 			} else if (!strncmp(param, PNO_PARAM_RTT, strlen(PNO_PARAM_RTT))) {
 				batch_params.rtt = simple_strtol(value, NULL, 0);
 				DHD_PNO(("rtt : %d\n", batch_params.rtt));
@@ -2789,8 +2795,8 @@ wl_android_set_roampref(struct net_device *dev, char *command, int total_len)
 	uint8 buf[MAX_BUF_SIZE];
 	uint8 *pref = buf;
 	char *pcmd;
-	int num_ucipher_suites = 0;
-	int num_akm_suites = 0;
+	uint num_ucipher_suites;
+	uint num_akm_suites;
 	wpa_suite_t ucipher_suites[MAX_NUM_SUITES];
 	wpa_suite_t akm_suites[MAX_NUM_SUITES];
 	int num_tuples = 0;
@@ -2803,6 +2809,10 @@ wl_android_set_roampref(struct net_device *dev, char *command, int total_len)
 	total_len_left = total_len - strlen(CMD_SET_ROAMPREF) + 1;
 
 	num_akm_suites = simple_strtoul(pcmd, NULL, 16);
+	if (num_akm_suites > MAX_NUM_SUITES) {
+		DHD_ERROR(("too many AKM suits = %d.\n", num_akm_suites));
+		return BCME_ERROR;
+	}
 	/* Increment for number of AKM suites field + space */
 	pcmd += 3;
 	total_len_left -= 3;
@@ -2828,6 +2838,10 @@ wl_android_set_roampref(struct net_device *dev, char *command, int total_len)
 
 	total_len_left -= (num_akm_suites * WIDTH_AKM_SUITE);
 	num_ucipher_suites = simple_strtoul(pcmd, NULL, 16);
+	if (num_ucipher_suites > MAX_NUM_SUITES) {
+		DHD_ERROR(("too many cipher suits = %d.\n", num_ucipher_suites));
+		return BCME_ERROR;
+	}
 	/* Increment for number of cipher suites field + space */
 	pcmd += 3;
 	total_len_left -= 3;
@@ -3550,13 +3564,13 @@ int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 
 	net_os_wake_lock(net);
 
-	if (!capable(CAP_NET_ADMIN)) {
-		ret = -EPERM;
+	if (!ifr->ifr_data) {
+		ret = -EINVAL;
 		goto exit;
 	}
 
-	if (!ifr->ifr_data) {
-		ret = -EINVAL;
+	if (!capable(CAP_NET_ADMIN)) {
+		ret = -EPERM;
 		goto exit;
 	}
 
