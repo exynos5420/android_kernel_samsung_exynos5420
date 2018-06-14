@@ -1,7 +1,7 @@
 /*
  * Broadcom Ethernettype  protocol definitions
  *
- * Copyright (C) 1999-2016, Broadcom Corporation
+ * Copyright (C) 1999-2017, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmeth.h 382882 2013-02-04 23:24:31Z $
+ * $Id: bcmeth.h 682522 2017-02-02 07:33:46Z $
  */
 
 /*
@@ -89,7 +89,8 @@
  * within BCMILCP_BCM_SUBTYPE_EVENT type messages
  */
 /* #define BCMILCP_BCM_SUBTYPE_EAPOL		3 */
-#define BCMILCP_BCM_SUBTYPE_DPT			4
+#define BCMILCP_BCM_SUBTYPE_DPT                 4
+#define BCMILCP_BCM_SUBTYPE_DNGLEVENT           5
 
 #define BCMILCP_BCM_SUBTYPEHDR_MINLENGTH	8
 #define BCMILCP_BCM_SUBTYPEHDR_VERSION		0

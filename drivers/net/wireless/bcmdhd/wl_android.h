@@ -1,7 +1,7 @@
 /*
  * Linux cfg80211 driver - Android related functions
  *
- * Copyright (C) 1999-2016, Broadcom Corporation
+ * Copyright (C) 1999-2017, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -53,7 +53,6 @@ void wl_android_post_init(void);
 int wl_android_wifi_on(struct net_device *dev);
 int wl_android_wifi_off(struct net_device *dev);
 int wl_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd);
-int wl_handle_private_cmd(struct net_device *net, char *command, u32 cmd_len);
 
 #ifdef WL_GENL
 typedef struct bcm_event_hdr {
