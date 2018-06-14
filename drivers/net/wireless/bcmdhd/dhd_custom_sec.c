@@ -180,7 +180,6 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"MH", "XZ", 11},	/* Universal if Country code is MARSHALL ISLANDS */
 	{"GL", "GP", 2},
 	{"AL", "AL", 2},
-	{"DZ", "GB", 6},
 	{"AS", "AS", 12},
 	{"AI", "AI", 1},
 	{"AF", "AD", 0},
@@ -189,6 +188,17 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"AW", "AW", 2},
 	{"AU", "AU", 6},
 	{"AT", "AT", 4},
+#if defined(BCM4354_CHIP) || defined(BCM43454_CHIP) || defined(BCM43455_CHIP)
+	{"AM", "AM", 1},
+	{"MY", "MY", 19},
+#if defined(BCM4354_CHIP)
+	{"DZ", "DZ", 2},
+#else
+	{"DZ", "GB", 6},
+#endif /* BCM4354_CHIP */
+#else
+	{"MY", "MY", 3},
+#endif /* BCM4354_CHIP || BCM43454_CHIP || BCM43455_CHIP */
 	{"AZ", "AZ", 2},
 	{"BS", "BS", 2},
 	{"BH", "BH", 4},
@@ -241,7 +251,6 @@ const struct cntry_locales_custom translate_custom_table[] = {
 	{"MO", "SG", 0},
 	{"MK", "MK", 2},
 	{"MW", "MW", 1},
-	{"MY", "MY", 3},
 	{"MV", "MV", 3},
 	{"MT", "MT", 4},
 	{"MQ", "MQ", 2},

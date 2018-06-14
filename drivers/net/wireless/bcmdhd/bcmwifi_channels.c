@@ -481,7 +481,7 @@ done_read:
 	/* if the bw is 20, center and sideband are trivial */
 	else if (chspec_bw == WL_CHANSPEC_BW_20) {
 		chspec_ch = ctl_ch;
-		chspec_sb = WL_LCHANSPEC_CTL_SB_NONE;
+		chspec_sb = WL_CHANSPEC_CTL_SB_NONE;
 	}
 	/* if the bw is 40/80/160, not 80+80, a single method
 	 * can be used to to find the center and sideband
