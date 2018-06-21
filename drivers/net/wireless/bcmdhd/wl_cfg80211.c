@@ -10195,16 +10195,6 @@ wl_notify_rx_mgmt_frame(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 				}
 			}
 #endif /* WL_CFG80211_USE_PRB_REQ_FOR_AF_TX */
-
-			/* Filter any P2P probe reqs arriving during the
-			 * GO-NEG Phase
-			 */
-			if (cfg->p2p &&
-				wl_get_p2p_status(cfg, GO_NEG_PHASE)) {
-				WL_DBG(("Filtering P2P probe_req while "
-					"being in GO-Neg state\n"));
-				return 0;
-			}
 		}
 	}
 
