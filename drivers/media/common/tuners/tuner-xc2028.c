@@ -90,10 +90,21 @@ struct firmware_properties {
 	int 		scode_nr;
 };
 
+enum xc2028_state {
+	XC2028_NO_FIRMWARE = 0,
+	XC2028_WAITING_FIRMWARE,
+	XC2028_ACTIVE,
+	XC2028_SLEEP,
+	XC2028_NODEV,
+};
+
 struct xc2028_data {
 	struct list_head        hybrid_tuner_instance_list;
 	struct tuner_i2c_props  i2c_props;
 	__u32			frequency;
+
+	enum xc2028_state	state;
+	const char		*fname;
 
 	struct firmware_description *firm;
 	int			firm_size;
@@ -255,18 +266,25 @@ static  v4l2_std_id parse_audio_std_option(void)
 	return 0;
 }
 
+static int check_device_status(struct xc2028_data *priv)
+{
+	switch (priv->state) {
+	case XC2028_NO_FIRMWARE:
+	case XC2028_WAITING_FIRMWARE:
+		return -EAGAIN;
+	case XC2028_ACTIVE:
+	case XC2028_SLEEP:
+		return 0;
+	case XC2028_NODEV:
+		return -ENODEV;
+	}
+	return 0;
+}
+
 static void free_firmware(struct xc2028_data *priv)
 {
 	int i;
 	tuner_dbg("%s called\n", __func__);
-
-	/* free allocated f/w string */
-	if (priv->fname != firmware_name)
-		kfree(priv->fname);
-	priv->fname = NULL;
-
-	priv->state = XC2028_NO_FIRMWARE;
-	memset(&priv->cur_fw, 0, sizeof(priv->cur_fw));
 
 	if (!priv->firm)
 		return;
@@ -278,45 +296,28 @@ static void free_firmware(struct xc2028_data *priv)
 
 	priv->firm = NULL;
 	priv->firm_size = 0;
+	priv->state = XC2028_NO_FIRMWARE;
 
 	memset(&priv->cur_fw, 0, sizeof(priv->cur_fw));
 }
 
-static int load_all_firmwares(struct dvb_frontend *fe)
+static int load_all_firmwares(struct dvb_frontend *fe,
+			      const struct firmware *fw)
 {
 	struct xc2028_data    *priv = fe->tuner_priv;
-	const struct firmware *fw   = NULL;
 	const unsigned char   *p, *endp;
 	int                   rc = 0;
 	int		      n, n_array;
 	char		      name[33];
-	char		      *fname;
 
 	tuner_dbg("%s called\n", __func__);
 
-	if (!firmware_name[0])
-		fname = priv->ctrl.fname;
-	else
-		fname = firmware_name;
-
-	tuner_dbg("Reading firmware %s\n", fname);
-	rc = request_firmware(&fw, fname, priv->i2c_props.adap->dev.parent);
-	if (rc < 0) {
-		if (rc == -ENOENT)
-			tuner_err("Error: firmware %s not found.\n",
-				   fname);
-		else
-			tuner_err("Error %d while requesting firmware %s \n",
-				   rc, fname);
-
-		return rc;
-	}
 	p = fw->data;
 	endp = p + fw->size;
 
 	if (fw->size < sizeof(name) - 1 + 2 + 2) {
 		tuner_err("Error: firmware file %s has invalid size!\n",
-			  fname);
+			  priv->fname);
 		goto corrupt;
 	}
 
@@ -331,7 +332,7 @@ static int load_all_firmwares(struct dvb_frontend *fe)
 	p += 2;
 
 	tuner_info("Loading %d firmware images from %s, type: %s, ver %d.%d\n",
-		   n_array, fname, name,
+		   n_array, priv->fname, name,
 		   priv->firm_version >> 8, priv->firm_version & 0xff);
 
 	priv->firm = kcalloc(n_array, sizeof(*priv->firm), GFP_KERNEL);
@@ -425,9 +426,10 @@ err:
 	free_firmware(priv);
 
 done:
-	release_firmware(fw);
 	if (rc == 0)
 		tuner_dbg("Firmware files loaded.\n");
+	else
+		priv->state = XC2028_NODEV;
 
 	return rc;
 }
@@ -715,22 +717,15 @@ static int check_firmware(struct dvb_frontend *fe, unsigned int type,
 {
 	struct xc2028_data         *priv = fe->tuner_priv;
 	struct firmware_properties new_fw;
-	int			   rc = 0, retry_count = 0;
+	int			   rc, retry_count = 0;
 	u16			   version, hwmodel;
 	v4l2_std_id		   std0;
 
 	tuner_dbg("%s called\n", __func__);
 
-	if (!priv->firm) {
-		if (!priv->ctrl.fname) {
-			tuner_info("xc2028/3028 firmware name not set!\n");
-			return -EINVAL;
-		}
-
-		rc = load_all_firmwares(fe);
-		if (rc < 0)
-			return rc;
-	}
+	rc = check_device_status(priv);
+	if (rc < 0)
+		return rc;
 
 	if (priv->ctrl.mts && !(type & FM))
 		type |= MTS;
@@ -757,9 +752,13 @@ retry:
 		printk("scode_nr %d\n", new_fw.scode_nr);
 	}
 
-	/* No need to reload base firmware if it matches */
-	if (((BASE | new_fw.type) & BASE_TYPES) ==
-	    (priv->cur_fw.type & BASE_TYPES)) {
+	/*
+	 * No need to reload base firmware if it matches and if the tuner
+	 * is not at sleep mode
+	 */
+	if ((priv->state == XC2028_ACTIVE) &&
+	    (((BASE | new_fw.type) & BASE_TYPES) ==
+	    (priv->cur_fw.type & BASE_TYPES))) {
 		tuner_dbg("BASE firmware not changed.\n");
 		goto skip_base;
 	}
@@ -871,7 +870,7 @@ check_device:
 	}
 
 read_not_reliable:
-	memcpy(&priv->cur_fw, &new_fw, sizeof(priv->cur_fw));
+	priv->cur_fw = new_fw;
 
 	/*
 	 * By setting BASE in cur_fw.type only after successfully loading all
@@ -880,13 +879,14 @@ read_not_reliable:
 	 * 2. Tell whether BASE firmware was just changed the next time through.
 	 */
 	priv->cur_fw.type |= BASE;
+	priv->state = XC2028_ACTIVE;
 
 	return 0;
 
 fail:
-	free_firmware(priv);
 	priv->state = XC2028_SLEEP;
 
+	memset(&priv->cur_fw, 0, sizeof(priv->cur_fw));
 	if (retry_count < 8) {
 		msleep(50);
 		retry_count++;
@@ -903,28 +903,39 @@ static int xc2028_signal(struct dvb_frontend *fe, u16 *strength)
 {
 	struct xc2028_data *priv = fe->tuner_priv;
 	u16                 frq_lock, signal = 0;
-	int                 rc;
+	int                 rc, i;
 
 	tuner_dbg("%s called\n", __func__);
+
+	rc = check_device_status(priv);
+	if (rc < 0)
+		return rc;
 
 	mutex_lock(&priv->lock);
 
 	/* Sync Lock Indicator */
-	rc = xc2028_get_reg(priv, XREG_LOCK, &frq_lock);
-	if (rc < 0)
-		goto ret;
+	for (i = 0; i < 3; i++) {
+		rc = xc2028_get_reg(priv, XREG_LOCK, &frq_lock);
+		if (rc < 0)
+			goto ret;
 
-	/* Frequency is locked */
-	if (frq_lock == 1)
-		signal = 1 << 11;
+		if (frq_lock)
+			break;
+		msleep(6);
+	}
+
+	/* Frequency didn't lock */
+	if (frq_lock == 2)
+		goto ret;
 
 	/* Get SNR of the video signal */
 	rc = xc2028_get_reg(priv, XREG_SNR, &signal);
 	if (rc < 0)
 		goto ret;
 
-	/* Use both frq_lock and signal to generate the result */
-	signal = signal || ((signal & 0x07) << 12);
+	/* Signal level is 3 bits only */
+
+	signal = ((1 << 12) - 1) | ((signal & 0x07) << 12);
 
 ret:
 	mutex_unlock(&priv->lock);
@@ -1072,8 +1083,7 @@ static int generic_set_freq(struct dvb_frontend *fe, u32 freq /* in HZ */,
 
 	priv->frequency = freq;
 
-	tuner_dbg("divisor= %02x %02x %02x %02x (freq=%d.%03d)\n",
-	       buf[0], buf[1], buf[2], buf[3],
+	tuner_dbg("divisor= %*ph (freq=%d.%03d)\n", 4, buf,
 	       freq / 1000000, (freq % 1000000) / 1000);
 
 	rc = 0;
@@ -1121,10 +1131,15 @@ static int xc2028_set_params(struct dvb_frontend *fe)
 	u32 delsys = c->delivery_system;
 	u32 bw = c->bandwidth_hz;
 	struct xc2028_data *priv = fe->tuner_priv;
-	unsigned int       type=0;
+	int rc;
+	unsigned int       type = 0;
 	u16                demod = 0;
 
 	tuner_dbg("%s called\n", __func__);
+
+	rc = check_device_status(priv);
+	if (rc < 0)
+		return rc;
 
 	switch (delsys) {
 	case SYS_DVBT:
@@ -1211,7 +1226,11 @@ static int xc2028_set_params(struct dvb_frontend *fe)
 static int xc2028_sleep(struct dvb_frontend *fe)
 {
 	struct xc2028_data *priv = fe->tuner_priv;
-	int rc = 0;
+	int rc;
+
+	rc = check_device_status(priv);
+	if (rc < 0)
+		return rc;
 
 	/* Avoid firmware reload on slow devices or if PM disabled */
 	if (no_poweroff || priv->ctrl.disable_power_mgmt)
@@ -1230,7 +1249,7 @@ static int xc2028_sleep(struct dvb_frontend *fe)
 	else
 		rc = send_seq(priv, {0x80, XREG_POWER_DOWN, 0x00, 0x00});
 
-	priv->cur_fw.type = 0;	/* need firmware reload */
+	priv->state = XC2028_SLEEP;
 
 	mutex_unlock(&priv->lock);
 
@@ -1246,8 +1265,11 @@ static int xc2028_dvb_release(struct dvb_frontend *fe)
 	mutex_lock(&xc2028_list_mutex);
 
 	/* only perform final cleanup if this is the last instance */
-	if (hybrid_tuner_report_instance_count(priv) == 1)
+	if (hybrid_tuner_report_instance_count(priv) == 1) {
+		free_firmware(priv);
 		kfree(priv->ctrl.fname);
+		priv->ctrl.fname = NULL;
+	}
 
 	if (priv)
 		hybrid_tuner_release_state(priv);
@@ -1262,12 +1284,40 @@ static int xc2028_dvb_release(struct dvb_frontend *fe)
 static int xc2028_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 {
 	struct xc2028_data *priv = fe->tuner_priv;
+	int rc;
 
 	tuner_dbg("%s called\n", __func__);
+
+	rc = check_device_status(priv);
+	if (rc < 0)
+		return rc;
 
 	*frequency = priv->frequency;
 
 	return 0;
+}
+
+static void load_firmware_cb(const struct firmware *fw,
+			     void *context)
+{
+	struct dvb_frontend *fe = context;
+	struct xc2028_data *priv = fe->tuner_priv;
+	int rc;
+
+	tuner_dbg("request_firmware_nowait(): %s\n", fw ? "OK" : "error");
+	if (!fw) {
+		tuner_err("Could not load firmware %s.\n", priv->fname);
+		priv->state = XC2028_NODEV;
+		return;
+	}
+
+	rc = load_all_firmwares(fe, fw);
+
+	release_firmware(fw);
+
+	if (rc < 0)
+		return;
+	priv->state = XC2028_SLEEP;
 }
 
 static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
@@ -1282,8 +1332,19 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 
 	/*
 	 * Copy the config data.
+	 * For the firmware name, keep a local copy of the string,
+	 * in order to avoid troubles during device release.
 	 */
+	kfree(priv->ctrl.fname);
+	priv->ctrl.fname = NULL;
 	memcpy(&priv->ctrl, p, sizeof(priv->ctrl));
+	if (p->fname) {
+		priv->ctrl.fname = kstrdup(p->fname, GFP_KERNEL);
+		if (priv->ctrl.fname == NULL) {
+			rc = -ENOMEM;
+                        goto fail;
+                }
+	}
 
 	/*
 	 * If firmware name changed, frees firmware. As free_firmware will
@@ -1298,14 +1359,9 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 
 	if (priv->state == XC2028_NO_FIRMWARE) {
 		if (!firmware_name[0])
-			priv->fname = kstrdup(p->fname, GFP_KERNEL);
+			priv->fname = priv->ctrl.fname;
 		else
 			priv->fname = firmware_name;
-
-		if (!priv->fname) {
-			rc = -ENOMEM;
-			goto unlock;
-		}
 
 		rc = request_firmware_nowait(THIS_MODULE, 1,
 					     priv->fname,
@@ -1319,7 +1375,7 @@ static int xc2028_set_config(struct dvb_frontend *fe, void *priv_cfg)
 		} else
 			priv->state = XC2028_WAITING_FIRMWARE;
 	}
-unlock:
+fail:
 	mutex_unlock(&priv->lock);
 
 	return rc;
@@ -1408,3 +1464,5 @@ MODULE_DESCRIPTION("Xceive xc2028/xc3028 tuner driver");
 MODULE_AUTHOR("Michel Ludwig <michel.ludwig@gmail.com>");
 MODULE_AUTHOR("Mauro Carvalho Chehab <mchehab@infradead.org>");
 MODULE_LICENSE("GPL");
+MODULE_FIRMWARE(XC2028_DEFAULT_FIRMWARE);
+MODULE_FIRMWARE(XC3028L_DEFAULT_FIRMWARE);
