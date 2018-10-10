@@ -212,7 +212,7 @@ void __init setup_log_buf(int early)
 	unsigned long flags;
 	unsigned start, dest_idx, offset;
 	char *new_log_buf;
-	int free;
+	unsigned int free;
 
 	if (!new_log_buf_len)
 		return;
