@@ -157,6 +157,32 @@ static int sec_fg_get_property(struct power_supply *psy,
 }
 
 #if defined(CONFIG_PREVENT_SOC_JUMP)
+static int sec_fg_check_capacity_max(
+		struct sec_fuelgauge_info *fuelgauge, int capacity_max)
+{
+	int new_capacity_max = capacity_max;
+
+	if (new_capacity_max < (fuelgauge->pdata->capacity_max -
+				fuelgauge->pdata->capacity_max_margin - 10)) {
+		new_capacity_max =
+			(fuelgauge->pdata->capacity_max -
+			 fuelgauge->pdata->capacity_max_margin);
+
+		dev_info(&fuelgauge->client->dev, "%s: set capacity max(%d --> %d)\n",
+				__func__, capacity_max, new_capacity_max);
+	} else if (new_capacity_max > (fuelgauge->pdata->capacity_max +
+				fuelgauge->pdata->capacity_max_margin)) {
+		new_capacity_max =
+			(fuelgauge->pdata->capacity_max +
+			 fuelgauge->pdata->capacity_max_margin);
+
+		dev_info(&fuelgauge->client->dev, "%s: set capacity max(%d --> %d)\n",
+				__func__, capacity_max, new_capacity_max);
+	}
+
+	return new_capacity_max;
+}
+
 static int sec_fg_calculate_dynamic_scale(
 				struct sec_fuelgauge_info *fuelgauge, int capacity)
 {
@@ -190,19 +216,17 @@ static int sec_fg_calculate_dynamic_scale(
 	}
 
     if (capacity != 100) {
-		fuelgauge->capacity_max =
-			(fuelgauge->capacity_max * 100 / capacity);
-		fuelgauge->capacity_old = capacity;
+		fuelgauge->capacity_max = sec_fg_check_capacity_max(
+			fuelgauge, (fuelgauge->capacity_max * 100 / capacity));
 	} else {
 		fuelgauge->capacity_max =
 			(fuelgauge->capacity_max * 99 / 100);
-		fuelgauge->capacity_old = 100;
 	}
 
 	dev_info(&fuelgauge->client->dev, "%s: %d is used for capacity_max\n",
 		__func__, fuelgauge->capacity_max);
 
-	fuelgauge->capacity_old = 100;
+	fuelgauge->capacity_old = capacity;
 
 	return fuelgauge->capacity_max;
 }

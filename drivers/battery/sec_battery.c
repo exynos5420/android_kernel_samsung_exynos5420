@@ -671,12 +671,18 @@ static bool sec_bat_check_recharge(struct sec_battery_info *battery)
 		return false;
 	}
 #endif
-	if ((battery->status == POWER_SUPPLY_STATUS_FULL ||
-		(battery->status == POWER_SUPPLY_STATUS_CHARGING &&
+	if ((battery->status == POWER_SUPPLY_STATUS_CHARGING) &&
 		(battery->pdata->full_condition_type &
-		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL))) &&
-		(battery->charging_mode == SEC_BATTERY_CHARGING_NONE ||
-		battery->charging_mode == SEC_BATTERY_CHARGING_ABS)) {
+		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL) &&
+		(battery->charging_mode == SEC_BATTERY_CHARGING_NONE)) {
+		dev_info(battery->dev,
+				"%s: Re-charging by NOTIMEFULL (%d)\n",
+				__func__, battery->capacity);
+		goto check_recharge_check_count;
+	}
+
+	if (battery->status == POWER_SUPPLY_STATUS_FULL &&
+		battery->charging_mode == SEC_BATTERY_CHARGING_NONE) {
 		if ((battery->pdata->recharge_condition_type &
 			SEC_BATTERY_RECHARGE_CONDITION_SOC) &&
 			(battery->capacity <=
@@ -1469,14 +1475,9 @@ static bool sec_bat_time_management(
 		battery->pdata->recharging_total_time))) {
 			dev_info(battery->dev,
 			"%s: Recharging Timer Expired\n", __func__);
-			if (battery->capacity >=
-				battery->pdata->full_condition_soc) {
+			if (battery->capacity >= 100)
 				battery->status = POWER_SUPPLY_STATUS_FULL;
-				battery->charging_mode =
-					SEC_BATTERY_CHARGING_NONE;
-			} else
-				battery->charging_mode =
-					SEC_BATTERY_CHARGING_ABS;
+			battery->charging_mode = SEC_BATTERY_CHARGING_NONE;
 			battery->is_recharging = false;
 			if (sec_bat_set_charge(battery, false)) {
 				dev_err(battery->dev,
@@ -1490,15 +1491,12 @@ static bool sec_bat_time_management(
 				"%s: Charging Timer Expired\n", __func__);
 			if (battery->pdata->full_condition_type &
 				SEC_BATTERY_FULL_CONDITION_NOTIMEFULL) {
-				if (battery->capacity >=
-					battery->pdata->full_condition_soc)
+				if (battery->capacity >= 100)
 					battery->status =
 						POWER_SUPPLY_STATUS_FULL;
-					battery->charging_mode =
-						SEC_BATTERY_CHARGING_NONE;
 			} else
-				battery->charging_mode =
-					SEC_BATTERY_CHARGING_ABS;
+				battery->status = POWER_SUPPLY_STATUS_FULL;
+			battery->charging_mode = SEC_BATTERY_CHARGING_NONE;
 			if (sec_bat_set_charge(battery, false)) {
 				dev_err(battery->dev,
 					"%s: Fail to Set Charger\n", __func__);
@@ -1801,6 +1799,11 @@ static void sec_bat_get_battery_info(
 	psy_do_property("sec-fuelgauge", get,
 		POWER_SUPPLY_PROP_VOLTAGE_AVG, value);
 	battery->voltage_ocv = value.intval;
+
+	value.intval = SEC_BATTEY_CURRENT_MA;
+	psy_do_property("sec-fuelgauge", get,
+		POWER_SUPPLY_PROP_CURRENT_NOW, value);
+	battery->current_now = value.intval;
 
 	value.intval = SEC_BATTEY_CURRENT_MA;
 	psy_do_property("sec-fuelgauge", get,
