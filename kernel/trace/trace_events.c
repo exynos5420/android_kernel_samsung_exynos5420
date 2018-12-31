@@ -782,9 +782,6 @@ event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
 	struct trace_seq *s;
 	int r;
 
-	if (*ppos)
-		return 0;
-
 	s = kmalloc(sizeof(*s), GFP_KERNEL);
 	if (!s)
 		return -ENOMEM;
