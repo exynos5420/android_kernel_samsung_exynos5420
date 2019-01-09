@@ -2370,8 +2370,8 @@ rescan_last_byte:
 	}
 	FLUSH
 	console_conditional_schedule();
-	console_unlock();
 	notify_update(vc);
+	console_unlock();
 	return n;
 #undef FLUSH
 }
