@@ -356,6 +356,14 @@ static const struct pipe_buf_operations anon_pipe_buf_ops = {
 	.get = generic_pipe_buf_get,
 };
 
+static const struct pipe_buf_operations anon_pipe_buf_nomerge_ops = {
+	.can_merge = 0,
+	.confirm = generic_pipe_buf_confirm,
+	.release = anon_pipe_buf_release,
+	.steal = generic_pipe_buf_steal,
+	.get = generic_pipe_buf_get,
+};
+
 static const struct pipe_buf_operations packet_pipe_buf_ops = {
 	.can_merge = 0,
 	.map = generic_pipe_buf_map,
@@ -365,6 +373,12 @@ static const struct pipe_buf_operations packet_pipe_buf_ops = {
 	.steal = generic_pipe_buf_steal,
 	.get = generic_pipe_buf_get,
 };
+
+void pipe_buf_mark_unmergeable(struct pipe_buffer *buf)
+{
+	if (buf->ops == &anon_pipe_buf_ops)
+		buf->ops = &anon_pipe_buf_nomerge_ops;
+}
 
 static ssize_t
 pipe_read(struct kiocb *iocb, const struct iovec *_iov,
