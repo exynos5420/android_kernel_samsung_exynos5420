@@ -518,6 +518,7 @@ void sock_release(struct socket *sock)
 
 		sock->ops->release(sock);
 		sock->ops = NULL;
+		sock->sk = NULL;
 		module_put(owner);
 	}
 
