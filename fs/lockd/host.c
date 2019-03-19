@@ -287,12 +287,11 @@ void nlmclnt_release_host(struct nlm_host *host)
 	BUG_ON(atomic_read(&host->h_count) < 0);
 	BUG_ON(host->h_server);
 
-	if (atomic_dec_and_test(&host->h_count)) {
+	if (atomic_dec_and_mutex_lock(&host->h_count, &nlm_host_mutex)) {
 		BUG_ON(!list_empty(&host->h_lockowners));
 		BUG_ON(!list_empty(&host->h_granted));
 		BUG_ON(!list_empty(&host->h_reclaim));
 
-		mutex_lock(&nlm_host_mutex);
 		nlm_destroy_host_locked(host);
 		mutex_unlock(&nlm_host_mutex);
 	}
