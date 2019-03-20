@@ -1479,14 +1479,18 @@ int netdev_register_kobject(struct net_device *net)
 
 	error = device_add(dev);
 	if (error)
-		return error;
+		goto error_put_device;
 
 	error = register_queue_kobjects(net);
-	if (error) {
-		device_del(dev);
-		return error;
-	}
+	if (error)
+		goto error_device_del;
 
+	return 0;
+
+error_device_del:
+	device_del(dev);
+error_put_device:
+	put_device(dev);
 	return error;
 }
 
