@@ -1734,13 +1734,16 @@ rollback:
 	}
 
 	br_multicast_open(br);
-	list_for_each_entry(port, &br->port_list, list) {
+
+	rcu_read_lock();
+	list_for_each_entry_rcu(port, &br->port_list, list) {
 		if (port->state == BR_STATE_DISABLED ||
 		    port->state == BR_STATE_BLOCKING)
 			continue;
 
 		__br_multicast_enable_port(port);
 	}
+	rcu_read_unlock();
 
 unlock:
 	spin_unlock_bh(&br->multicast_lock);
