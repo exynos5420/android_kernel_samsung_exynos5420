@@ -234,9 +234,8 @@ struct ip6_flowlabel * fl6_sock_lookup(struct sock *sk, __be32 label)
 	read_lock_bh(&ip6_sk_fl_lock);
 	for (sfl=np->ipv6_fl_list; sfl; sfl = sfl->next) {
 		struct ip6_flowlabel *fl = sfl->fl;
-		if (fl->label == label) {
+		if (fl->label == label && atomic_inc_not_zero(&fl->users)) {
 			fl->lastuse = jiffies;
-			atomic_inc(&fl->users);
 			read_unlock_bh(&ip6_sk_fl_lock);
 			return fl;
 		}
@@ -544,7 +543,8 @@ int ipv6_flowlabel_opt(struct sock *sk, char __user *optval, int optlen)
 						goto done;
 					}
 					fl1 = sfl->fl;
-					atomic_inc(&fl1->users);
+					if (!atomic_inc_not_zero(&fl1->users))
+						fl1 = NULL;
 					break;
 				}
 			}
