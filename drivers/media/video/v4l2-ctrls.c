@@ -1445,12 +1445,12 @@ struct v4l2_ctrl *v4l2_ctrl_new_custom(struct v4l2_ctrl_handler *hdl,
 		v4l2_ctrl_fill(cfg->id, &name, &type, &min, &max, &step,
 								&def, &flags);
 
-	is_menu = (cfg->type == V4L2_CTRL_TYPE_MENU);
+	is_menu = (type == V4L2_CTRL_TYPE_MENU);
 	if (is_menu)
 		WARN_ON(step);
 	else
 		WARN_ON(cfg->menu_skip_mask);
-	if (is_menu && qmenu == NULL)
+	if (is_menu && !qmenu)
 		qmenu = v4l2_ctrl_get_menu(cfg->id);
 
 	ctrl = v4l2_ctrl_new(hdl, cfg->ops, cfg->id, name,
