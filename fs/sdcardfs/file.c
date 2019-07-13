@@ -296,8 +296,10 @@ static int sdcardfs_flush(struct file *file, fl_owner_t id)
 	struct file *lower_file = NULL;
 
 	lower_file = sdcardfs_lower_file(file);
-	if (lower_file && lower_file->f_op && lower_file->f_op->flush)
+	if (lower_file && lower_file->f_op && lower_file->f_op->flush) {
+		filemap_write_and_wait(file->f_mapping);
 		err = lower_file->f_op->flush(lower_file, id);
+	}
 
 	return err;
 }
