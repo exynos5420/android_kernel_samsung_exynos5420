@@ -38,6 +38,7 @@ static u64			tick_length_base;
 #define MAX_TICKADJ		500LL		/* usecs */
 #define MAX_TICKADJ_SCALED \
 	(((MAX_TICKADJ * NSEC_PER_USEC) << NTP_SCALE_SHIFT) / NTP_INTERVAL_FREQ)
+#define MAX_TAI_OFFSET		100000
 
 /*
  * phase-lock loop variables
@@ -92,7 +93,7 @@ static s64			ntp_next_leap_sec = KTIME_MAX;
 #define PPS_VALID	10	/* PPS signal watchdog max (s) */
 #define PPS_POPCORN	4	/* popcorn spike threshold (shift) */
 #define PPS_INTMIN	2	/* min freq interval (s) (shift) */
-#define PPS_INTMAX	8	/* max freq interval (s) (shift) */
+#define PPS_INTMAX	8	/* max	 freq interval (s) (shift) */
 #define PPS_INTCOUNT	4	/* number of consecutive good intervals to
 				   increase pps_shift or consecutive bad
 				   intervals to decrease it */
@@ -633,7 +634,8 @@ static inline void process_adjtimex_modes(struct timex *txc, struct timespec *ts
 		time_constant = max(time_constant, 0l);
 	}
 
-	if (txc->modes & ADJ_TAI && txc->constant >= 0)
+	if (txc->modes & ADJ_TAI &&
+			txc->constant >= 0 && txc->constant <= MAX_TAI_OFFSET)
 		time_tai = txc->constant;
 
 	if (txc->modes & ADJ_OFFSET)
