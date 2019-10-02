@@ -167,6 +167,7 @@ enum nfs4_acl_whotype {
 
 #ifdef __KERNEL__
 #include <linux/list.h>
+#include <linux/uidgid.h>
 
 struct nfs4_ace {
 	uint32_t	type;

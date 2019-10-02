@@ -35,6 +35,7 @@
 
 #include <linux/errno.h>
 #include <linux/types.h>
+#include <linux/uidgid.h>
 
 #define __DQUOT_VERSION__	"dquot_6.5.2"
 
