@@ -338,8 +338,8 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
 
 int lg4ff_init(struct hid_device *hid)
 {
-	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
-	struct input_dev *dev = hidinput->input;
+	struct hid_input *hidinput;
+	struct input_dev *dev;
 	struct lg4ff_device_entry *entry;
 	struct usb_device_descriptor *udesc;
 	int error, i, j;
