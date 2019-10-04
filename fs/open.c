@@ -995,6 +995,7 @@ struct file *file_open_root(struct dentry *dentry, struct vfsmount *mnt,
 }
 EXPORT_SYMBOL(file_open_root);
 
+printk(KERN_DEBUG "fs/open.c line 998 before\n");
 long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
 	struct open_flags op;
@@ -1002,6 +1003,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	char *tmp = getname(filename);
 	int fd = PTR_ERR(tmp);
 
+	printk(KERN_DEBUG "fs/open.c line 998 after\n");
 	if (!IS_ERR(tmp)) {
 		fd = get_unused_fd_flags(flags);
 		if (fd >= 0) {
@@ -1026,7 +1028,9 @@ SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
 	if (force_o_largefile())
 		flags |= O_LARGEFILE;
 
+	printk(KERN_DEBUG "fs/open.c line 1029 before\n");
 	ret = do_sys_open(AT_FDCWD, filename, flags, mode);
+	printk(KERN_DEBUG "fs/open.c line 1029 after\n");
 	/* avoid REGPARM breakage on x86: */
 	asmlinkage_protect(3, ret, filename, flags, mode);
 	return ret;
@@ -1040,7 +1044,9 @@ SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
 	if (force_o_largefile())
 		flags |= O_LARGEFILE;
 
+	printk(KERN_DEBUG "fs/open.c line 1043 before\n");
 	ret = do_sys_open(dfd, filename, flags, mode);
+	printk(KERN_DEBUG "fs/open.c line 1043 after\n");
 	/* avoid REGPARM breakage on x86: */
 	asmlinkage_protect(4, ret, dfd, filename, flags, mode);
 	return ret;

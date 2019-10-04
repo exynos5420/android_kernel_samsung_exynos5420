@@ -1297,7 +1297,9 @@ compat_sys_vmsplice(int fd, const struct compat_iovec __user *iov32,
 asmlinkage long
 compat_sys_open(const char __user *filename, int flags, umode_t mode)
 {
+	printk(KERN_DEBUG "fs/compat.c line 1300 before\n");
 	return do_sys_open(AT_FDCWD, filename, flags, mode);
+	printk(KERN_DEBUG "fs/compat.c line 1300 after\n");
 }
 
 /*
@@ -1307,7 +1309,9 @@ compat_sys_open(const char __user *filename, int flags, umode_t mode)
 asmlinkage long
 compat_sys_openat(unsigned int dfd, const char __user *filename, int flags, umode_t mode)
 {
+	printk(KERN_DEBUG "fs/compat.c line 1310 before\n");
 	return do_sys_open(dfd, filename, flags, mode);
+	printk(KERN_DEBUG "fs/compat.c line 1310 after\n");
 }
 
 #define __COMPAT_NFDBITS       (8 * sizeof(compat_ulong_t))
