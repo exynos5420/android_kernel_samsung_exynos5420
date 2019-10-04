@@ -559,7 +559,9 @@ asmlinkage long compat_sys_sendfile64(int out_fd, int in_fd,
 asmlinkage long sparc32_open(const char __user *filename,
 			     int flags, int mode)
 {
+	printk("sys_sparc32 562 before\n");
 	return do_sys_open(AT_FDCWD, filename, flags, mode);
+	printk("sys_sparc32 562 after\n");
 }
 
 long sys32_lookup_dcookie(unsigned long cookie_high,

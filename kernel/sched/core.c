@@ -3284,6 +3284,7 @@ void scheduler_tick(void)
 #endif
 }
 
+printk("core.c line 3287 before");
 notrace unsigned long get_parent_ip(unsigned long addr)
 {
 	if (in_lock_functions(addr)) {
@@ -3293,6 +3294,7 @@ notrace unsigned long get_parent_ip(unsigned long addr)
 	}
 	return addr;
 }
+printk("core.c line 3287 after");
 
 #if defined(CONFIG_PREEMPT) && (defined(CONFIG_DEBUG_PREEMPT) || \
 				defined(CONFIG_PREEMPT_TRACER))
@@ -3315,7 +3317,9 @@ void __kprobes add_preempt_count(int val)
 				PREEMPT_MASK - 10);
 #endif
 	if (preempt_count() == val)
+		printk("core.c line 3318 before");
 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+		printk("core.c line 3318 after");
 }
 EXPORT_SYMBOL(add_preempt_count);
 
@@ -3336,7 +3340,9 @@ void __kprobes sub_preempt_count(int val)
 #endif
 
 	if (preempt_count() == val)
+		printk("core.c line 3339 before");
 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+		printk("core.c line 3339 after");
 	preempt_count() -= val;
 }
 EXPORT_SYMBOL(sub_preempt_count);
