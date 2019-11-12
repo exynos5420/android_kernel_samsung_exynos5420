@@ -818,7 +818,7 @@ thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
 static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
 					    int delay)
 {
-	cancel_delayed_work_sync(&(tz->poll_queue));
+	cancel_delayed_work(&tz->poll_queue);
 
 	if (!delay)
 		return;
@@ -1513,7 +1513,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 		    tz->ops->unbind(tz, cdev);
 	mutex_unlock(&thermal_list_lock);
 
-	thermal_zone_device_set_polling(tz, 0);
+	cancel_delayed_work_sync(&tz->poll_queue);
 
 	if (tz->type[0])
 		device_remove_file(&tz->device, &dev_attr_type);
