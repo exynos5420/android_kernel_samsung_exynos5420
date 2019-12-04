@@ -717,6 +717,7 @@ static void rndis_disable(struct usb_function *f)
 
 	usb_ep_disable(rndis->notify);
 	rndis->notify->driver_data = NULL;
+	rndis->notify->desc = NULL;
 }
 
 /*-------------------------------------------------------------------------*/
