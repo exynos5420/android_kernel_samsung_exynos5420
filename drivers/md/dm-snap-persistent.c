@@ -15,7 +15,7 @@
 #include <linux/dm-io.h>
 
 #define DM_MSG_PREFIX "persistent snapshot"
-#define DM_CHUNK_SIZE_DEFAULT_SECTORS 32	/* 16KB */
+#define DM_CHUNK_SIZE_DEFAULT_SECTORS 32U	/* 16KB */
 
 /*-----------------------------------------------------------------
  * Persistent snapshots, by persistent we mean that the snapshot
