@@ -846,7 +846,7 @@ static int __ip_append_data(struct sock *sk,
 		csummode = CHECKSUM_PARTIAL;
 
 	cork->length += length;
-	if ((skb && skb_is_gso(skb)) ||
+	if ((skb && skb_has_frags(skb)) ||
 	    (((length + (skb ? skb->len : fragheaderlen)) > mtu) &&
 	    (skb_queue_len(queue) <= 1) &&
 	    (sk->sk_protocol == IPPROTO_UDP) &&
