@@ -161,6 +161,35 @@ size_t strlcpy(char *dest, const char *src, size_t size)
 EXPORT_SYMBOL(strlcpy);
 #endif
 
+#ifndef __HAVE_ARCH_STRSCPY
+/**
+ * strscpy - Copy a C-string into a sized buffer, but only if it fits
+ * @dest: Where to copy the string to
+ * @src: Where to copy the string from
+ * @size: size of destination buffer
+ *
+ * Use this routine to avoid copying too-long strings.
+ * The routine returns the total number of bytes copied
+ * (including the trailing NUL) or zero if the buffer wasn't
+ * big enough.  To ensure that programmers pay attention
+ * to the return code, the destination has a single NUL
+ * written at the front (if size is non-zero) when the
+ * buffer is not big enough.
+ */
+static size_t strscpy(char *dest, const char *src, size_t size)
+{
+	size_t len = strnlen(src, size) + 1;
+	if (len > size) {
+		if (size)
+			dest[0] = '\0';
+		return 0;
+	}
+	memcpy(dest, src, len);
+	return len;
+}
+EXPORT_SYMBOL(strscpy);
+#endif
+
 #ifndef __HAVE_ARCH_STRCAT
 /**
  * strcat - Append one %NUL-terminated string to another
