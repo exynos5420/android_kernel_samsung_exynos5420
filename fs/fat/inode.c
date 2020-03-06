@@ -529,6 +529,14 @@ static struct inode *fat_alloc_inode(struct super_block *sb)
 		return NULL;
 
 	init_rwsem(&ei->truncate_lock);
+
+	/* Zeroing to allow iput() even if partial initialized inode. */
+	ei->mmu_private = 0;
+	ei->i_start = 0;
+	ei->i_logstart = 0;
+	ei->i_attrs = 0;
+	ei->i_pos = 0;
+
 	return &ei->vfs_inode;
 }
 
