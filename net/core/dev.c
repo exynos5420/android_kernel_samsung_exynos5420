@@ -2481,7 +2481,7 @@ static void skb_update_prio(struct sk_buff *skb)
 #endif
 
 static DEFINE_PER_CPU(int, xmit_recursion);
-#define RECURSION_LIMIT 10
+#define RECURSION_LIMIT 8
 
 /**
  *	dev_queue_xmit - transmit a buffer
