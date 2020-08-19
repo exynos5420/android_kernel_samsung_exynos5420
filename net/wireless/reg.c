@@ -1689,6 +1689,9 @@ int regulatory_hint_user(const char *alpha2)
 
 	BUG_ON(!alpha2);
 
+	if (!is_world_regdom(alpha2) && !is_an_alpha2(alpha2))
+		return -EINVAL;
+
 	request = kzalloc(sizeof(struct regulatory_request), GFP_KERNEL);
 	if (!request)
 		return -ENOMEM;
