@@ -654,6 +654,11 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 	zone->all_unreclaimable = 0;
 	zone->pages_scanned = 0;
 
+	/*
+	 * Ensure proper count is passed which otherwise would stuck in the
+	 * below while (list_empty(list)) loop.
+	 */
+	count = min(pcp->count, count);
 	while (to_free) {
 		struct page *page;
 		struct list_head *list;
