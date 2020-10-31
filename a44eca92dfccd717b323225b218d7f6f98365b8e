@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9ab322db_b6e8ef83",
+        "filename": "arch/arm/configs/lineageos_chagalllte_defconfig",
+        "patchSetId": 2
+      },
+      "lineNbr": 3318,
+      "author": {
+        "id": 1000001
+      },
+      "writtenOn": "2020-10-31T21:08:02Z",
+      "side": 1,
+      "message": "This needs to be it own commit since it has nothing to do with LZMA",
+      "revId": "a44eca92dfccd717b323225b218d7f6f98365b8e",
+      "serverId": "c6d92919-bfe7-411c-9f64-004a8163e0f0",
+      "unresolved": false
+    }
+  ]
+}
