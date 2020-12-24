@@ -257,7 +257,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 			if (!ld)
 				goto err_free_modemctl;
 
-			mif_err("link created: %s\n", ld->name);
+			mif_info("link created: %s\n", ld->name);
 			ld->link_type = i;
 			ld->mc = modemctl;
 			ld->msd = msd;
