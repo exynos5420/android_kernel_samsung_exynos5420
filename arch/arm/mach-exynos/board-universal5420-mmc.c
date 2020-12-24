@@ -313,7 +313,7 @@ void mmc_force_presence_change(struct platform_device *pdev, int val)
 	mutex_lock(&wlan_mutex_lock);
 
 	if (pdev == &exynos5_device_dwmci1) {
-		pr_err("%s: called for device exynos5_device_dwmci1\n", __func__);
+		pr_info("%s: called for device exynos5_device_dwmci1\n", __func__);
 		notify_func = wlan_notify_func;
 	} else
 		pr_err("%s: called for device with no notifier, t\n", __func__);
