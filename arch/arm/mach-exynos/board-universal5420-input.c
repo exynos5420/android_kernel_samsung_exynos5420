@@ -329,7 +329,7 @@ static int mxt_power_on(void)
 	s3c_gpio_cfgpin(GPIO_TSP_INT, S3C_GPIO_SFN(0xf));
 	s3c_gpio_setpull(GPIO_TSP_INT, S3C_GPIO_PULL_NONE);
 
-	printk(KERN_ERR "mxt_power_on is finished\n");
+	printk(KERN_INFO "mxt_power_on is finished\n");
 
 	return 0;
 }
@@ -378,7 +378,7 @@ static int mxt_power_off(void)
 	s3c_gpio_cfgpin(GPIO_TSP_INT, S3C_GPIO_INPUT);
 	s3c_gpio_setpull(GPIO_TSP_INT, S3C_GPIO_PULL_NONE);
 
-	printk(KERN_ERR "mxt_power_off is finished\n");
+	printk(KERN_INFO "mxt_power_off is finished\n");
 
 	return 0;
 }
@@ -435,7 +435,7 @@ void __init atmel_tsp_init(void)
 	i2c_register_board_info(0, mxt_i2c_devs0,
 			ARRAY_SIZE(mxt_i2c_devs0));
 
-	printk(KERN_ERR "%s touch : %d\n",
+	printk(KERN_INFO "%s touch : %d\n",
 		 __func__, mxt_i2c_devs0[0].irq);
 }
 #endif
@@ -503,7 +503,7 @@ static int synaptics_power(bool on)
 		return PTR_ERR(regulator_avdd);
 	}
 
-	printk(KERN_ERR "[TSP] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP] %s %s\n", __func__, on ? "on" : "off");
 
 	if (on) {
 		regulator_enable(regulator_vdd);
@@ -661,7 +661,7 @@ static void synaptics_verify_panel_revision(void)
 	else
 		rmi4_platformdata.charger_noti_type = TSP_CHG_NOTI_RMI;
 
-	printk(KERN_ERR "%s: panel_revision: %d, lcdtype: 0x%06X, touch_type: %d, el_type: %s, h_sync: %s, ddi_type: %s, charger_noti_type: %s\n",
+	printk(KERN_INFO "%s: panel_revision: %d, lcdtype: 0x%06X, touch_type: %d, el_type: %s, h_sync: %s, ddi_type: %s, charger_noti_type: %s\n",
 		__func__, rmi4_platformdata.panel_revision,
 		lcdtype, touch_type, el_type ? "M4+" : "M4",
 		!rmi4_platformdata.enable_sync ? "NA" : "OK",
@@ -682,7 +682,7 @@ void __init synaptics_tsp_init(void)
 	synaptics_verify_panel_revision();
 
 	if (lpcharge) {
-		printk(KERN_ERR "%s: disable TSP for lpm\n", __func__);
+		printk(KERN_INFO "%s: disable TSP for lpm\n", __func__);
 		return;
 	}
 
@@ -690,7 +690,7 @@ void __init synaptics_tsp_init(void)
 	i2c_register_board_info(0, synaptics_i2c_devs0,
 		 ARRAY_SIZE(synaptics_i2c_devs0));
 
-	printk(KERN_ERR "%s touch : %d\n",
+	printk(KERN_INFO "%s touch : %d\n",
 		 __func__, synaptics_i2c_devs0[0].irq);
 }
 #endif
@@ -753,7 +753,7 @@ static int synaptics_power(bool on)
 
 	enabled = on;
 
-	printk(KERN_ERR "[TSP] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP] %s %s\n", __func__, on ? "on" : "off");
 
 	return 0;
 }
@@ -827,7 +827,7 @@ static int ts_led_power_on(bool on)
 		regulator_put(regulator);
 	}
 
-	printk(KERN_ERR "[TSP_KEY] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP_KEY] %s %s\n", __func__, on ? "on" : "off");
 
 	return 0;
 }
@@ -900,7 +900,7 @@ void __init synaptics_dsx_tsp_init(void)
 	i2c_register_board_info(0, synaptics_dsx_i2c_devs0,
 		 ARRAY_SIZE(synaptics_dsx_i2c_devs0));
 
-	printk(KERN_ERR "%s touch : %d\n",
+	printk(KERN_INFO "%s touch : %d\n",
 		 __func__, synaptics_dsx_i2c_devs0[0].irq);
 }
 #endif
