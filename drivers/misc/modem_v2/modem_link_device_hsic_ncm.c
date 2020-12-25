@@ -1315,7 +1315,7 @@ static int cdc_acm_bind(struct if_usb_devdata *pipe_data,
 				mif_err("data_desc is NULL\n");
 				return -EINVAL;
 			}
-			mif_err("cdc-data desc - bootrom\n");
+			mif_info("cdc-data desc - bootrom\n");
 			goto found_data_desc;
 		}
 	}
