@@ -145,7 +145,7 @@ static struct io_device *create_io_device(struct modem_io_t *io_t,
 		modemctl->iod = iod;
 	if (iod->format == IPC_BOOT) {
 		modemctl->bootd = iod;
-		mif_err("BOOT device = %s\n", iod->name);
+		mif_info("BOOT device = %s\n", iod->name);
 	}
 
 	/* link between io device and modem shared */
@@ -241,7 +241,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 	struct modem_ctl *modemctl;
 	struct io_device *iod[pdata->num_iodevs];
 	struct link_device *ld;
-	mif_err("%s: +++\n", pdata->name);
+	mif_info("%s: +++\n", pdata->name);
 
 	msd = create_modem_shared_data();
 	if (!msd) {
@@ -266,7 +266,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 			if (!ld)
 				goto free_mc;
 
-			mif_err("%s: %s link created\n", pdata->name, ld->name);
+			mif_info("%s: %s link created\n", pdata->name, ld->name);
 			ld->link_type = i;
 			ld->mc = modemctl;
 			ld->msd = msd;
@@ -288,7 +288,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, modemctl);
 
-	mif_err("%s: ---\n", pdata->name);
+	mif_info("%s: ---\n", pdata->name);
 	return 0;
 
 free_iod:
