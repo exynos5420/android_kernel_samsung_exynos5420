@@ -241,7 +241,7 @@ static int max77803_led_setup(struct max77803_led_data *led_data)
 					0xC0);
 	}
 
-	pr_err("%s: %s, 0x%x\n", __func__, led_data->led.name, led_data->brightness);
+	pr_info("%s: %s, 0x%x\n", __func__, led_data->led.name, led_data->brightness);
 
 	/* Set current */
 	ret |= max77803_set_bits(led_data->i2c, reg_led_current[id],
