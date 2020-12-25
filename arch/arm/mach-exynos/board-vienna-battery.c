@@ -516,7 +516,7 @@ static void sec_bat_check_batt_id(void)
 		adonis_battery_data[0].type_str = "ATL";
 	}
 
-	pr_err("%s: batt_type(%s), batt_id(%d), cap(0x%x), type(%s)\n",
+	pr_info("%s: batt_type(%s), batt_id(%d), cap(0x%x), type(%s)\n",
 		__func__, sec_battery_pdata.vendor, ret,
 		adonis_battery_data[0].Capacity, adonis_battery_data[0].type_str);
 }

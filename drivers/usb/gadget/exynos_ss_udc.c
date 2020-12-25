@@ -2450,7 +2450,7 @@ static void exynos_ss_udc_irq_connectdone(struct exynos_ss_udc *udc)
 	reg = readl(udc->regs + EXYNOS_USB3_DSTS);
 	speed = reg & EXYNOS_USB3_DSTS_ConnectSpd_MASK;
 
-	printk(KERN_ERR "usb: %s - connected speed = %d\n", __func__, speed);
+	printk(KERN_INFO "usb: %s - connected speed = %d\n", __func__, speed);
 	switch (speed) {
 	/* High-speed */
 	case 0:
@@ -2766,13 +2766,13 @@ static void exynos_ss_udc_handle_devt(struct exynos_ss_udc *udc, u32 event)
 
 	case EXYNOS_USB3_DEVT_EVENT_USBRst:
 		dev_dbg(udc->dev, "USB Reset");
-		printk(KERN_ERR "usb: [%s] USB Reset\n", __func__);
+		printk(KERN_INFO "usb: [%s] USB Reset\n", __func__);
 		exynos_ss_udc_irq_usbrst(udc);
 		break;
 
 	case EXYNOS_USB3_DEVT_EVENT_DisconnEvt:
 		dev_dbg(udc->dev, "Disconnection Detected");
-		printk(KERN_ERR "usb: [%s] Disconnection Detected\n", __func__);
+		printk(KERN_INFO "usb: [%s] Disconnection Detected\n", __func__);
 		/* do the cable disconnect event before calling gadget */
 		EXYNOS_SS_UDC_CABLE_CONNECT(udc, false);
 		call_gadget(udc, disconnect);

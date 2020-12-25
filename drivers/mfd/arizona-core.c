@@ -9,7 +9,6 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-#define DEBUG
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
@@ -114,25 +113,25 @@ static irqreturn_t arizona_underclocked(int irq, void *data)
 	}
 
 	if (val & ARIZONA_AIF3_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF3 underclocked\n");
+		dev_info(arizona->dev, "AIF3 underclocked\n");
 	if (val & ARIZONA_AIF2_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF2 underclocked\n");
+		dev_info(arizona->dev, "AIF2 underclocked\n");
 	if (val & ARIZONA_AIF1_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF1 underclocked\n");
+		dev_info(arizona->dev, "AIF1 underclocked\n");
 	if (val & ARIZONA_ISRC2_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "ISRC2 underclocked\n");
+		dev_info(arizona->dev, "ISRC2 underclocked\n");
 	if (val & ARIZONA_ISRC1_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "ISRC1 underclocked\n");
+		dev_info(arizona->dev, "ISRC1 underclocked\n");
 	if (val & ARIZONA_FX_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "FX underclocked\n");
+		dev_info(arizona->dev, "FX underclocked\n");
 	if (val & ARIZONA_ASRC_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "ASRC underclocked\n");
+		dev_info(arizona->dev, "ASRC underclocked\n");
 	if (val & ARIZONA_DAC_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "DAC underclocked\n");
+		dev_info(arizona->dev, "DAC underclocked\n");
 	if (val & ARIZONA_ADC_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "ADC underclocked\n");
+		dev_info(arizona->dev, "ADC underclocked\n");
 	if (val & ARIZONA_MIXER_UNDERCLOCKED_STS)
-		dev_err(arizona->dev, "Mixer dropped sample\n");
+		dev_info(arizona->dev, "Mixer dropped sample\n");
 
 	return IRQ_HANDLED;
 }
@@ -152,46 +151,46 @@ static irqreturn_t arizona_overclocked(int irq, void *data)
 	}
 
 	if (val[0] & ARIZONA_PWM_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "PWM overclocked\n");
+		dev_info(arizona->dev, "PWM overclocked\n");
 	if (val[0] & ARIZONA_FX_CORE_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "FX core overclocked\n");
+		dev_info(arizona->dev, "FX core overclocked\n");
 	if (val[0] & ARIZONA_DAC_SYS_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "DAC SYS overclocked\n");
+		dev_info(arizona->dev, "DAC SYS overclocked\n");
 	if (val[0] & ARIZONA_DAC_WARP_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "DAC WARP overclocked\n");
+		dev_info(arizona->dev, "DAC WARP overclocked\n");
 	if (val[0] & ARIZONA_ADC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ADC overclocked\n");
+		dev_info(arizona->dev, "ADC overclocked\n");
 	if (val[0] & ARIZONA_MIXER_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "Mixer overclocked\n");
+		dev_info(arizona->dev, "Mixer overclocked\n");
 	if (val[0] & ARIZONA_AIF3_SYNC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF3 overclocked\n");
+		dev_info(arizona->dev, "AIF3 overclocked\n");
 	if (val[0] & ARIZONA_AIF2_SYNC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF2 overclocked\n");
+		dev_info(arizona->dev, "AIF2 overclocked\n");
 	if (val[0] & ARIZONA_AIF1_SYNC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "AIF1 overclocked\n");
+		dev_info(arizona->dev, "AIF1 overclocked\n");
 	if (val[0] & ARIZONA_PAD_CTRL_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "Pad control overclocked\n");
+		dev_info(arizona->dev, "Pad control overclocked\n");
 
 	if (val[1] & ARIZONA_SLIMBUS_SUBSYS_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "Slimbus subsystem overclocked\n");
+		dev_info(arizona->dev, "Slimbus subsystem overclocked\n");
 	if (val[1] & ARIZONA_SLIMBUS_ASYNC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "Slimbus async overclocked\n");
+		dev_info(arizona->dev, "Slimbus async overclocked\n");
 	if (val[1] & ARIZONA_SLIMBUS_SYNC_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "Slimbus sync overclocked\n");
+		dev_info(arizona->dev, "Slimbus sync overclocked\n");
 	if (val[1] & ARIZONA_ASRC_ASYNC_SYS_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ASRC async system overclocked\n");
+		dev_info(arizona->dev, "ASRC async system overclocked\n");
 	if (val[1] & ARIZONA_ASRC_ASYNC_WARP_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ASRC async WARP overclocked\n");
+		dev_info(arizona->dev, "ASRC async WARP overclocked\n");
 	if (val[1] & ARIZONA_ASRC_SYNC_SYS_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ASRC sync system overclocked\n");
+		dev_info(arizona->dev, "ASRC sync system overclocked\n");
 	if (val[1] & ARIZONA_ASRC_SYNC_WARP_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ASRC sync WARP overclocked\n");
+		dev_info(arizona->dev, "ASRC sync WARP overclocked\n");
 	if (val[1] & ARIZONA_ADSP2_1_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "DSP1 overclocked\n");
+		dev_info(arizona->dev, "DSP1 overclocked\n");
 	if (val[1] & ARIZONA_ISRC2_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ISRC2 overclocked\n");
+		dev_info(arizona->dev, "ISRC2 overclocked\n");
 	if (val[1] & ARIZONA_ISRC1_OVERCLOCKED_STS)
-		dev_err(arizona->dev, "ISRC1 overclocked\n");
+		dev_info(arizona->dev, "ISRC1 overclocked\n");
 
 	return IRQ_HANDLED;
 }
@@ -553,7 +552,7 @@ int __devinit arizona_dev_init(struct arizona *arizona)
 	case 0x5102:
 		type_name = "WM5102";
 		if (arizona->type != WM5102) {
-			dev_err(arizona->dev, "WM5102 registered as %d\n",
+			dev_info(arizona->dev, "WM5102 registered as %d\n",
 				arizona->type);
 			arizona->type = WM5102;
 		}
@@ -565,7 +564,7 @@ int __devinit arizona_dev_init(struct arizona *arizona)
 	case 0x5110:
 		type_name = "WM5110";
 		if (arizona->type != WM5110) {
-			dev_err(arizona->dev, "WM5110 registered as %d\n",
+			dev_info(arizona->dev, "WM5110 registered as %d\n",
 				arizona->type);
 			arizona->type = WM5110;
 		}

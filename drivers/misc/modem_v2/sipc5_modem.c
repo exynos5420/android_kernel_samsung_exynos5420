@@ -244,7 +244,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 	struct io_device *iod[pdata->num_iodevs];
 	struct link_device *ld;
 
-	mif_err("%s\n", pdev->name);
+	mif_info("%s\n", pdev->name);
 	memset(iod, 0, sizeof(iod));
 
 	msd = create_modem_shared_data();
@@ -268,7 +268,7 @@ static int __devinit modem_probe(struct platform_device *pdev)
 			if (!ld)
 				goto err_free_modemctl;
 
-			mif_err("link created: %s\n", ld->name);
+			mif_info("link created: %s\n", ld->name);
 			ld->link_type = i;
 			ld->mc = modemctl;
 			ld->msd = msd;
