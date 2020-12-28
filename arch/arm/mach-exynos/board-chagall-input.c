@@ -101,7 +101,7 @@ static int synaptics_power(void *data, bool on)
 
 	enabled = on;
 
-	printk(KERN_ERR "[TSP] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP] %s %s\n", __func__, on ? "on" : "off");
 
 	return 0;
 }
@@ -161,7 +161,7 @@ static int ts_led_power_on(bool on)
 		regulator_put(regulator);
 	}
 
-	printk(KERN_ERR "[TSP_KEY] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP_KEY] %s %s\n", __func__, on ? "on" : "off");
 
 	return 0;
 }
