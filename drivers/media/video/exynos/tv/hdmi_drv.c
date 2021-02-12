@@ -1027,7 +1027,7 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
 	clk_enable(hdmi_dev->res.hdmi);
 	if (is_ip_ver_5a || is_ip_ver_5s) {
 		hdmiphy_set_power(hdmi_dev, 0);
-		dev_err(dev, "Set HDMI phy power off\n");
+		dev_info(dev, "Set HDMI phy power off\n");
 	}
 	clk_disable(hdmi_dev->res.hdmi);
 

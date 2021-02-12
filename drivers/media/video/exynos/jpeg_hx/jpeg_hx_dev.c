@@ -755,7 +755,7 @@ static int jpeg_hx_probe(struct platform_device *pdev)
 	pm_runtime_get_sync(&pdev->dev);
 	jpeg->ver = jpeg_hwget_version(jpeg->reg_base);
 	pm_runtime_put_sync(&pdev->dev);
-	v4l2_err(&jpeg->v4l2_dev, "jpeg-hx.%d registered successfully\n", jpeg->id);
+	v4l2_info(&jpeg->v4l2_dev, "jpeg-hx.%d registered successfully\n", jpeg->id);
 
 	return 0;
 

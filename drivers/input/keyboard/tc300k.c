@@ -1740,7 +1740,7 @@ static int __devinit tc300k_probe(struct i2c_client *client,
 	data->key_num = data->pdata->key_num;
 	dev_info(&client->dev, "number of keys = %d\n", data->key_num);
 	data->keycode = data->pdata->keycode;
-	dev_notice(&client->dev, "fw_ver_bin = 0x%x\n", data->pdata->fw_version);
+	dev_info(&client->dev, "fw_ver_bin = 0x%x\n", data->pdata->fw_version);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 	for (i = 1; i < data->key_num; i++)
 		dev_info(&client->dev, "keycode[%d]= %3d\n", i, data->keycode[i]);
