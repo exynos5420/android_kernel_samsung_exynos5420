@@ -101,7 +101,7 @@ static int synaptics_power(void *data, bool on)
 
 	enabled = on;
 
-	printk(KERN_ERR "[TSP] %s %s\n", __func__, on ? "on" : "off");
+	printk(KERN_INFO "[TSP] %s %s\n", __func__, on ? "on" : "off");
 
 	return 0;
 }

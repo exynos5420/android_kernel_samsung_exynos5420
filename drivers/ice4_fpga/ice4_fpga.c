@@ -947,7 +947,7 @@ static int __devinit barcode_emul_probe(struct i2c_client *client,
 	}
 	queue_work(barcode_init_wq, &barcode_init_work);
 
-	pr_err("probe complete %s\n", __func__);
+	pr_info("probe complete %s\n", __func__);
 
 	return 0;
 
