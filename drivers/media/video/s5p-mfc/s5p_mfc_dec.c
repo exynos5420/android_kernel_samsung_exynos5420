@@ -348,7 +348,7 @@ static int vidioc_try_fmt(struct file *file, void *priv, struct v4l2_format *f)
 		return -EINVAL;
 	}
 	if (fmt->type != MFC_FMT_DEC) {
-		mfc_err("\n");
+		mfc_err("fmt type != MFT_FMT_DEC\n");
 		return -EINVAL;
 	}
 	return 0;
