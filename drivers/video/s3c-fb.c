@@ -5926,7 +5926,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	bts_drex_initialize();
 	if(__raw_readl(EXYNOS5_DREXI_1_BRBRSVCONFIG) != 0x88588858)
 		dev_warn(sfb->dev, "drex bts is not set\n");
-	dev_warn(sfb->dev, "mali level : %d\n", mali_get_dvfs_current_level());
 #endif
 
 #ifdef CONFIG_PM_RUNTIME
