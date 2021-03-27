@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2e8fd2b7_77f3b243",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000113
+      },
+      "writtenOn": "2021-03-27T20:48:09Z",
+      "side": 1,
+      "message": "how about:\n\n`chagallwifi: switch CONFIG_SCSI_WAIT_SCAN to builtin`",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 31
+      },
+      "revId": "d80a009886304af0be10225735818a8d286d3143",
+      "serverId": "c6d92919-bfe7-411c-9f64-004a8163e0f0",
+      "unresolved": true
+    }
+  ]
+}
