@@ -54,9 +54,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/vmscan.h>
 
-#ifdef CONFIG_ZSWAP
 int max_swappiness = 200;
-#endif
 
 struct scan_control {
 	/* Incremented by the number of inactive pages that were scanned */
@@ -139,7 +137,7 @@ struct mem_cgroup_zone {
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 60;
+int vm_swappiness = 160;
 long vm_total_pages;	/* The total number of pages which the VM controls */
 
 static LIST_HEAD(shrinker_list);
@@ -1772,11 +1770,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
 	 * This scanning priority is essentially the inverse of IO cost.
 	 */
 	anon_prio = vmscan_swappiness(sc);
-#ifdef CONFIG_ZSWAP
 	file_prio = max_swappiness - vmscan_swappiness(sc);
-#else
-	file_prio = 200 - vmscan_swappiness(sc);
-#endif
 
 	/*
 	 * OK, so we have swap space and a fair amount of page cache
