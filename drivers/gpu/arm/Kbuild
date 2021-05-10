@@ -10,4 +10,3 @@
 #
 
 obj-$(CONFIG_MALI_T6XX_R7P0) += t6xx/r7p0/
-obj-$(CONFIG_MALI_T6XX_R15P0) += t6xx/r15p0/
