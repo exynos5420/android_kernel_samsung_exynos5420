@@ -824,7 +824,7 @@ static int conn_gadget_bind_config(struct usb_configuration *c)
 
 	dev->cdev = c->cdev;
 	dev->function.name = "conn_gadget";
-	dev->function.descriptors = fs_conn_gadget_descs;
+	dev->function.fs_descriptors = fs_conn_gadget_descs;
 	dev->function.hs_descriptors = hs_conn_gadget_descs;
     dev->function.ss_descriptors = ss_conn_gadget_descs;
 	dev->function.bind = conn_gadget_function_bind;
