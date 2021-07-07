@@ -1789,12 +1789,12 @@ static int _mtp_bind_config(struct usb_configuration *c, bool ptp_config)
 
 	/*Test the switch */
 	if (ptp_config) {
-		mtpg->function.descriptors = _fs_ptp_descs;
+		mtpg->function.fs_descriptors = _fs_ptp_descs;
 		mtpg->function.hs_descriptors = _hs_ptp_descs;
 		if (gadget_is_superspeed(c->cdev->gadget))
 			mtpg->function.ss_descriptors = ss_ptpg_descs;
 	} else {
-		mtpg->function.descriptors = fs_mtpg_desc;
+		mtpg->function.fs_descriptors = fs_mtpg_desc;
 		mtpg->function.hs_descriptors = hs_mtpg_desc;
 		if (gadget_is_superspeed(c->cdev->gadget))
 			mtpg->function.ss_descriptors = ss_mtpg_descs;
