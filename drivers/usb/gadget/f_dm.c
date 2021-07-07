@@ -241,10 +241,7 @@ dm_bind(struct usb_configuration *c, struct usb_function *f)
 				dm->port.in, dm->port.out);
 
 	/* copy descriptors, and track endpoint copies */
-	f->descriptors = usb_copy_descriptors(dm_fs_function);
-
-
-
+	f->fs_descriptors = usb_copy_descriptors(dm_fs_function);
 
 	/* support all relevant hardware speeds... we expect that when
 	 * hardware is dual speed, all bulk-capable endpoints work at
@@ -296,7 +293,7 @@ dm_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	if (gadget_is_dualspeed(c->cdev->gadget))
 		usb_free_descriptors(f->hs_descriptors);
-	usb_free_descriptors(f->descriptors);
+	usb_free_descriptors(f->fs_descriptors);
 	kfree(func_to_dm(f));
 	printk(KERN_DEBUG "usb: %s\n", __func__);
 }
