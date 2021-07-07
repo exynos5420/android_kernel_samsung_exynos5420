@@ -166,9 +166,8 @@ int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc)
 	 * improve this algorithm so that we better use the internal
 	 * FIFO space
 	 */
-	for (num = 0; num < DWC3_ENDPOINTS_NUM; num++) {
-		struct dwc3_ep	*dep = dwc->eps[num];
-		int		fifo_number = dep->number >> 1;
+	for (num = 0; num < dwc->num_in_eps; num++) {
+		struct dwc3_ep	*dep = dwc->eps[(num << 1) | 1];
 		int		mult = 1;
 		int		tmp;
 
@@ -203,8 +202,7 @@ int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc)
 		dev_vdbg(dwc->dev, "%s: Fifo Addr %04x Size %d\n",
 				dep->name, last_fifo_depth, fifo_size & 0xffff);
 
-		dwc3_writel(dwc->regs, DWC3_GTXFIFOSIZ(fifo_number),
-				fifo_size);
+		dwc3_writel(dwc->regs, DWC3_GTXFIFOSIZ(num), fifo_size);
 
 		last_fifo_depth += (fifo_size & 0xffff);
 	}
@@ -2124,6 +2122,14 @@ static void dwc3_gadget_wakeup_interrupt(struct dwc3 *dwc)
 	 */
 
 	dwc->gadget_driver->resume(&dwc->gadget);
+	/*
+	 * gadget_driver resume function might require some dwc3-gadget
+	 * operations, such as ep_enable. Hence, dwc->lock must be released.
+	 */
+	spin_unlock(&dwc->lock);
+	dwc->gadget_driver->resume(&dwc->gadget);
+	spin_lock(&dwc->lock);
+	dwc->link_state = DWC3_LINK_STATE_U0;
 }
 
 static void dwc3_gadget_linksts_change_interrupt(struct dwc3 *dwc,
