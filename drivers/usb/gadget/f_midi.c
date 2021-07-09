@@ -424,7 +424,6 @@ static void f_midi_unbind(struct usb_configuration *c, struct usb_function *f)
 		snd_card_free_when_closed(card);
 
 	usb_free_all_descriptors(f);
-	kfree(midi);
 }
 
 static int f_midi_snd_free(struct snd_device *device)
