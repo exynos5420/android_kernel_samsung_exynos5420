@@ -1766,6 +1766,23 @@ static ssize_t show_cmd_result(struct device *dev, struct device_attribute
 	return snprintf(buf, TSP_BUF_SIZE, "%s\n", fdata->cmd_result);
 }
 
+static ssize_t cmd_list_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int ii = 0;
+	char buffer[896];
+	char buffer_name[32];
+
+	snprintf(buffer, 30, "++factory command list++\n");
+	while (strncmp(tsp_cmds[ii].cmd_name, "not_support_cmd", 16) != 0) {
+		snprintf(buffer_name, 32, "%s\n", tsp_cmds[ii].cmd_name);
+		strncat(buffer, buffer_name, (int)strlen(buffer_name));
+		ii++;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%s\n", buffer);
+}
+
 #if TSP_CHANGE_CONFIG_FOR_INPUT
 static ssize_t set_tsp_for_inputmethod_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -1859,6 +1876,7 @@ static ssize_t tsp_booster_enabled_store(struct device *dev,
 static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, store_cmd);
 static DEVICE_ATTR(cmd_status, S_IRUGO, show_cmd_status, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, show_cmd_result, NULL);
+static DEVICE_ATTR(cmd_list, S_IRUGO, cmd_list_show, NULL);
 static DEVICE_ATTR(set_tsp_for_inputmethod, S_IRUGO | S_IWUSR | S_IWGRP,
 	set_tsp_for_inputmethod_show, set_tsp_for_inputmethod_store);
 #if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
@@ -1870,6 +1888,7 @@ static struct attribute *touchscreen_factory_attributes[] = {
 	&dev_attr_cmd.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
+	&dev_attr_cmd_list.attr,
 #if defined(CONFIG_INPUT_BOOSTER) || defined(TSP_BOOSTER)
 	&dev_attr_tsp_booster_enabled.attr,
 #endif
