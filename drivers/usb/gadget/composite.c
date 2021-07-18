@@ -24,7 +24,7 @@
 #include "multi_config.h"
 #include <linux/power_supply.h>
 #define PSY_CHG_NAME "battery"
-//extern void usb30_redriver_en(int enable);
+extern void usb30_redriver_en(int enable);
 #endif
 
 /*
