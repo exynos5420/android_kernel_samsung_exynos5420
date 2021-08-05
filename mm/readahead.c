@@ -159,9 +159,6 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
 	int page_idx;
 	int ret = 0;
 	loff_t isize = i_size_read(inode);
-#ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-	//struct scfs_sb_info *sbi;
-#endif
 
 	if (isize == 0)
 		goto out;
@@ -186,15 +183,6 @@ __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
 		page = page_cache_alloc_readahead(mapping);
 		if (!page)
 			break;
-
-#ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-		/*
-		   if (filp->f_flags & O_SCFSLOWER) {
-		   sbi = ;
-		   sbi->scfs_lowerpage_alloc_count++;
-		   }
-		 */
-#endif
 
 		page->index = page_offset;
 		list_add(&page->lru, &page_pool);
