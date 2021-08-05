@@ -1274,17 +1274,6 @@ void free_hot_cold_page(struct page *page, int cold)
 	int migratetype;
 	int wasMlocked = __TestClearPageMlocked(page);
 
-#ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-	/*
-	   struct scfs_sb_info *sbi;
-
-	   if (PageScfslower(page) || PageNocache(page)) {
-	   sbi = SCFS_S(page->mapping->host->i_sb);
-	   sbi->scfs_lowerpage_reclaim_count++;
-	   }
-	 */
-#endif
-
 	if (!free_pages_prepare(page, 0))
 		return;
 
@@ -5729,10 +5718,6 @@ static struct trace_print_flags pageflag_names[] = {
 #endif
 #ifdef CONFIG_MEMORY_FAILURE
 	{1UL << PG_hwpoison,		"hwpoison"	},
-#endif
-#ifdef CONFIG_SCFS_LOWER_PAGECACHE_INVALIDATION
-	{1UL << PG_scfslower,		"scfslower"	},
-	{1UL << PG_nocache,		"nocache"	},
 #endif
 	{-1UL,				NULL		},
 };
