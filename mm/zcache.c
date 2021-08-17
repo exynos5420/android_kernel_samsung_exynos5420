@@ -170,7 +170,7 @@ static int zcache_rbnode_cache_create(void)
 	zcache_rbnode_cache = KMEM_CACHE(zcache_rbnode, 0);
 	return zcache_rbnode_cache == NULL;
 }
-static void zcache_rbnode_cache_destroy(void)
+static void __init zcache_rbnode_cache_destroy(void)
 {
 	kmem_cache_destroy(zcache_rbnode_cache);
 }
