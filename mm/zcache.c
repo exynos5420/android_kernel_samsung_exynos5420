@@ -624,7 +624,7 @@ out:
 static void zcache_store_page(int pool_id, struct cleancache_filekey key,
 		pgoff_t index, struct page *page)
 {
-	struct zcache_ra_handle *zhandle;
+	struct zcache_ra_handle *zhandle = NULL;
 	u8 *zpage, *src, *dst;
 	/* Address of zhandle + compressed data(zpage) */
 	unsigned long zaddr = 0;
