@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "17f0f5a8_f2403662",
+        "filename": "arch/arm/configs/lineageos_klimtlte_defconfig",
+        "patchSetId": 2
+      },
+      "lineNbr": 3764,
+      "author": {
+        "id": 1000024
+      },
+      "writtenOn": "2021-10-19T13:45:33Z",
+      "side": 1,
+      "message": "And what is this for?\nAnd below...",
+      "revId": "51cb5f8790d361bedc05a0ca12ba73b161a93313",
+      "serverId": "c6d92919-bfe7-411c-9f64-004a8163e0f0",
+      "unresolved": true
+    }
+  ]
+}
