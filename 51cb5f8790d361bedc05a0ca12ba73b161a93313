@@ -16,6 +16,24 @@
       "revId": "51cb5f8790d361bedc05a0ca12ba73b161a93313",
       "serverId": "c6d92919-bfe7-411c-9f64-004a8163e0f0",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2436ac57_db0d8afa",
+        "filename": "arch/arm/configs/lineageos_klimtlte_defconfig",
+        "patchSetId": 2
+      },
+      "lineNbr": 3764,
+      "author": {
+        "id": 1000136
+      },
+      "writtenOn": "2021-10-19T14:37:18Z",
+      "side": 1,
+      "message": "Those were enabled when regenerating the kernel conf",
+      "parentUuid": "17f0f5a8_f2403662",
+      "revId": "51cb5f8790d361bedc05a0ca12ba73b161a93313",
+      "serverId": "c6d92919-bfe7-411c-9f64-004a8163e0f0",
+      "unresolved": true
     }
   ]
 }
