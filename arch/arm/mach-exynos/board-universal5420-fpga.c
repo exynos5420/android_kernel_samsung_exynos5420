@@ -63,7 +63,7 @@ void fpga_config_gpio_table(int array_size, unsigned int (*gpio_table)[4])
 static void irda_device_init(void)
 {
 	int ret;
-	printk(KERN_ERR "%s called!\n", __func__);
+	printk(KERN_INFO "%s called!\n", __func__);
 	ret = gpio_request(GPIO_IRDA_IRQ, "irda_irq");
 	if (ret) {
 		printk(KERN_ERR "%s: gpio_request fail[%d], ret = %d\n",
@@ -73,7 +73,7 @@ static void irda_device_init(void)
 	s3c_gpio_cfgpin(GPIO_IRDA_IRQ, S3C_GPIO_INPUT);
 	s3c_gpio_setpull(GPIO_IRDA_IRQ, S3C_GPIO_PULL_NONE);
 	gpio_direction_input(GPIO_IRDA_IRQ);
-	printk(KERN_ERR "%s complete\n", __func__);
+	printk(KERN_INFO "%s complete\n", __func__);
 	return;
 };
 
@@ -111,7 +111,7 @@ static struct platform_device *universal5420_fpga_devices[] __initdata = {
 
 void __init exynos5_universal5420_fpga_init(void)
 {
-	printk(KERN_ERR "[%s] initialization start!\n", __func__);
+	printk(KERN_INFO "[%s] initialization start!\n", __func__);
 #if defined(USING_SPI_AND_I2C_IN_SAME_LINE)
 	barcode_fpga_firmware_update();
 #endif
