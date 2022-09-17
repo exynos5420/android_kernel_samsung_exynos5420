@@ -43,14 +43,14 @@
  * Enable/disable zcache (disabled by default)
  */
 static bool zcache_enabled __read_mostly;
-module_param_named(enabled, zcache_enabled, bool, 0);
+module_param_named(enabled, zcache_enabled, bool, 0444);
 
 /*
  * Compressor to be used by zcache
  */
 #define ZCACHE_COMPRESSOR_DEFAULT "lzo"
 static char *zcache_compressor = ZCACHE_COMPRESSOR_DEFAULT;
-module_param_named(compressor, zcache_compressor, charp, 0);
+module_param_named(compressor, zcache_compressor, charp, 0444);
 
 /*
  * The maximum percentage of memory that the compressed pool can occupy.
@@ -170,7 +170,7 @@ static int zcache_rbnode_cache_create(void)
 	zcache_rbnode_cache = KMEM_CACHE(zcache_rbnode, 0);
 	return zcache_rbnode_cache == NULL;
 }
-static void zcache_rbnode_cache_destroy(void)
+static void __init zcache_rbnode_cache_destroy(void)
 {
 	kmem_cache_destroy(zcache_rbnode_cache);
 }
@@ -365,18 +365,18 @@ static int zcache_cpu_init(void)
 {
 	unsigned long cpu;
 
-	get_online_cpus();
+	cpu_notifier_register_begin();
 	for_each_online_cpu(cpu)
 		if (__zcache_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
 			goto cleanup;
-	register_cpu_notifier(&zcache_cpu_notifier_block);
-	put_online_cpus();
+	__register_cpu_notifier(&zcache_cpu_notifier_block);
+	cpu_notifier_register_done();
 	return 0;
 
 cleanup:
 	for_each_online_cpu(cpu)
 		__zcache_cpu_notifier(CPU_UP_CANCELED, cpu);
-	put_online_cpus();
+	cpu_notifier_register_done();
 	return -ENOMEM;
 }
 
@@ -624,7 +624,7 @@ out:
 static void zcache_store_page(int pool_id, struct cleancache_filekey key,
 		pgoff_t index, struct page *page)
 {
-	struct zcache_ra_handle *zhandle;
+	struct zcache_ra_handle *zhandle = NULL;
 	u8 *zpage, *src, *dst;
 	/* Address of zhandle + compressed data(zpage) */
 	unsigned long zaddr = 0;
