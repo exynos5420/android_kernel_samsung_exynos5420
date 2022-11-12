@@ -219,7 +219,7 @@ again:
 
 	/* Check ST bit */
 	if (!(temp[0] & 0x01)) {
-		if ((retries++ < 3) && (temp[0] == 0)) {
+		if ((retries++ < 4) && (temp[0] == 0)) {
 			goto again;
 		} else {
 			// If data is not ready to read, store previous data
