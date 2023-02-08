@@ -74,7 +74,7 @@ int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation)
 		mutex_unlock(&platform->gpu_dvfs_handler_lock);
 	}
 
-	GPU_LOG(DVFS_DEBUG, DUMMY, 0u, 0u, "dvfs hanlder is called\n");
+	GPU_LOG(DVFS_DEBUG, DUMMY, 0u, 0u, "dvfs handler is called\n");
 
 	return 0;
 }

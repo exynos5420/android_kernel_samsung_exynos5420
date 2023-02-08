@@ -157,6 +157,7 @@ static int hid_synaptics_probe(struct hid_device *hdev, const struct hid_device_
 	input_dev = input_allocate_device();
 	if (!input_dev) {
 		ret = -ENOMEM;
+		kfree(syntp_data);
 		goto hid_stop;
 	}
 

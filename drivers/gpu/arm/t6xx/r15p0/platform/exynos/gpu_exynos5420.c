@@ -705,6 +705,7 @@ struct gpu_control_ops *gpu_get_control_ops(void)
 #ifdef CONFIG_REGULATOR
 int gpu_enable_dvs(struct exynos_context *platform)
 {
+	platform->dvs_is_enabled = true;
 #if 0
 	if (!platform->dvs_status)
 		return 0;
@@ -731,6 +732,7 @@ int gpu_enable_dvs(struct exynos_context *platform)
 
 int gpu_disable_dvs(struct exynos_context *platform)
 {
+	platform->dvs_is_enabled = false;
 #if 0
 	if (!platform->dvs_status)
 		return 0;

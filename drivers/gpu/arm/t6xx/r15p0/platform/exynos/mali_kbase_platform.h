@@ -32,7 +32,7 @@ do { \
 #define GPU_LOG(level, code, gpu_addr, info_val, msg, args...) \
 do { \
 	if (level >= gpu_get_debug_level()) { \
-		printk(KERN_INFO msg, ## args); \
+		printk(KERN_INFO "[G3D] "msg, ## args); \
 	} \
 } while (0)
 #endif /* CONFIG_MALI_EXYNOS_TRACE */

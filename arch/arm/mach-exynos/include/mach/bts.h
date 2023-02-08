@@ -22,7 +22,7 @@ void bts_set_bw(unsigned int bw);
 #endif
 
 #if defined(CONFIG_EXYNOS5410_BTS) || defined(CONFIG_EXYNOS5420_BTS)
-void bts_initialize(char *pd_name, bool on);
+void bts_initialize(const char *pd_name, bool on);
 void bts_drex_initialize(void);
 void bts_change_g3d_state(unsigned int freq);
 #else

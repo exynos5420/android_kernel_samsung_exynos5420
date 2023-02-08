@@ -10,7 +10,7 @@
  * published by the Free Software Foundation.
  */
 
-#define DEBUG
+// #define DEBUG
 
 #include <linux/battery/sec_fuelgauge.h>
 

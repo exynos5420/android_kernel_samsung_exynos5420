@@ -228,7 +228,6 @@ int gpu_control_enable_customization(struct kbase_device *kbdev)
 		ctr_ops->set_clock_to_osc(platform);
 
 	ret = gpu_enable_dvs(platform);
-	platform->dvs_is_enabled = true;
 
 	mutex_unlock(&platform->gpu_clock_lock);
 #endif /* CONFIG_REGULATOR */
@@ -248,9 +247,9 @@ int gpu_control_disable_customization(struct kbase_device *kbdev)
 		return 0;
 
 	mutex_lock(&platform->gpu_clock_lock);
-	ret = gpu_disable_dvs(platform);
-
-	platform->dvs_is_enabled = false;
+	if (platform->dvs_is_enabled) {
+		ret = gpu_disable_dvs(platform);
+	}
 
 	if (ctr_ops->set_clock_to_osc && ctr_ops->set_clock) {
 #ifdef CONFIG_MALI_DVFS

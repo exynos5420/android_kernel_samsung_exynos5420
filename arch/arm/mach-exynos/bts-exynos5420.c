@@ -865,7 +865,7 @@ void bts_change_g3d_state(unsigned int freq)
 	spin_unlock(&bts_lock);
 }
 
-void bts_initialize(char *pd_name, bool on)
+void bts_initialize(const char *pd_name, bool on)
 {
 	struct bts_info *bts;
 	bool fimc_state = false;
