@@ -45,6 +45,14 @@ int kbase_device_runtime_init(struct kbase_device *kbdev)
 {
 	dev_dbg(kbdev->dev, "kbase_device_runtime_init\n");
 	pm_runtime_enable(kbdev->dev);
+#ifdef CONFIG_MALI_DEBUG_SYS
+	{
+		int err = kbase_platform_create_sysfs_file(kbdev->dev);
+
+		if (err)
+			return err;
+	}
+#endif				/* CONFIG_MALI_MIDGARD_DEBUG_SYS */
 	return 0;
 }
 

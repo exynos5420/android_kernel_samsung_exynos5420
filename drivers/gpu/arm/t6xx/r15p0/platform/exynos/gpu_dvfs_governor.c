@@ -235,7 +235,9 @@ static int gpu_dvfs_decide_next_governor(struct exynos_context *platform)
 	return 0;
 }
 
+#ifdef CONFIG_CPU_THERMAL_IPA
 void ipa_mali_dvfs_requested(unsigned int freq);
+#endif
 int gpu_dvfs_decide_next_freq(struct kbase_device *kbdev, int utilization)
 {
 	unsigned long flags;
