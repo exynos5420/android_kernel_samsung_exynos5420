@@ -405,7 +405,7 @@ struct usb_composite_dev {
 	 */
 	bool				mute_switch;
 	bool				force_disconnect;
-#ifdef CONFIG_V1A
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 	struct work_struct redriver_work;
 #endif
 #endif
