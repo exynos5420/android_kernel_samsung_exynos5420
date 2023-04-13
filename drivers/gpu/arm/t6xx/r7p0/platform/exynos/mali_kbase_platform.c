@@ -162,8 +162,6 @@ static int gpu_validate_attrib_data(struct exynos_context *platform)
 	platform->gpu_dvfs_config_clock = data == 0 ? 266 : (u32) data;
 	data = gpu_get_attrib_data(attrib, GPU_DVFS_START_CLOCK);
 	platform->gpu_dvfs_start_clock = data == 0 ? 266 : (u32) data;
-	data = gpu_get_attrib_data(attrib, GPU_DVFS_BL_CONFIG_CLOCK);
-	platform->gpu_dvfs_config_clock = data == 0 ? 266 : (u32) data;
 
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_CPU_THERMAL_IPA
