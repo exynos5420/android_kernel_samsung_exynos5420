@@ -778,7 +778,7 @@ static int check_gate_ip_disp1(struct s3c_fb *sfb) {
 	if(sfb->clk_gating) {
 		flush_kthread_worker(&sfb->control_clock_gating);
 		s3c_fb_enable_clk(sfb);
-		dev_warn(sfb->dev, "clock is enabled.()\n");
+		dev_info(sfb->dev, "clock is enabled.()\n");
 	}
 #endif
 	return (readl(gate_ip_disp1) & 0x1);
@@ -5437,7 +5437,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	}
 
 	pm_stay_awake(sfb->dev);
-	dev_warn(sfb->dev, "pm_stay_awake");
+	dev_info(sfb->dev, "pm_stay_awake");
 
 	if (win == sfb->pdata->default_win) {
 		sec_getlog_supply_fbinfo((void *)fbinfo->fix.smem_start,
@@ -5619,7 +5619,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	/* [W/A] prevent sleep enter during LCD on */
 	pm_relax(sfb->dev);
-	dev_warn(sfb->dev, "pm_relax");
+	dev_info(sfb->dev, "pm_relax");
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
@@ -5920,7 +5920,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	/* [W/A] prevent sleep enter during LCD on */
 	pm_stay_awake(sfb->dev);
-	dev_warn(sfb->dev, "pm_stay_awake");
+	dev_info(sfb->dev, "pm_stay_awake");
 
 #if defined(CONFIG_SUPPORT_WQXGA)
 	bts_drex_initialize();
@@ -6270,9 +6270,9 @@ static int s3c_fb_runtime_suspend(struct device *dev)
 	}
 
 	if (!s3c_fb_clk_validation(sfb))
-		dev_warn(sfb->dev, "ready to suspend!\n");
+		dev_info(sfb->dev, "ready to suspend!\n");
 	else
-		dev_warn(sfb->dev, "suspend is not ready!\n");
+		dev_info(sfb->dev, "suspend is not ready!\n");
 
 	return 0;
 }
@@ -6338,7 +6338,7 @@ first_skip:
 	if (!s3c_fb_clk_validation(sfb))
 		dev_warn(sfb->dev, "some clocks are not ready!\n");
 	else
-		dev_warn(sfb->dev, "all clocks are ready!\n");
+		dev_info(sfb->dev, "all clocks are ready!\n");
 
 	return 0;
 }
