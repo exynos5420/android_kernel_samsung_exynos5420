@@ -159,7 +159,7 @@ static int exynos_power_up_cpu(unsigned int cpu)
 		}
 
 		if (timeout == 0) {
-			printk(KERN_ERR "cpu%d power up failed", cpu);
+			printk(KERN_ERR "CPU%d power up failed", cpu);
 			return -ETIMEDOUT;
 		}
 	}
@@ -170,7 +170,7 @@ static int exynos_power_up_cpu(unsigned int cpu)
 
 		udelay(10);
 
-		printk(KERN_DEBUG "cpu%d: SWRESET\n", cpu);
+		printk(KERN_DEBUG "CPU%d: SWRESET\n", cpu);
 
 		val = ((1 << 20) | (1 << 8)) << cpu;
 		__raw_writel(val, EXYNOS_SWRESET);
