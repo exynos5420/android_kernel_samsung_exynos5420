@@ -117,7 +117,7 @@ config MALI_EXYNOS_SECURE_RENDERING
       Support Secure Rendering on Exynos SoC
 
 config MALI_SEC_ASP_SECURE_BUF_CTRL
-    bool "Enable EXYNOS Secure Rendering whit ASP Support"
+    bool "Enable EXYNOS Secure Rendering with ASP Support"
     depends on MALI_T8XX && MALI_EXYNOS_SECURE_RENDERING && ION_EXYNOS && EXYNOS_CONTENT_PATH_PROTECTION
     default n
     help

@@ -11,6 +11,7 @@
  */
 
 #include <linux/atomic.h>
+#include <linux/compat.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/hid.h>
@@ -23,6 +24,7 @@
 #include <linux/spinlock.h>
 #include <linux/uhid.h>
 #include <linux/wait.h>
+#include <linux/fb.h>
 
 #define UHID_NAME	"uhid"
 #define UHID_BUFSIZE	32
@@ -51,6 +53,8 @@ struct uhid_device {
 };
 
 static struct miscdevice uhid_misc;
+
+bool lcd_is_on = true;
 
 static void uhid_queue(struct uhid_device *uhid, struct uhid_event *ev)
 {
@@ -132,6 +136,11 @@ static int uhid_hid_input(struct input_dev *input, unsigned int type,
 
 	switch (type) {
 	case EV_LED:
+		if(!lcd_is_on){
+			dbg_hid("uhid_hid_input lcd is off, don't report LED event\n");
+			kfree(ev);
+			return -1;
+		}
 		offset = hidinput_find_field(hid, type, code, &field);
 		if (offset == -1) {
 			hid_warn(input, "event field not found\n");
@@ -163,6 +172,34 @@ static int uhid_hid_input(struct input_dev *input, unsigned int type,
 
 	return 0;
 }
+
+static int fb_state_change(struct notifier_block *nb,
+    unsigned long val, void *data)
+{
+	struct fb_event *evdata = data;
+	unsigned int blank;
+    dbg_hid("fb_state_change");
+	if (val != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_POWERDOWN:
+		lcd_is_on = false;
+		break;
+	case FB_BLANK_UNBLANK:
+		lcd_is_on = true;
+		break;
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+static struct notifier_block fb_block = {
+	.notifier_call = fb_state_change,
+};
 
 static int uhid_hid_parse(struct hid_device *hid)
 {
@@ -300,6 +337,94 @@ static struct hid_ll_driver uhid_hid_driver = {
 	.hidinput_input_event = uhid_hid_input,
 	.parse = uhid_hid_parse,
 };
+
+#ifdef CONFIG_COMPAT
+
+/* Apparently we haven't stepped on these rakes enough times yet. */
+struct uhid_create_req_compat {
+	__u8 name[128];
+	__u8 phys[64];
+	__u8 uniq[64];
+
+	compat_uptr_t rd_data;
+	__u16 rd_size;
+
+	__u16 bus;
+	__u32 vendor;
+	__u32 product;
+	__u32 version;
+	__u32 country;
+} __attribute__((__packed__));
+
+static int uhid_event_from_user(const char __user *buffer, size_t len,
+				struct uhid_event *event)
+{
+	if (is_compat_task()) {
+		u32 type;
+
+		if (get_user(type, buffer))
+			return -EFAULT;
+
+		if (type == UHID_CREATE) {
+			/*
+			 * This is our messed up request with compat pointer.
+			 * It is largish (more than 256 bytes) so we better
+			 * allocate it from the heap.
+			 */
+			struct uhid_create_req_compat *compat;
+
+			compat = kmalloc(sizeof(*compat), GFP_KERNEL);
+			if (!compat)
+				return -ENOMEM;
+
+			buffer += sizeof(type);
+			len -= sizeof(type);
+			if (copy_from_user(compat, buffer,
+					   min(len, sizeof(*compat)))) {
+				kfree(compat);
+				return -EFAULT;
+			}
+
+			/* Shuffle the data over to proper structure */
+			event->type = type;
+
+			memcpy(event->u.create.name, compat->name,
+				sizeof(compat->name));
+			memcpy(event->u.create.phys, compat->phys,
+				sizeof(compat->phys));
+			memcpy(event->u.create.uniq, compat->uniq,
+				sizeof(compat->uniq));
+
+			event->u.create.rd_data = compat_ptr(compat->rd_data);
+			event->u.create.rd_size = compat->rd_size;
+
+			event->u.create.bus = compat->bus;
+			event->u.create.vendor = compat->vendor;
+			event->u.create.product = compat->product;
+			event->u.create.version = compat->version;
+			event->u.create.country = compat->country;
+
+			kfree(compat);
+			return 0;
+		}
+		/* All others can be copied directly */
+	}
+
+	if (copy_from_user(event, buffer, min(len, sizeof(*event))))
+		return -EFAULT;
+
+	return 0;
+}
+#else
+static int uhid_event_from_user(const char __user *buffer, size_t len,
+				struct uhid_event *event)
+{
+	if (copy_from_user(event, buffer, min(len, sizeof(*event))))
+		return -EFAULT;
+
+	return 0;
+}
+#endif
 
 static int uhid_dev_create(struct uhid_device *uhid,
 			   const struct uhid_event *ev)
@@ -523,10 +648,11 @@ static ssize_t uhid_char_write(struct file *file, const char __user *buffer,
 
 	memset(&uhid->input_buf, 0, sizeof(uhid->input_buf));
 	len = min(count, sizeof(uhid->input_buf));
-	if (copy_from_user(&uhid->input_buf, buffer, len)) {
-		ret = -EFAULT;
+
+	ret = uhid_event_from_user(buffer, len, &uhid->input_buf);
+	if (ret)
 		goto unlock;
-	}
+	
 
 	switch (uhid->input_buf.type) {
 	case UHID_CREATE:
@@ -560,9 +686,9 @@ static unsigned int uhid_char_poll(struct file *file, poll_table *wait)
 	poll_wait(file, &uhid->waitq, wait);
 
 	if (uhid->head != uhid->tail)
-		mask |= POLLIN | POLLRDNORM;
+		return POLLIN | POLLRDNORM;
 
-	return mask;
+	return 0;
 }
 
 static const struct file_operations uhid_fops = {
@@ -583,11 +709,13 @@ static struct miscdevice uhid_misc = {
 
 static int __init uhid_init(void)
 {
+	fb_register_client(&fb_block);
 	return misc_register(&uhid_misc);
 }
 
 static void __exit uhid_exit(void)
 {
+	fb_unregister_client(&fb_block);
 	misc_deregister(&uhid_misc);
 }
 

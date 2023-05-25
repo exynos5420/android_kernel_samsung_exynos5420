@@ -23,9 +23,9 @@
 
 #include <mach/asv-exynos.h>
 #include <mach/pm_domains.h>
-#if (defined(CONFIG_EXYNOS5433_BTS) || defined(CONFIG_EXYNOS5420_BTS))
+#if defined(CONFIG_EXYNOS5420_BTS)
 #include <mach/bts.h>
-#endif /* CONFIG_EXYNOS5433_BTS || CONFIG_EXYNOS5420_BTS */
+#endif /* CONFIG_EXYNOS5420_BTS */
 
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
@@ -40,7 +40,8 @@ extern struct kbase_device *pkbdev;
 
 #define GPU_OSC_CLK	24000
 
-/*  clk,vol,abb,min,max,down stay,time_in_state,pm_qos mem,pm_qos int,pm_qos cpu_kfc_min,pm_qos cpu_egl_max */
+
+// clock, voltage, asv_abb, min_threshold, max_threshold, down_staycount, time, mem_freq, int_freq, cpu_freq, cpu_max_freq
 static gpu_dvfs_info gpu_dvfs_table_default[] = {
 #if !defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	{533, 1037500, 0, 99, 100, 1, 0, 800000, 400000, 1200000, CPU_MAX},
@@ -75,10 +76,8 @@ static int mif_min_table[] = {
 	 733000,  800000,
 };
 
-//static int available_max_clock[] = {GPU_L2, GPU_L2, GPU_L0, GPU_L0, GPU_L0};
-
 static gpu_attribute gpu_config_attributes[] = {
-	{GPU_MAX_CLOCK, 480},
+	{GPU_MAX_CLOCK, 533},
 	{GPU_MAX_CLOCK_LIMIT, 480},
 #ifdef CONFIG_SUPPORT_WQXGA
 	{GPU_MIN_CLOCK, 177},
@@ -87,8 +86,8 @@ static gpu_attribute gpu_config_attributes[] = {
 	{GPU_MIN_CLOCK, 100},
 	{GPU_DVFS_START_CLOCK, 177},
 #endif
-	{GPU_DVFS_BL_CONFIG_CLOCK, 350},
-	{GPU_GOVERNOR_TYPE, G3D_DVFS_GOVERNOR_DEFAULT},
+	{GPU_DVFS_BL_CONFIG_CLOCK, 266},
+	{GPU_GOVERNOR_TYPE, G3D_DVFS_GOVERNOR_INTERACTIVE},
 	{GPU_GOVERNOR_START_CLOCK_DEFAULT, 266},
 	{GPU_GOVERNOR_START_CLOCK_INTERACTIVE, 266},
 	{GPU_GOVERNOR_START_CLOCK_STATIC, 266},
@@ -151,7 +150,9 @@ static gpu_attribute gpu_config_attributes[] = {
 
 int gpu_dvfs_decide_max_clock(struct exynos_context *platform)
 {
-	//unused
+	GPU_LOG(DVFS_WARNING, 0u, 0u, 0u, "%s: gpu_max_clock %d \n",
+	 __func__, platform->gpu_max_clock);
+
 	return 0;
 }
 
@@ -705,6 +706,7 @@ struct gpu_control_ops *gpu_get_control_ops(void)
 #ifdef CONFIG_REGULATOR
 int gpu_enable_dvs(struct exynos_context *platform)
 {
+	platform->dvs_is_enabled = true;
 #if 0
 	if (!platform->dvs_status)
 		return 0;
@@ -731,6 +733,7 @@ int gpu_enable_dvs(struct exynos_context *platform)
 
 int gpu_disable_dvs(struct exynos_context *platform)
 {
+	platform->dvs_is_enabled = false;
 #if 0
 	if (!platform->dvs_status)
 		return 0;

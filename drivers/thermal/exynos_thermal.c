@@ -286,7 +286,7 @@ static void exynos_report_trigger(void)
 			break;
 	}
 
-	pr_info("[TMU-IRQ] IRQ mode=%d\n",i);
+	//pr_info("[TMU-IRQ] IRQ mode=%d\n",i);
 	if (th_zone->mode == THERMAL_DEVICE_ENABLED) {
 		if (i > 0)
 			th_zone->therm_dev->polling_delay = ACTIVE_INTERVAL;

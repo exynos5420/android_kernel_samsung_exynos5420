@@ -144,6 +144,7 @@ kbase_devfreq_status(struct device *dev, struct devfreq_dev_status *stat)
 	return 0;
 }
 
+
 static int kbase_devfreq_init_freq_table(struct kbase_device *kbdev,
 		struct devfreq_dev_profile *dp)
 {
@@ -218,12 +219,16 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 	dp->exit = kbase_devfreq_exit;
 
 	if (kbase_devfreq_init_freq_table(kbdev, dp))
+	{
+		dev_err(kbdev->dev, "Failed to initialize freq table (%d)\n", -EFAULT);
 		return -EFAULT;
+	}
 
-	kbdev->devfreq = devfreq_add_device(kbdev->dev, dp,
-				"simple_ondemand", NULL);
+	kbdev->devfreq = devfreq_add_device(kbdev->dev, dp, &devfreq_simple_ondemand, NULL);
+
 	if (IS_ERR(kbdev->devfreq)) {
 		kbase_devfreq_term_freq_table(kbdev);
+		dev_err(kbdev->dev, "Failed to initialize freq table returning PTR_ERR");
 		return PTR_ERR(kbdev->devfreq);
 	}
 

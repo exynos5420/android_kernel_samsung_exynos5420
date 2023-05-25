@@ -149,8 +149,8 @@ config MALI_PLATFORM_THIRDPARTY
     depends on MALI_T6XX_R7P0
     bool "Third Party Platform"
     default y
-      help
-      Select the SOC platform that contains a Mali-T7XX
+	help
+	  Select the SOC platform that contains a Mali-T7XX
 
 config MALI_PLATFORM_THIRDPARTY_NAME
 	depends on MALI_T6XX_R7P0 && MALI_PLATFORM_THIRDPARTY && MALI_EXPERT

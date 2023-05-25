@@ -122,7 +122,7 @@ struct vfsspi_devData *g_data;
  * VFSSPI_IOCTL_SET_CLK IOCTL command for getting the final baud rate. */
 #define BAUD_RATE_COEF  1000
 
-#define VFSSPI_DEBUG_TIMER_SEC	(10 * HZ)
+#define VFSSPI_DEBUG_TIMER_SEC	(30 * HZ) // ijh bumped to 30
 
 #define DRDY_IRQ_ENABLE	1
 #define DRDY_IRQ_DISABLE	0
@@ -1690,6 +1690,7 @@ int vfsspi_probe(struct spi_device *spi)
 		pr_err("%s: could not create workqueue\n", __func__);
 		goto err_create_workqueue;
 	}
+
 	INIT_WORK(&vfsSpiDev->work_debug, vfsspi_work_func_debug);
 
 	vfsspi_enable_debug_timer();
