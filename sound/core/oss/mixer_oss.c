@@ -1048,6 +1048,7 @@ static int snd_mixer_oss_build_input(struct snd_mixer_oss *mixer, struct snd_mix
 		uinfo = kzalloc(sizeof(*uinfo), GFP_KERNEL);
 		if (! uinfo) {
 			up_read(&mixer->card->controls_rwsem);
+			kfree(uinfo);
 			return -ENOMEM;
 		}
 			
