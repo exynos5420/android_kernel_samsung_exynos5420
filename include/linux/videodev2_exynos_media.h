@@ -62,6 +62,8 @@
 /* yuv411 of JFIF JPEG */
 #define V4L2_PIX_FMT_JPEG_411 v4l2_fourcc('J', 'P', 'G', '3')
 
+#define V4L2_PIX_FMT_NV12M_S10B v4l2_fourcc('B', 'M', '1', '2')
+
 /*
  *	C O N T R O L S
  */

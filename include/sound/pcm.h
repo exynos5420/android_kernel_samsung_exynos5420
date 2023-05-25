@@ -437,6 +437,7 @@ struct snd_pcm_str {
 	struct snd_info_entry *proc_xrun_debug_entry;
 #endif
 #endif
+	struct snd_kcontrol *chmap_kctl; /* channel-mapping controls */
 };
 
 struct snd_pcm {
@@ -810,7 +811,7 @@ int snd_pcm_hw_constraint_integer(struct snd_pcm_runtime *runtime, snd_pcm_hw_pa
 int snd_pcm_hw_constraint_list(struct snd_pcm_runtime *runtime, 
 			       unsigned int cond,
 			       snd_pcm_hw_param_t var,
-			       struct snd_pcm_hw_constraint_list *l);
+			       const struct snd_pcm_hw_constraint_list *l);
 int snd_pcm_hw_constraint_ratnums(struct snd_pcm_runtime *runtime, 
 				  unsigned int cond,
 				  snd_pcm_hw_param_t var,

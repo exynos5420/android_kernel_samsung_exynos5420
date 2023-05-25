@@ -70,6 +70,20 @@ struct snd_aes_iec958 {
 
 /****************************************************************************
  *                                                                          *
+ *        CEA-861 Audio InfoFrame. Used in HDMI and DisplayPort		    *
+ *                                                                          *
+ ****************************************************************************/
+
+struct snd_cea_861_aud_if {
+	unsigned char db1_ct_cc; /* coding type and channel count */
+	unsigned char db2_sf_ss; /* sample frequency and size */
+	unsigned char db3; /* not used, all zeros */
+	unsigned char db4_ca; /* channel allocation code */
+	unsigned char db5_dminh_lsv; /* downmix inhibit & level-shit values */
+};
+
+/****************************************************************************
+ *                                                                          *
  *      Section for driver hardware dependent interface - /dev/snd/hw?      *
  *                                                                          *
  ****************************************************************************/
@@ -139,7 +153,7 @@ struct snd_hwdep_dsp_image {
  *                                                                           *
  *****************************************************************************/
 
-#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 10)
+#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 11)
 
 typedef unsigned long snd_pcm_uframes_t;
 typedef signed long snd_pcm_sframes_t;
@@ -217,7 +231,9 @@ typedef int __bitwise snd_pcm_format_t;
 #define	SNDRV_PCM_FORMAT_G723_24_1B	((__force snd_pcm_format_t) 45) /* 1 sample in 1 byte */
 #define	SNDRV_PCM_FORMAT_G723_40	((__force snd_pcm_format_t) 46) /* 8 Samples in 5 bytes */
 #define	SNDRV_PCM_FORMAT_G723_40_1B	((__force snd_pcm_format_t) 47) /* 1 sample in 1 byte */
-#define	SNDRV_PCM_FORMAT_LAST		SNDRV_PCM_FORMAT_G723_40_1B
+#define	SNDRV_PCM_FORMAT_DSD_U8		((__force snd_pcm_format_t) 48) /* DSD, 1-byte samples DSD (x8) */
+#define	SNDRV_PCM_FORMAT_DSD_U16_LE	((__force snd_pcm_format_t) 49) /* DSD, 2-byte samples DSD (x16), little endian */
+#define	SNDRV_PCM_FORMAT_LAST		SNDRV_PCM_FORMAT_DSD_U16_LE
 
 #ifdef SNDRV_LITTLE_ENDIAN
 #define	SNDRV_PCM_FORMAT_S16		SNDRV_PCM_FORMAT_S16_LE
@@ -261,6 +277,7 @@ typedef int __bitwise snd_pcm_subformat_t;
 #define SNDRV_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
 #define SNDRV_PCM_INFO_SYNC_START	0x00400000	/* pcm support some kind of sync go */
 #define SNDRV_PCM_INFO_NO_PERIOD_WAKEUP	0x00800000	/* period wakeup can be disabled */
+#define SNDRV_PCM_INFO_HAS_WALL_CLOCK   0x01000000      /* has audio wall clock for audio/system time sync */
 #define SNDRV_PCM_INFO_FIFO_IN_FRAMES	0x80000000	/* internal kernel flag - FIFO size is in frames */
 
 typedef int __bitwise snd_pcm_state_t;
@@ -409,7 +426,9 @@ struct snd_pcm_status {
 	snd_pcm_uframes_t avail_max;	/* max frames available on hw since last status */
 	snd_pcm_uframes_t overrange;	/* count of ADC (capture) overrange detections from last status */
 	snd_pcm_state_t suspended_state; /* suspended stream state */
-	unsigned char reserved[60];	/* must be filled with zero */
+	__u32 reserved_alignment;	/* must be filled with zero */
+	struct timespec audio_tstamp;	/* from sample counter or wall clock */
+	unsigned char reserved[56-sizeof(struct timespec)]; /* must be filled with zero */
 };
 
 struct snd_pcm_mmap_status {
@@ -418,6 +437,7 @@ struct snd_pcm_mmap_status {
 	snd_pcm_uframes_t hw_ptr;	/* RO: hw ptr (0...boundary-1) */
 	struct timespec tstamp;		/* Timestamp */
 	snd_pcm_state_t suspended_state; /* RO: suspended stream state */
+	struct timespec audio_tstamp;	/* from sample counter or wall clock */
 };
 
 struct snd_pcm_mmap_control {
@@ -458,6 +478,55 @@ enum {
 	SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,	/* posix_clock_monotonic equivalent */
 	SNDRV_PCM_TSTAMP_TYPE_LAST = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,
 };
+
+/* channel positions */
+enum {
+	SNDRV_CHMAP_UNKNOWN = 0,
+	SNDRV_CHMAP_NA,		/* N/A, silent */
+	SNDRV_CHMAP_MONO,	/* mono stream */
+	/* this follows the alsa-lib mixer channel value + 3 */
+	SNDRV_CHMAP_FL,		/* front left */
+	SNDRV_CHMAP_FR,		/* front right */
+	SNDRV_CHMAP_RL,		/* rear left */
+	SNDRV_CHMAP_RR,		/* rear right */
+	SNDRV_CHMAP_FC,		/* front center */
+	SNDRV_CHMAP_LFE,	/* LFE */
+	SNDRV_CHMAP_SL,		/* side left */
+	SNDRV_CHMAP_SR,		/* side right */
+	SNDRV_CHMAP_RC,		/* rear center */
+	/* new definitions */
+	SNDRV_CHMAP_FLC,	/* front left center */
+	SNDRV_CHMAP_FRC,	/* front right center */
+	SNDRV_CHMAP_RLC,	/* rear left center */
+	SNDRV_CHMAP_RRC,	/* rear right center */
+	SNDRV_CHMAP_FLW,	/* front left wide */
+	SNDRV_CHMAP_FRW,	/* front right wide */
+	SNDRV_CHMAP_FLH,	/* front left high */
+	SNDRV_CHMAP_FCH,	/* front center high */
+	SNDRV_CHMAP_FRH,	/* front right high */
+	SNDRV_CHMAP_TC,		/* top center */
+	SNDRV_CHMAP_TFL,	/* top front left */
+	SNDRV_CHMAP_TFR,	/* top front right */
+	SNDRV_CHMAP_TFC,	/* top front center */
+	SNDRV_CHMAP_TRL,	/* top rear left */
+	SNDRV_CHMAP_TRR,	/* top rear right */
+	SNDRV_CHMAP_TRC,	/* top rear center */
+	/* new definitions for UAC2 */
+	SNDRV_CHMAP_TFLC,	/* top front left center */
+	SNDRV_CHMAP_TFRC,	/* top front right center */
+	SNDRV_CHMAP_TSL,	/* top side left */
+	SNDRV_CHMAP_TSR,	/* top side right */
+	SNDRV_CHMAP_LLFE,	/* left LFE */
+	SNDRV_CHMAP_RLFE,	/* right LFE */
+	SNDRV_CHMAP_BC,		/* bottom center */
+	SNDRV_CHMAP_BLC,	/* bottom left center */
+	SNDRV_CHMAP_BRC,	/* bottom right center */
+	SNDRV_CHMAP_LAST = SNDRV_CHMAP_BRC,
+};
+
+#define SNDRV_CHMAP_POSITION_MASK	0xffff
+#define SNDRV_CHMAP_PHASE_INVERSE	(0x01 << 16)
+#define SNDRV_CHMAP_DRIVER_SPEC		(0x02 << 16)
 
 #define SNDRV_PCM_IOCTL_PVERSION	_IOR('A', 0x00, int)
 #define SNDRV_PCM_IOCTL_INFO		_IOR('A', 0x01, struct snd_pcm_info)

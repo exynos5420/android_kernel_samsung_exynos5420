@@ -249,6 +249,7 @@ struct snd_kcontrol *snd_ctl_new1(const struct snd_kcontrol_new *ncontrol,
 	kctl.count = ncontrol->count ? ncontrol->count : 1;
 	access = ncontrol->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
 		 (ncontrol->access & (SNDRV_CTL_ELEM_ACCESS_READWRITE|
+				      SNDRV_CTL_ELEM_ACCESS_VOLATILE|
 				      SNDRV_CTL_ELEM_ACCESS_INACTIVE|
 				      SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE|
 				      SNDRV_CTL_ELEM_ACCESS_TLV_COMMAND|
@@ -309,7 +310,7 @@ static int snd_ctl_find_hole(struct snd_card *card, unsigned int count)
 	while (snd_ctl_remove_numid_conflict(card, count)) {
 		if (--iter == 0) {
 			/* this situation is very unlikely */
-			snd_printk(KERN_ERR "unable to allocate new control numid\n");
+			dev_err(card->dev, "unable to allocate new control numid\n");
 			return -ENOMEM;
 		}
 	}
@@ -432,6 +433,7 @@ add:
 	card->controls_count += kcontrol->count;
 	kcontrol->id.numid = card->last_numid + 1;
 	card->last_numid += kcontrol->count;
+	id = kcontrol->id;
 	count = kcontrol->count;
 	up_write(&card->controls_rwsem);
 	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
@@ -1407,11 +1409,20 @@ static long snd_ctl_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	case SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS:
 		return snd_ctl_subscribe_events(ctl, ip);
 	case SNDRV_CTL_IOCTL_TLV_READ:
-		return snd_ctl_tlv_ioctl(ctl, argp, 0);
+		down_read(&ctl->card->controls_rwsem);
+		err = snd_ctl_tlv_ioctl(ctl, argp, SNDRV_CTL_TLV_OP_READ);
+		up_read(&ctl->card->controls_rwsem);
+		return err;
 	case SNDRV_CTL_IOCTL_TLV_WRITE:
-		return snd_ctl_tlv_ioctl(ctl, argp, 1);
+		down_write(&ctl->card->controls_rwsem);
+		err = snd_ctl_tlv_ioctl(ctl, argp, SNDRV_CTL_TLV_OP_WRITE);
+		up_write(&ctl->card->controls_rwsem);
+		return err;
 	case SNDRV_CTL_IOCTL_TLV_COMMAND:
-		return snd_ctl_tlv_ioctl(ctl, argp, -1);
+		down_write(&ctl->card->controls_rwsem);
+		err = snd_ctl_tlv_ioctl(ctl, argp, SNDRV_CTL_TLV_OP_CMD);
+		up_write(&ctl->card->controls_rwsem);
+		return err;
 	case SNDRV_CTL_IOCTL_POWER:
 		return -ENOPROTOOPT;
 	case SNDRV_CTL_IOCTL_POWER_STATE:
@@ -1430,7 +1441,7 @@ static long snd_ctl_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 		}
 	}
 	up_read(&snd_ioctl_rwsem);
-	snd_printdd("unknown ioctl = 0x%x\n", cmd);
+	dev_dbg(card->dev, "unknown ioctl = 0x%x\n", cmd);
 	return -ENOTTY;
 }
 
@@ -1680,6 +1691,7 @@ static int snd_ctl_dev_free(struct snd_device *device)
 		snd_ctl_remove(card, control);
 	}
 	up_write(&card->controls_rwsem);
+	put_device(&card->ctl_dev);
 	return 0;
 }
 
@@ -1694,10 +1706,20 @@ int snd_ctl_create(struct snd_card *card)
 		.dev_register =	snd_ctl_dev_register,
 		.dev_disconnect = snd_ctl_dev_disconnect,
 	};
+	int err;
 
 	if (snd_BUG_ON(!card))
 		return -ENXIO;
-	return snd_device_new(card, SNDRV_DEV_CONTROL, card, &ops);
+	if (snd_BUG_ON(card->number < 0 || card->number >= SNDRV_CARDS))
+		return -ENXIO;
+
+	snd_device_initialize(&card->ctl_dev, card);
+	dev_set_name(&card->ctl_dev, "controlC%d", card->number);
+
+	err = snd_device_new(card, SNDRV_DEV_CONTROL, card, &ops);
+	if (err < 0)
+		put_device(&card->ctl_dev);
+	return err;
 }
 
 /*
@@ -1744,8 +1766,13 @@ int snd_ctl_enum_info(struct snd_ctl_elem_info *info, unsigned int channels,
 	info->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	info->count = channels;
 	info->value.enumerated.items = items;
+	if (!items)
+		return 0;
 	if (info->value.enumerated.item >= items)
 		info->value.enumerated.item = items - 1;
+	WARN(strlen(names[info->value.enumerated.item]) >= sizeof(info->value.enumerated.name),
+	     "ALSA: too long item name '%s'\n",
+	     names[info->value.enumerated.item]);
 	strlcpy(info->value.enumerated.name,
 		names[info->value.enumerated.item],
 		sizeof(info->value.enumerated.name));

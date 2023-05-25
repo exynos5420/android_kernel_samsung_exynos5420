@@ -2,7 +2,7 @@
 config 64BIT
 	bool "64-bit kernel" if ARCH = "x86"
 	default ARCH = "x86_64"
-	---help---
+	help
 	  Say yes to build a 64-bit kernel - formerly known as x86_64
 	  Say no to build a 32-bit kernel - formerly known as i386
 
@@ -264,7 +264,7 @@ source "kernel/time/Kconfig"
 
 config SMP
 	bool "Symmetric multi-processing support"
-	---help---
+	help
 	  This enables support for systems with more than one CPU. If you have
 	  a system with only one CPU, like most personal computers, say N. If
 	  you have a system with more than one CPU, say Y.
@@ -293,7 +293,7 @@ config SMP
 config X86_X2APIC
 	bool "Support x2apic"
 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
-	---help---
+	help
 	  This enables x2apic support on CPUs that have this feature.
 
 	  This allows 32-bit apic IDs (so it can support very large systems),
@@ -305,21 +305,21 @@ config X86_MPPARSE
 	bool "Enable MPS table" if ACPI
 	default y
 	depends on X86_LOCAL_APIC
-	---help---
+	help
 	  For old smp systems that do not have proper acpi support. Newer systems
 	  (esp with 64bit cpus) with acpi support, MADT and DSDT will override it
 
 config X86_BIGSMP
 	bool "Support for big SMP systems with more than 8 CPUs"
 	depends on X86_32 && SMP
-	---help---
+	help
 	  This option is needed for the systems that have more than 8 CPUs
 
 if X86_32
 config X86_EXTENDED_PLATFORM
 	bool "Support for extended (non-PC) x86 platforms"
 	default y
-	---help---
+	help
 	  If you disable this option then the kernel will only support
 	  standard PC platforms. (which covers the vast majority of
 	  systems out there.)
@@ -342,7 +342,7 @@ if X86_64
 config X86_EXTENDED_PLATFORM
 	bool "Support for extended (non-PC) x86 platforms"
 	default y
-	---help---
+	help
 	  If you disable this option then the kernel will only support
 	  standard PC platforms. (which covers the vast majority of
 	  systems out there.)
@@ -365,7 +365,7 @@ config X86_NUMACHIP
 	depends on NUMA
 	depends on SMP
 	depends on X86_X2APIC
-	---help---
+	help
 	  Adds support for Numascale NumaChip large-SMP systems. Needed to
 	  enable more than ~168 cores.
 	  If you don't have one of these, you should say N here.
@@ -376,7 +376,7 @@ config X86_VSMP
 	select PARAVIRT
 	depends on X86_64 && PCI
 	depends on X86_EXTENDED_PLATFORM
-	---help---
+	help
 	  Support for ScaleMP vSMP systems.  Say 'Y' here if this kernel is
 	  supposed to run on these EM64T-based machines.  Only choose this option
 	  if you have one of these machines.
@@ -387,7 +387,7 @@ config X86_UV
 	depends on X86_EXTENDED_PLATFORM
 	depends on NUMA
 	depends on X86_X2APIC
-	---help---
+	help
 	  This option is needed in order to support SGI Ultraviolet systems.
 	  If you don't have one of these, you should say N here.
 
@@ -404,7 +404,7 @@ config X86_INTEL_CE
 	select OF
 	select OF_EARLY_FLATTREE
 	select IRQ_DOMAIN
-	---help---
+	help
 	  Select for the Intel CE media processor (CE4100) SOC.
 	  This option compiles in support for the CE4100 SOC for settop
 	  boxes and media devices.
@@ -413,7 +413,7 @@ config X86_WANT_INTEL_MID
 	bool "Intel MID platform support"
 	depends on X86_32
 	depends on X86_EXTENDED_PLATFORM
-	---help---
+	help
 	  Select to build a kernel capable of supporting Intel MID platform
 	  systems which do not have the PCI legacy interfaces (Moorestown,
 	  Medfield). If you are building for a PC class system say N here.
@@ -437,7 +437,7 @@ config X86_MDFLD
 	select INTEL_SCU_IPC
 	select X86_PLATFORM_DEVICES
 	select MFD_INTEL_MSIC
-	---help---
+	help
 	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
 	  Internet Device(MID) platform. 
 	  Unlike standard x86 PCs, Medfield does not have many legacy devices
@@ -452,7 +452,7 @@ config X86_RDC321X
 	depends on X86_EXTENDED_PLATFORM
 	select M486
 	select X86_REBOOTFIXUPS
-	---help---
+	help
 	  This option is needed for RDC R-321x system-on-chip, also known
 	  as R-8610-(G).
 	  If you don't have one of these chips, you should say N here.
@@ -461,7 +461,7 @@ config X86_32_NON_STANDARD
 	bool "Support non-standard 32-bit SMP architectures"
 	depends on X86_32 && SMP
 	depends on X86_EXTENDED_PLATFORM
-	---help---
+	help
 	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000, default
 	  subarchitectures.  It is intended for a generic binary kernel.
 	  if you select them all, kernel will probe it one by one. and will
@@ -475,7 +475,7 @@ config X86_NUMAQ
 	depends on PCI
 	select NUMA
 	select X86_MPPARSE
-	---help---
+	help
 	  This option is used for getting Linux to run on a NUMAQ (IBM/Sequent)
 	  NUMA multiquad box. This changes the way that processors are
 	  bootstrapped, and uses Clustered Logical APIC addressing mode instead
@@ -496,7 +496,7 @@ config X86_VISWS
 	bool "SGI 320/540 (Visual Workstation)"
 	depends on X86_32 && PCI && X86_MPPARSE && PCI_GODIRECT
 	depends on X86_32_NON_STANDARD
-	---help---
+	help
 	  The SGI Visual Workstation series is an IA32-based workstation
 	  based on SGI systems chips with some legacy PC hardware attached.
 
@@ -508,21 +508,21 @@ config X86_VISWS
 config X86_SUMMIT
 	bool "Summit/EXA (IBM x440)"
 	depends on X86_32_NON_STANDARD
-	---help---
+	help
 	  This option is needed for IBM systems that use the Summit/EXA chipset.
 	  In particular, it is needed for the x440.
 
 config X86_ES7000
 	bool "Unisys ES7000 IA32 series"
 	depends on X86_32_NON_STANDARD && X86_BIGSMP
-	---help---
+	help
 	  Support for Unisys ES7000 systems.  Say 'Y' here if this kernel is
 	  supposed to run on an IA32-based Unisys ES7000 system.
 
 config X86_32_IRIS
 	tristate "Eurobraille/Iris poweroff module"
 	depends on X86_32
-	---help---
+	help
 	  The Iris machines from EuroBraille do not have APM or ACPI support
 	  to shut themselves down properly.  A special I/O sequence is
 	  needed to do so, which is what this module does at
@@ -536,7 +536,7 @@ config SCHED_OMIT_FRAME_POINTER
 	def_bool y
 	prompt "Single-depth WCHAN output"
 	depends on X86
-	---help---
+	help
 	  Calculate simpler /proc/<PID>/wchan values. If this option
 	  is disabled then wchan values will recurse back to the
 	  caller function. This provides more accurate wchan values,
@@ -546,7 +546,7 @@ config SCHED_OMIT_FRAME_POINTER
 
 menuconfig PARAVIRT_GUEST
 	bool "Paravirtualized guest support"
-	---help---
+	help
 	  Say Y here to get to see options related to running Linux under
 	  various hypervisors.  This option alone does not add any kernel code.
 
@@ -558,7 +558,7 @@ config PARAVIRT_TIME_ACCOUNTING
 	bool "Paravirtual steal time accounting"
 	select PARAVIRT
 	default n
-	---help---
+	help
 	  Select this option to enable fine granularity task steal time
 	  accounting. Time spent executing other tasks in parallel with
 	  the current vCPU is discounted from the vCPU power. To account for
@@ -572,7 +572,7 @@ config KVM_CLOCK
 	bool "KVM paravirtualized clock"
 	select PARAVIRT
 	select PARAVIRT_CLOCK
-	---help---
+	help
 	  Turning on this option will allow you to run a paravirtualized clock
 	  when running over the KVM hypervisor. Instead of relying on a PIT
 	  (or probably other) emulation by the underlying device model, the host
@@ -582,7 +582,7 @@ config KVM_CLOCK
 config KVM_GUEST
 	bool "KVM Guest support"
 	select PARAVIRT
-	---help---
+	help
 	  This option enables various optimizations for running under the KVM
 	  hypervisor.
 
@@ -590,7 +590,7 @@ source "arch/x86/lguest/Kconfig"
 
 config PARAVIRT
 	bool "Enable paravirtualization code"
-	---help---
+	help
 	  This changes the kernel so it can modify itself when it is run
 	  under a hypervisor, potentially improving performance significantly
 	  over full virtualization.  However, when run without a hypervisor
@@ -599,7 +599,7 @@ config PARAVIRT
 config PARAVIRT_SPINLOCKS
 	bool "Paravirtualization layer for spinlocks"
 	depends on PARAVIRT && SMP && EXPERIMENTAL
-	---help---
+	help
 	  Paravirtualized spinlocks allow a pvops backend to replace the
 	  spinlock implementation with something virtualization-friendly
 	  (for example, block the virtual CPU rather than spinning).
@@ -617,7 +617,7 @@ endif
 config PARAVIRT_DEBUG
 	bool "paravirt-ops debugging"
 	depends on PARAVIRT && DEBUG_KERNEL
-	---help---
+	help
 	  Enable to debug paravirt_ops internals.  Specifically, BUG if
 	  a paravirt_op is missing when it is called.
 
@@ -626,7 +626,7 @@ config NO_BOOTMEM
 
 config MEMTEST
 	bool "Memtest"
-	---help---
+	help
 	  This option adds a kernel parameter 'memtest', which allows memtest
 	  to be set.
 	        memtest=0, mean disabled; -- default
@@ -648,7 +648,7 @@ source "arch/x86/Kconfig.cpu"
 config HPET_TIMER
 	def_bool X86_64
 	prompt "HPET Timer Support" if X86_32
-	---help---
+	help
 	  Use the IA-PC HPET (High Precision Event Timer) to manage
 	  time in preference to the PIT and RTC, if a HPET is
 	  present.
@@ -685,7 +685,7 @@ config APB_TIMER
 config DMI
 	default y
 	bool "Enable DMI scanning" if EXPERT
-	---help---
+	help
 	  Enabled scanning of DMI to identify machine quirks. Say Y
 	  here unless you have verified that your setup is not
 	  affected by entries in the DMI blacklist. Required by PNP
@@ -696,7 +696,7 @@ config GART_IOMMU
 	default y
 	select SWIOTLB
 	depends on X86_64 && PCI && AMD_NB
-	---help---
+	help
 	  Support for full DMA access of devices with 32bit memory access only
 	  on systems with more than 3GB. This is usually needed for USB,
 	  sound, many IDE/SATA chipsets and some other devices.
@@ -711,7 +711,7 @@ config CALGARY_IOMMU
 	bool "IBM Calgary IOMMU support"
 	select SWIOTLB
 	depends on X86_64 && PCI && EXPERIMENTAL
-	---help---
+	help
 	  Support for hardware IOMMUs in IBM's xSeries x366 and x460
 	  systems. Needed to run systems with more than 3GB of memory
 	  properly with 32-bit PCI devices that do not support DAC
@@ -729,7 +729,7 @@ config CALGARY_IOMMU_ENABLED_BY_DEFAULT
 	def_bool y
 	prompt "Should Calgary be enabled by default?"
 	depends on CALGARY_IOMMU
-	---help---
+	help
 	  Should Calgary be enabled by default? if you choose 'y', Calgary
 	  will be used (if it exists). If you choose 'n', Calgary will not be
 	  used even if it exists. If you choose 'n' and would like to use
@@ -739,7 +739,7 @@ config CALGARY_IOMMU_ENABLED_BY_DEFAULT
 # need this always selected by IOMMU for the VIA workaround
 config SWIOTLB
 	def_bool y if X86_64
-	---help---
+	help
 	  Support for software bounce buffers used on x86-64 systems
 	  which don't have a hardware IOMMU (e.g. the current generation
 	  of Intel's x86-64 CPUs). Using this PCI devices which can only
@@ -753,7 +753,7 @@ config MAXSMP
 	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
 	depends on X86_64 && SMP && DEBUG_KERNEL && EXPERIMENTAL
 	select CPUMASK_OFFSTACK
-	---help---
+	help
 	  Enable maximum number of CPUS and NUMA Nodes for this architecture.
 	  If unsure, say N.
 
@@ -765,7 +765,7 @@ config NR_CPUS
 	default "4096" if MAXSMP
 	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
 	default "8" if SMP
-	---help---
+	help
 	  This allows you to specify the maximum number of CPUs which this
 	  kernel will support.  The maximum supported value is 512 and the
 	  minimum value which makes sense is 2.
@@ -776,7 +776,7 @@ config NR_CPUS
 config SCHED_SMT
 	bool "SMT (Hyperthreading) scheduler support"
 	depends on X86_HT
-	---help---
+	help
 	  SMT scheduler support improves the CPU scheduler's decision making
 	  when dealing with Intel Pentium 4 chips with HyperThreading at a
 	  cost of slightly increased overhead in some places. If unsure say
@@ -786,7 +786,7 @@ config SCHED_MC
 	def_bool y
 	prompt "Multi-core scheduler support"
 	depends on X86_HT
-	---help---
+	help
 	  Multi-core scheduler support improves the CPU scheduler's decision
 	  making when dealing with multi-core CPU chips at a cost of slightly
 	  increased overhead in some places. If unsure say N here.
@@ -794,7 +794,7 @@ config SCHED_MC
 config IRQ_TIME_ACCOUNTING
 	bool "Fine granularity task level IRQ time accounting"
 	default n
-	---help---
+	help
 	  Select this option to enable fine granularity task irq time
 	  accounting. This is done by reading a timestamp on each
 	  transitions between softirq and hardirq state, so there can be a
@@ -807,7 +807,7 @@ source "kernel/Kconfig.preempt"
 config X86_UP_APIC
 	bool "Local APIC support on uniprocessors"
 	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
-	---help---
+	help
 	  A local APIC (Advanced Programmable Interrupt Controller) is an
 	  integrated interrupt controller in the CPU. If you have a single-CPU
 	  system which has a processor with a local APIC, you can say Y here to
@@ -820,7 +820,7 @@ config X86_UP_APIC
 config X86_UP_IOAPIC
 	bool "IO-APIC support on uniprocessors"
 	depends on X86_UP_APIC
-	---help---
+	help
 	  An IO-APIC (I/O Advanced Programmable Interrupt Controller) is an
 	  SMP-capable replacement for PC-style interrupt controllers. Most
 	  SMP systems and many recent uniprocessor systems have one.
@@ -844,7 +844,7 @@ config X86_VISWS_APIC
 config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
 	bool "Reroute for broken boot IRQs"
 	depends on X86_IO_APIC
-	---help---
+	help
 	  This option enables a workaround that fixes a source of
 	  spurious interrupts. This is recommended when threaded
 	  interrupt handling is used on systems where the generation of
@@ -866,7 +866,7 @@ config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
 
 config X86_MCE
 	bool "Machine Check / overheating reporting"
-	---help---
+	help
 	  Machine Check support allows the processor to notify the
 	  kernel if it detects a problem (e.g. overheating, data corruption).
 	  The action the kernel takes depends on the severity of the problem,
@@ -876,7 +876,7 @@ config X86_MCE_INTEL
 	def_bool y
 	prompt "Intel MCE features"
 	depends on X86_MCE && X86_LOCAL_APIC
-	---help---
+	help
 	   Additional support for intel specific MCE features such as
 	   the thermal monitor.
 
@@ -884,14 +884,14 @@ config X86_MCE_AMD
 	def_bool y
 	prompt "AMD MCE features"
 	depends on X86_MCE && X86_LOCAL_APIC
-	---help---
+	help
 	   Additional support for AMD specific MCE features such as
 	   the DRAM Error Threshold.
 
 config X86_ANCIENT_MCE
 	bool "Support for old Pentium 5 / WinChip machine checks"
 	depends on X86_32 && X86_MCE
-	---help---
+	help
 	  Include support for machine check handling on old Pentium 5 or WinChip
 	  systems. These typically need to be enabled explicitely on the command
 	  line.
@@ -903,7 +903,7 @@ config X86_MCE_THRESHOLD
 config X86_MCE_INJECT
 	depends on X86_MCE
 	tristate "Machine check injector support"
-	---help---
+	help
 	  Provide support for injecting machine checks for testing purposes.
 	  If you don't know what a machine check is and you don't do kernel
 	  QA it is safe to say n.
@@ -916,7 +916,7 @@ config VM86
 	bool "Enable VM86 support" if EXPERT
 	default y
 	depends on X86_32
-	---help---
+	help
 	  This option is required by programs like DOSEMU to run
 	  16-bit real mode legacy code on x86 processors. It also may
 	  be needed by software like XFree86 to initialize some video
@@ -925,7 +925,7 @@ config VM86
 config X86_16BIT
 	bool "Enable support for 16-bit segments" if EXPERT
 	default y
-	---help---
+	help
 	  This option is required by programs like Wine to run 16-bit
 	  protected mode legacy code on x86 processors.  Disabling
 	  this option saves about 300 bytes on i386, or around 6K text
@@ -942,7 +942,7 @@ config X86_ESPFIX64
 config TOSHIBA
 	tristate "Toshiba Laptop support"
 	depends on X86_32
-	---help---
+	help
 	  This adds a driver to safely access the System Management Mode of
 	  the CPU on Toshiba portables with a genuine Toshiba BIOS. It does
 	  not work on models with a Phoenix BIOS. The System Management Mode
@@ -958,7 +958,7 @@ config TOSHIBA
 config I8K
 	tristate "Dell laptop support"
 	select HWMON
-	---help---
+	help
 	  This adds a driver to safely access the System Management Mode
 	  of the CPU on the Dell Inspiron 8000. The System Management Mode
 	  is used to read cpu temperature and cooling fan status and to
@@ -979,7 +979,7 @@ config I8K
 config X86_REBOOTFIXUPS
 	bool "Enable X86 board specific fixups for reboot"
 	depends on X86_32
-	---help---
+	help
 	  This enables chipset and/or board specific fixups to be done
 	  in order to get reboot to work correctly. This is only needed on
 	  some combinations of hardware and BIOS. The symptom, for which
@@ -996,7 +996,7 @@ config X86_REBOOTFIXUPS
 config MICROCODE
 	tristate "/dev/cpu/microcode - microcode support"
 	select FW_LOADER
-	---help---
+	help
 	  If you say Y here, you will be able to update the microcode on
 	  certain Intel and AMD processors. The Intel support is for the
 	  IA32 family, e.g. Pentium Pro, Pentium II, Pentium III,
@@ -1016,7 +1016,7 @@ config MICROCODE_INTEL
 	depends on MICROCODE
 	default MICROCODE
 	select FW_LOADER
-	---help---
+	help
 	  This options enables microcode patch loading support for Intel
 	  processors.
 
@@ -1028,7 +1028,7 @@ config MICROCODE_AMD
 	bool "AMD microcode patch loading support"
 	depends on MICROCODE
 	select FW_LOADER
-	---help---
+	help
 	  If you select this option, microcode patch loading support for AMD
 	  processors will be enabled.
 
@@ -1038,7 +1038,7 @@ config MICROCODE_OLD_INTERFACE
 
 config X86_MSR
 	tristate "/dev/cpu/*/msr - Model-specific register support"
-	---help---
+	help
 	  This device gives privileged processes access to the x86
 	  Model-Specific Registers (MSRs).  It is a character device with
 	  major 202 and minors 0 to 31 for /dev/cpu/0/msr to /dev/cpu/31/msr.
@@ -1047,7 +1047,7 @@ config X86_MSR
 
 config X86_CPUID
 	tristate "/dev/cpu/*/cpuid - CPU information support"
-	---help---
+	help
 	  This device gives processes access to the x86 CPUID instruction to
 	  be executed on a specific processor.  It is a character device
 	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
@@ -1062,7 +1062,7 @@ choice
 config NOHIGHMEM
 	bool "off"
 	depends on !X86_NUMAQ
-	---help---
+	help
 	  Linux can use up to 64 Gigabytes of physical memory on x86 systems.
 	  However, the address space of 32-bit x86 processors is only 4
 	  Gigabytes large. That means that, if you have a large amount of
@@ -1099,7 +1099,7 @@ config NOHIGHMEM
 config HIGHMEM4G
 	bool "4GB"
 	depends on !X86_NUMAQ
-	---help---
+	help
 	  Select this if you have a 32-bit processor and between 1 and 4
 	  gigabytes of physical RAM.
 
@@ -1107,7 +1107,7 @@ config HIGHMEM64G
 	bool "64GB"
 	depends on !M386 && !M486
 	select X86_PAE
-	---help---
+	help
 	  Select this if you have a 32-bit processor and more than 4
 	  gigabytes of physical RAM.
 
@@ -1118,7 +1118,7 @@ choice
 	prompt "Memory split" if EXPERT
 	default VMSPLIT_3G
 	depends on X86_32
-	---help---
+	help
 	  Select the desired split between kernel and user memory.
 
 	  If the address range available to the kernel is less than the
@@ -1164,7 +1164,7 @@ config HIGHMEM
 config X86_PAE
 	bool "PAE (Physical Address Extension) Support"
 	depends on X86_32 && !HIGHMEM4G
-	---help---
+	help
 	  PAE is required for NX support, and furthermore enables
 	  larger swapspace support for non-overcommit purposes. It
 	  has the cost of more pagetable lookup overhead, and also
@@ -1180,7 +1180,7 @@ config DIRECT_GBPAGES
 	bool "Enable 1GB pages for kernel pagetables" if EXPERT
 	default y
 	depends on X86_64
-	---help---
+	help
 	  Allow the kernel linear mapping to use 1GB pages on CPUs that
 	  support it. This can improve the kernel's performance a tiny bit by
 	  reducing TLB pressure. If in doubt, say "Y".
@@ -1191,7 +1191,7 @@ config NUMA
 	depends on SMP
 	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI) && EXPERIMENTAL)
 	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
-	---help---
+	help
 	  Enable NUMA (Non Uniform Memory Access) support.
 
 	  The kernel will try to allocate memory used by a CPU on the
@@ -1214,7 +1214,7 @@ config AMD_NUMA
 	def_bool y
 	prompt "Old style AMD Opteron NUMA detection"
 	depends on X86_64 && NUMA && PCI
-	---help---
+	help
 	  Enable AMD NUMA node topology detection.  You should say Y here if
 	  you have a multi processor AMD system. This uses an old method to
 	  read the NUMA configuration directly from the builtin Northbridge
@@ -1226,7 +1226,7 @@ config X86_64_ACPI_NUMA
 	prompt "ACPI NUMA detection"
 	depends on X86_64 && NUMA && ACPI && PCI
 	select ACPI_NUMA
-	---help---
+	help
 	  Enable ACPI SRAT based node topology detection.
 
 # Some NUMA nodes have memory ranges that span
@@ -1241,7 +1241,7 @@ config NODES_SPAN_OTHER_NODES
 config NUMA_EMU
 	bool "NUMA emulation"
 	depends on NUMA
-	---help---
+	help
 	  Enable NUMA emulation. A flat machine will be split
 	  into virtual nodes when booted with "numa=fake=N", where N is the
 	  number of nodes. This is only useful for debugging.
@@ -1254,7 +1254,7 @@ config NODES_SHIFT
 	default "4" if X86_NUMAQ
 	default "3"
 	depends on NEED_MULTIPLE_NODES
-	---help---
+	help
 	  Specify the maximum number of NUMA Nodes available on the target
 	  system.  Increases memory reserved to accommodate various tables.
 
@@ -1314,7 +1314,7 @@ source "mm/Kconfig"
 config HIGHPTE
 	bool "Allocate 3rd-level pagetables from highmem"
 	depends on HIGHMEM
-	---help---
+	help
 	  The VM uses one page table entry for each page of physical memory.
 	  For systems with a lot of RAM, this can be wasteful of precious
 	  low memory.  Setting this option will put user-space page table
@@ -1322,7 +1322,7 @@ config HIGHPTE
 
 config X86_CHECK_BIOS_CORRUPTION
 	bool "Check for low memory corruption"
-	---help---
+	help
 	  Periodically check for memory corruption in low memory, which
 	  is suspected to be caused by BIOS.  Even when enabled in the
 	  configuration, it is disabled at runtime.  Enable it by
@@ -1346,7 +1346,7 @@ config X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK
 	bool "Set the default setting of memory_corruption_check"
 	depends on X86_CHECK_BIOS_CORRUPTION
 	default y
-	---help---
+	help
 	  Set whether the default state of memory_corruption_check is
 	  on or off.
 
@@ -1354,7 +1354,7 @@ config X86_RESERVE_LOW
 	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
 	default 64
 	range 4 640
-	---help---
+	help
 	  Specify the amount of low memory to reserve for the BIOS.
 
 	  The first page contains BIOS data structures that the kernel
@@ -1382,7 +1382,7 @@ config X86_RESERVE_LOW
 config MATH_EMULATION
 	bool
 	prompt "Math emulation" if X86_32
-	---help---
+	help
 	  Linux can emulate a math coprocessor (used for floating point
 	  operations) if you don't have one. 486DX and Pentium processors have
 	  a math coprocessor built in, 486SX and 386 do not, unless you added
@@ -1408,7 +1408,7 @@ config MATH_EMULATION
 config MTRR
 	def_bool y
 	prompt "MTRR (Memory Type Range Register) support" if EXPERT
-	---help---
+	help
 	  On Intel P6 family processors (Pentium Pro, Pentium II and later)
 	  the Memory Type Range Registers (MTRRs) may be used to control
 	  processor access to memory ranges. This is most useful if you have
@@ -1444,7 +1444,7 @@ config MTRR_SANITIZER
 	def_bool y
 	prompt "MTRR cleanup support"
 	depends on MTRR
-	---help---
+	help
 	  Convert MTRR layout from continuous to discrete, so X drivers can
 	  add writeback entries.
 
@@ -1459,7 +1459,7 @@ config MTRR_SANITIZER_ENABLE_DEFAULT
 	range 0 1
 	default "0"
 	depends on MTRR_SANITIZER
-	---help---
+	help
 	  Enable mtrr cleanup default value
 
 config MTRR_SANITIZER_SPARE_REG_NR_DEFAULT
@@ -1467,7 +1467,7 @@ config MTRR_SANITIZER_SPARE_REG_NR_DEFAULT
 	range 0 7
 	default "1"
 	depends on MTRR_SANITIZER
-	---help---
+	help
 	  mtrr cleanup spare entries default, it can be changed via
 	  mtrr_spare_reg_nr=N on the kernel command line.
 
@@ -1475,7 +1475,7 @@ config X86_PAT
 	def_bool y
 	prompt "x86 PAT support" if EXPERT
 	depends on MTRR
-	---help---
+	help
 	  Use PAT attributes to setup page level cache control.
 
 	  PATs are the modern equivalents of MTRRs and are much more
@@ -1493,7 +1493,7 @@ config ARCH_USES_PG_UNCACHED
 config ARCH_RANDOM
 	def_bool y
 	prompt "x86 architectural random number generator" if EXPERT
-	---help---
+	help
 	  Enable the x86 architectural RDRAND instruction
 	  (Intel Bull Mountain technology) to generate random numbers.
 	  If supported, this is a high bandwidth, cryptographically
@@ -1502,7 +1502,7 @@ config ARCH_RANDOM
 config EFI
 	bool "EFI runtime service support"
 	depends on ACPI
-	---help---
+	help
 	  This enables the kernel to use EFI runtime services that are
 	  available (such as the EFI variable services).
 
@@ -1516,14 +1516,14 @@ config EFI
 config EFI_STUB
        bool "EFI stub support"
        depends on EFI
-       ---help---
+       help
           This kernel feature allows a bzImage to be loaded directly
 	  by EFI firmware without the use of a bootloader.
 
 config SECCOMP
 	def_bool y
 	prompt "Enable seccomp to safely compute untrusted bytecode"
-	---help---
+	help
 	  This kernel feature is useful for number crunching applications
 	  that may need to compute untrusted bytecode during their
 	  execution. By using pipes or other transports made available to
@@ -1540,7 +1540,7 @@ source kernel/Kconfig.hz
 
 config KEXEC
 	bool "kexec system call"
-	---help---
+	help
 	  kexec is a system call that implements the ability to shutdown your
 	  current kernel, and to start another kernel.  It is like a reboot
 	  but it is independent of the system firmware.   And like a reboot
@@ -1557,7 +1557,7 @@ config KEXEC
 config CRASH_DUMP
 	bool "kernel crash dumps"
 	depends on X86_64 || (X86_32 && HIGHMEM)
-	---help---
+	help
 	  Generate crash dump after being started by kexec.
 	  This should be normally only set in special crash dump kernels
 	  which are loaded in the main kernel with kexec-tools into
@@ -1572,14 +1572,14 @@ config KEXEC_JUMP
 	bool "kexec jump (EXPERIMENTAL)"
 	depends on EXPERIMENTAL
 	depends on KEXEC && HIBERNATION
-	---help---
+	help
 	  Jump between original kernel and kexeced kernel and invoke
 	  code in physical address mode via KEXEC
 
 config PHYSICAL_START
 	hex "Physical address where the kernel is loaded" if (EXPERT || CRASH_DUMP)
 	default "0x1000000"
-	---help---
+	help
 	  This gives the physical address where the kernel is loaded.
 
 	  If kernel is a not relocatable (CONFIG_RELOCATABLE=n) then
@@ -1620,7 +1620,7 @@ config PHYSICAL_START
 config RELOCATABLE
 	bool "Build a relocatable kernel"
 	default y
-	---help---
+	help
 	  This builds a kernel image that retains relocation information
 	  so it can be loaded someplace besides the default 1MB.
 	  The relocations tend to make the kernel binary about 10% larger,
@@ -1643,7 +1643,7 @@ config PHYSICAL_ALIGN
 	hex "Alignment value to which kernel should be aligned" if X86_32
 	default "0x1000000"
 	range 0x2000 0x1000000
-	---help---
+	help
 	  This value puts the alignment restrictions on physical address
 	  where kernel is loaded and run from. Kernel is compiled for an
 	  address which meets above alignment restriction.
@@ -1665,7 +1665,7 @@ config PHYSICAL_ALIGN
 config HOTPLUG_CPU
 	bool "Support for hot-pluggable CPUs"
 	depends on SMP && HOTPLUG
-	---help---
+	help
 	  Say Y here to allow turning CPUs off and on. CPUs can be
 	  controlled through /sys/devices/system/cpu.
 	  ( Note: power management support will enable this option
@@ -1676,7 +1676,7 @@ config COMPAT_VDSO
 	def_bool y
 	prompt "Compat VDSO support"
 	depends on X86_32 || IA32_EMULATION
-	---help---
+	help
 	  Map the 32-bit VDSO to the predictable old-style address too.
 
 	  Say N here if you are running a sufficiently recent glibc
@@ -1687,7 +1687,7 @@ config COMPAT_VDSO
 
 config CMDLINE_BOOL
 	bool "Built-in kernel command line"
-	---help---
+	help
 	  Allow for specifying boot arguments to the kernel at
 	  build time.  On some systems (e.g. embedded ones), it is
 	  necessary or convenient to provide some or all of the
@@ -1705,7 +1705,7 @@ config CMDLINE
 	string "Built-in kernel command string"
 	depends on CMDLINE_BOOL
 	default ""
-	---help---
+	help
 	  Enter arguments here that should be compiled into the kernel
 	  image and used at boot time.  If the boot loader provides a
 	  command line at boot time, it is appended to this string to
@@ -1721,7 +1721,7 @@ config CMDLINE
 config CMDLINE_OVERRIDE
 	bool "Built-in command line overrides boot loader arguments"
 	depends on CMDLINE_BOOL
-	---help---
+	help
 	  Set this option to 'Y' to have the kernel ignore the boot loader
 	  command line, and use ONLY the built-in command line.
 
@@ -1761,7 +1761,7 @@ config X86_APM_BOOT
 menuconfig APM
 	tristate "APM (Advanced Power Management) BIOS support"
 	depends on X86_32 && PM_SLEEP
-	---help---
+	help
 	  APM is a BIOS specification for saving power using several different
 	  techniques. This is mostly useful for battery powered laptops with
 	  APM compliant BIOSes. If you say Y here, the system time will be
@@ -1821,14 +1821,14 @@ if APM
 
 config APM_IGNORE_USER_SUSPEND
 	bool "Ignore USER SUSPEND"
-	---help---
+	help
 	  This option will ignore USER SUSPEND requests. On machines with a
 	  compliant APM BIOS, you want to say N. However, on the NEC Versa M
 	  series notebooks, it is necessary to say Y because of a BIOS bug.
 
 config APM_DO_ENABLE
 	bool "Enable PM at boot time"
-	---help---
+	help
 	  Enable APM features at boot time. From page 36 of the APM BIOS
 	  specification: "When disabled, the APM BIOS does not automatically
 	  power manage devices, enter the Standby State, enter the Suspend
@@ -1845,7 +1845,7 @@ config APM_DO_ENABLE
 
 config APM_CPU_IDLE
 	bool "Make CPU Idle calls when idle"
-	---help---
+	help
 	  Enable calls to APM CPU Idle/CPU Busy inside the kernel's idle loop.
 	  On some machines, this can activate improved power savings, such as
 	  a slowed CPU clock rate, when the machine is idle. These idle calls
@@ -1856,7 +1856,7 @@ config APM_CPU_IDLE
 
 config APM_DISPLAY_BLANK
 	bool "Enable console blanking using APM"
-	---help---
+	help
 	  Enable console blanking using the APM. Some laptops can use this to
 	  turn off the LCD backlight when the screen blanker of the Linux
 	  virtual console blanks the screen. Note that this is only used by
@@ -1869,7 +1869,7 @@ config APM_DISPLAY_BLANK
 
 config APM_ALLOW_INTS
 	bool "Allow interrupts during APM BIOS calls"
-	---help---
+	help
 	  Normally we disable external interrupts while we are making calls to
 	  the APM BIOS as a measure to lessen the effects of a badly behaving
 	  BIOS implementation.  The BIOS should reenable interrupts if it
@@ -1894,7 +1894,7 @@ config PCI
 	bool "PCI support"
 	default y
 	select ARCH_SUPPORTS_MSI if (X86_LOCAL_APIC && X86_IO_APIC)
-	---help---
+	help
 	  Find out whether you have a PCI motherboard. PCI is the name of a
 	  bus system, i.e. the way the CPU talks to the other stuff inside
 	  your box. Other bus systems are ISA, EISA, MicroChannel (MCA) or
@@ -1904,7 +1904,7 @@ choice
 	prompt "PCI access mode"
 	depends on X86_32 && PCI
 	default PCI_GOANY
-	---help---
+	help
 	  On PCI systems, the BIOS can be used to detect the PCI devices and
 	  determine their configuration. However, some old PCI motherboards
 	  have BIOS bugs and may crash if this is done. Also, some embedded
@@ -1997,7 +1997,7 @@ if X86_32
 
 config ISA
 	bool "ISA support"
-	---help---
+	help
 	  Find out whether you have ISA slots on your motherboard.  ISA is the
 	  name of a bus system, i.e. the way the CPU talks to the other stuff
 	  inside your box.  Other bus systems are PCI, EISA, MicroChannel
@@ -2007,7 +2007,7 @@ config ISA
 config EISA
 	bool "EISA support"
 	depends on ISA
-	---help---
+	help
 	  The Extended Industry Standard Architecture (EISA) bus was
 	  developed as an open alternative to the IBM MicroChannel bus.
 
@@ -2024,7 +2024,7 @@ source "drivers/eisa/Kconfig"
 
 config MCA
 	bool "MCA support"
-	---help---
+	help
 	  MicroChannel Architecture is found in some IBM PS/2 machines and
 	  laptops.  It is a bus system similar to PCI or ISA. See
 	  <file:Documentation/mca.txt> (and especially the web page given
@@ -2034,7 +2034,7 @@ source "drivers/mca/Kconfig"
 
 config SCx200
 	tristate "NatSemi SCx200 support"
-	---help---
+	help
 	  This provides basic support for National Semiconductor's
 	  (now AMD's) Geode processors.  The driver probes for the
 	  PCI-IDs of several on-chip devices, so its a good dependency
@@ -2046,7 +2046,7 @@ config SCx200HR_TIMER
 	tristate "NatSemi SCx200 27MHz High-Resolution Timer Support"
 	depends on SCx200
 	default y
-	---help---
+	help
 	  This driver provides a clocksource built upon the on-chip
 	  27MHz high-resolution timer.  Its also a workaround for
 	  NSC Geode SC-1100's buggy TSC, which loses time when the
@@ -2060,7 +2060,7 @@ config OLPC
 	select OF
 	select OF_PROMTREE
 	select IRQ_DOMAIN
-	---help---
+	help
 	  Add support for detecting the unique features of the OLPC
 	  XO hardware.
 
@@ -2068,13 +2068,13 @@ config OLPC_XO1_PM
 	bool "OLPC XO-1 Power Management"
 	depends on OLPC && MFD_CS5535 && PM_SLEEP
 	select MFD_CORE
-	---help---
+	help
 	  Add support for poweroff and suspend of the OLPC XO-1 laptop.
 
 config OLPC_XO1_RTC
 	bool "OLPC XO-1 Real Time Clock"
 	depends on OLPC_XO1_PM && RTC_DRV_CMOS
-	---help---
+	help
 	  Add support for the XO-1 real time clock, which can be used as a
 	  programmable wakeup source.
 
@@ -2084,7 +2084,7 @@ config OLPC_XO1_SCI
 	select POWER_SUPPLY
 	select GPIO_CS5535
 	select MFD_CORE
-	---help---
+	help
 	  Add support for SCI-based features of the OLPC XO-1 laptop:
 	   - EC-driven system wakeups
 	   - Power button
@@ -2097,7 +2097,7 @@ config OLPC_XO15_SCI
 	bool "OLPC XO-1.5 SCI extras"
 	depends on OLPC && ACPI
 	select POWER_SUPPLY
-	---help---
+	help
 	  Add support for SCI-based features of the OLPC XO-1.5 laptop:
 	   - EC-driven system wakeups
 	   - AC adapter status updates
@@ -2106,7 +2106,7 @@ config OLPC_XO15_SCI
 config ALIX
 	bool "PCEngines ALIX System Support (LED setup)"
 	select GPIOLIB
-	---help---
+	help
 	  This option enables system support for the PCEngines ALIX.
 	  At present this just sets up LEDs for GPIO control on
 	  ALIX2/3/6 boards.  However, other system specific setup should
@@ -2120,14 +2120,14 @@ config ALIX
 config NET5501
 	bool "Soekris Engineering net5501 System Support (LEDS, GPIO, etc)"
 	select GPIOLIB
-	---help---
+	help
 	  This option enables system support for the Soekris Engineering net5501.
 
 config GEOS
 	bool "Traverse Technologies GEOS System Support (LEDS, GPIO, etc)"
 	select GPIOLIB
 	depends on DMI
-	---help---
+	help
 	  This option enables system support for the Traverse Technologies GEOS.
 
 endif # X86_32
@@ -2162,7 +2162,7 @@ config IA32_EMULATION
 	depends on X86_64
 	select BINFMT_ELF
 	select COMPAT_BINFMT_ELF
-	---help---
+	help
 	  Include code to run legacy 32-bit programs under a
 	  64-bit kernel. You should likely turn this on, unless you're
 	  100% sure that you don't have any 32-bit programs left.
@@ -2170,13 +2170,13 @@ config IA32_EMULATION
 config IA32_AOUT
 	tristate "IA32 a.out support"
 	depends on IA32_EMULATION
-	---help---
+	help
 	  Support old a.out binaries in the 32bit emulation.
 
 config X86_X32
 	bool "x32 ABI for 64-bit mode (EXPERIMENTAL)"
 	depends on X86_64 && IA32_EMULATION && EXPERIMENTAL
-	---help---
+	help
 	  Include code to run binaries for the x32 native 32-bit ABI
 	  for 64-bit processors.  An x32 process gets access to the
 	  full 64-bit register file and wide data path while leaving

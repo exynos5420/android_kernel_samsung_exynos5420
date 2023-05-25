@@ -130,6 +130,29 @@ static inline int init_info_for_card(struct snd_card *card)
 #define init_info_for_card(card)
 #endif
 
+/* the default release callback set in snd_device_initialize() below;
+ * this is just NOP for now, as almost all jobs are already done in
+ * dev_free callback of snd_device chain instead.
+ */
+static void default_release(struct device *dev)
+{
+}
+
+/**
+ * snd_device_initialize - Initialize struct device for sound devices
+ * @dev: device to initialize
+ * @card: card to assign, optional
+ */
+void snd_device_initialize(struct device *dev, struct snd_card *card)
+{
+	device_initialize(dev);
+	if (card)
+		dev->parent = (struct device *)card->card_dev;
+	dev->class = sound_class;
+	dev->release = default_release;
+}
+EXPORT_SYMBOL_GPL(snd_device_initialize);
+
 /**
  *  snd_card_create - create and initialize a soundcard structure
  *  @idx: card index (address) [0 ... (SNDRV_CARDS-1)]
@@ -359,7 +382,14 @@ int snd_card_disconnect(struct snd_card *card)
 	card->shutdown = 1;
 	spin_unlock(&card->files_lock);
 
-	/* replace file->f_op with special dummy operations */
+	/* phase 1: disable fops (user space) operations for ALSA API */
+	mutex_lock(&snd_card_mutex);
+	snd_cards[card->number] = NULL;
+	snd_cards_lock &= ~(1 << card->number);
+	mutex_unlock(&snd_card_mutex);
+	
+	/* phase 2: replace file->f_op with special dummy operations */
+	
 	spin_lock(&card->files_lock);
 	list_for_each_entry(mfile, &card->files_list, list) {
 		/* it's critical part, use endless loop */
@@ -375,7 +405,7 @@ int snd_card_disconnect(struct snd_card *card)
 	}
 	spin_unlock(&card->files_lock);	
 
-	/* notify all connected devices about disconnection */
+	/* phase 3: notify all connected devices about disconnection */
 	/* at this point, they cannot respond to any calls except release() */
 
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
@@ -393,13 +423,6 @@ int snd_card_disconnect(struct snd_card *card)
 		device_unregister(card->card_dev);
 		card->card_dev = NULL;
 	}
-
-	/* disable fops (user space) operations for ALSA API */
-	mutex_lock(&snd_card_mutex);
-	snd_cards[card->number] = NULL;
-	snd_cards_lock &= ~(1 << card->number);
-	mutex_unlock(&snd_card_mutex);
-
 #ifdef CONFIG_PM
 	wake_up(&card->power_sleep);
 #endif

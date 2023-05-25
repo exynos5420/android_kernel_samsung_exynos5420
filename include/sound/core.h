@@ -22,6 +22,7 @@
  *
  */
 
+#include <linux/device.h>
 #include <linux/sched.h>		/* wake_up() */
 #include <linux/mutex.h>		/* struct mutex */
 #include <linux/rwsem.h>		/* struct rw_semaphore */
@@ -41,8 +42,7 @@
 /* forward declarations */
 struct pci_dev;
 struct module;
-struct device;
-struct device_attribute;
+struct completion;
 
 /* device allocation stuff */
 
@@ -104,6 +104,7 @@ struct snd_card {
 	char driver[16];		/* driver name */
 	char shortname[32];		/* short name of this soundcard */
 	char longname[80];		/* name of this soundcard */
+	char irq_descr[32];		/* Interrupt description */
 	char mixername[80];		/* mixer name */
 	char components[128];		/* card components delimited with
 								space */
@@ -114,6 +115,7 @@ struct snd_card {
 								private data */
 	struct list_head devices;	/* devices */
 
+	struct device ctl_dev;		/* control device */
 	unsigned int last_numid;	/* last used numeric ID */
 	struct rw_semaphore controls_rwsem;	/* controls list lock */
 	rwlock_t ctl_files_rwlock;	/* ctl_files list lock */
@@ -199,7 +201,11 @@ struct snd_minor {
 /* return a device pointer linked to each sound device as a parent */
 static inline struct device *snd_card_get_device_link(struct snd_card *card)
 {
+#ifdef CONFIG_SYSFS_DEPRECATED
+	return card ? card->dev : NULL;
+#else
 	return card ? card->card_dev : NULL;
+#endif
 }
 
 /* sound.c */
@@ -209,6 +215,8 @@ extern int snd_ecards_limit;
 extern struct class *sound_class;
 
 void snd_request_card(int card);
+
+void snd_device_initialize(struct device *dev, struct snd_card *card);
 
 int snd_register_device_for_dev(int type, struct snd_card *card,
 				int dev,
