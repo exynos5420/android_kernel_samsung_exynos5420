@@ -153,10 +153,18 @@ static struct page *kbase_mem_pool_remove(struct kbase_mem_pool *pool)
 static void kbase_mem_pool_sync_page(struct kbase_mem_pool *pool,
 		struct page *p)
 {
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+	u64 *page;
+	page = kmap_atomic(p);
+	__cpuc_flush_dcache_area(page, PAGE_SIZE);
+	outer_flush_range(page_to_phys(p), page_to_phys(p) + PAGE_SIZE);
+	kunmap_atomic(page);
+#else
 	struct device *dev = pool->kbdev->dev;
 
 	dma_sync_single_for_device(dev, kbase_dma_addr(p),
 			PAGE_SIZE, DMA_BIDIRECTIONAL);
+#endif
 }
 
 static void kbase_mem_pool_zero_page(struct kbase_mem_pool *pool,
@@ -185,7 +193,7 @@ struct page *kbase_mem_alloc_page(struct kbase_device *kbdev)
 #if defined(CONFIG_ARM) && !defined(CONFIG_HAVE_DMA_ATTRS) && \
 	LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
 	/* DMA cache sync fails for HIGHMEM before 3.5 on ARM */
-	gfp = GFP_USER | __GFP_ZERO;
+	gfp = GFP_HIGHUSER | __GFP_ZERO;
 #else
 	gfp = GFP_HIGHUSER | __GFP_ZERO;
 #endif

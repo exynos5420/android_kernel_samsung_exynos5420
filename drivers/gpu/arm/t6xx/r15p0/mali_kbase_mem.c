@@ -1039,6 +1039,11 @@ static int kbase_do_syncset(struct kbase_context *kctx,
 	u64 page_off, page_count;
 	u64 i;
 	u64 offset;
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+	phys_addr_t base_phy_addr = 0;
+	void *base_virt_addr = 0;
+	size_t area_size = 0;
+#endif
 
 	kbase_os_mem_map_lock(kctx);
 	kbase_gpu_vm_lock(kctx);
@@ -1087,6 +1092,46 @@ static int kbase_do_syncset(struct kbase_context *kctx,
 		goto out_unlock;
 	}
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+    for (i = 0; i < page_count; i++) {
+        u32 offset = start & (PAGE_SIZE - 1);
+        phys_addr_t paddr = cpu_pa[page_off + i] + offset;		// cpu? gpu? which
+        size_t sz = MIN(((size_t) PAGE_SIZE - offset), size);
+
+		if (paddr == base_phy_addr + area_size && start == ((uintptr_t) base_virt_addr + area_size)) {
+			area_size += sz;
+		} else if (area_size > 0) {
+			if (sync_fn == KBASE_SYNC_TO_CPU) {
+				kbase_sync_to_cpu(base_phy_addr, base_virt_addr, area_size);
+				area_size = 0;
+			}
+			else if (sync_fn == KBASE_SYNC_TO_DEVICE) {
+				kbase_sync_to_memory(base_phy_addr, base_virt_addr, area_size);
+				area_size = 0;
+			}
+		}
+
+		if (area_size == 0) {
+			base_phy_addr = paddr;
+			base_virt_addr = (void *)(uintptr_t)start;
+			area_size = sz;
+		}
+
+		start += sz;
+		size -= sz;
+	}
+
+	if (area_size > 0) {
+		if (sync_fn == KBASE_SYNC_TO_CPU) {
+			kbase_sync_to_cpu(base_phy_addr, base_virt_addr, area_size);
+		}
+		else if (sync_fn == KBASE_SYNC_TO_DEVICE) {
+			kbase_sync_to_memory(base_phy_addr, base_virt_addr, area_size);
+		}
+	}
+
+    KBASE_DEBUG_ASSERT(size == 0);
+#else
 	/* Sync first page */
 	if (cpu_pa[page_off]) {
 		size_t sz = MIN(((size_t) PAGE_SIZE - offset), size);
@@ -1113,6 +1158,7 @@ static int kbase_do_syncset(struct kbase_context *kctx,
 				gpu_pa[page_off + page_count - 1], 0, sz,
 				sync_fn);
 	}
+#endif
 
 out_unlock:
 	kbase_gpu_vm_unlock(kctx);
