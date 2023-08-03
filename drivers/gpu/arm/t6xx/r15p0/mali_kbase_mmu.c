@@ -75,6 +75,13 @@ static void kbase_mmu_flush_invalidate(struct kbase_context *kctx,
  * This should be called after each page directory update.
  */
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+static void kbase_mmu_sync_pgd(phys_addr_t paddr, void *vaddr, size_t size)
+{
+	__cpuc_flush_dcache_area(vaddr, size);
+	outer_flush_range(paddr, paddr + size);
+}
+#else
 static void kbase_mmu_sync_pgd(struct kbase_device *kbdev,
 		dma_addr_t handle, size_t size)
 {
@@ -85,6 +92,7 @@ static void kbase_mmu_sync_pgd(struct kbase_device *kbdev,
 		dma_sync_single_for_device(kbdev->dev, handle, size,
 				DMA_TO_DEVICE);
 }
+#endif
 
 /*
  * Definitions:
@@ -411,7 +419,11 @@ phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
 	for (i = 0; i < KBASE_MMU_PAGE_ENTRIES; i++)
 		kctx->kbdev->mmu_mode->entry_invalidate(&page[i]);
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+	kbase_mmu_sync_pgd(page_to_phys(p), page, PAGE_SIZE);
+#else
 	kbase_mmu_sync_pgd(kctx->kbdev, kbase_dma_addr(p), PAGE_SIZE);
+#endif
 
 	kunmap(p);
 	return page_to_phys(p);
@@ -468,7 +480,11 @@ static int mmu_get_next_pgd(struct kbase_context *kctx,
 
 		kctx->kbdev->mmu_mode->entry_set_pte(&page[vpfn], target_pgd);
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(*pgd, page, PAGE_SIZE);
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev, kbase_dma_addr(p), PAGE_SIZE);
+#endif
 		/* Rely on the caller to update the address space flags. */
 	}
 
@@ -589,7 +605,11 @@ static void mmu_insert_pages_failure_recovery(struct kbase_context *kctx, u64 vp
 		vpfn += count;
 		nr -= count;
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(pgd, pgd_page, PAGE_SIZE);
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev, kbase_dma_addr(p), PAGE_SIZE);
+#endif
 
 		kunmap_atomic(pgd_page);
 	}
@@ -689,9 +709,13 @@ int kbase_mmu_insert_single_page(struct kbase_context *kctx, u64 vpfn,
 		vpfn += count;
 		remain -= count;
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(pgd + (index * sizeof(u64)), pgd_page + index, count * sizeof(u64));
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev,
 				kbase_dma_addr(p) + (index * sizeof(u64)),
 				count * sizeof(u64));
+#endif
 
 		kunmap(p);
 		/* We have started modifying the page table.
@@ -802,9 +826,13 @@ int kbase_mmu_insert_pages_no_flush(struct kbase_context *kctx, u64 vpfn,
 		vpfn += count;
 		remain -= count;
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(pgd + (index * sizeof(u64)), pgd_page + index, count * sizeof(u64));
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev,
 				kbase_dma_addr(p) + (index * sizeof(u64)),
 				count * sizeof(u64));
+#endif
 
 		kunmap(p);
 		/* We have started modifying the page table. If further pages
@@ -1081,9 +1109,13 @@ int kbase_mmu_teardown_pages(struct kbase_context *kctx, u64 vpfn, size_t nr)
 		vpfn += count;
 		nr -= count;
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(pgd + (index * sizeof(u64)), pgd_page + index, count * sizeof(u64));
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev,
 				kbase_dma_addr(p) + (index * sizeof(u64)),
 				count * sizeof(u64));
+#endif
 
 		kunmap(p);
 	}
@@ -1177,9 +1209,13 @@ int kbase_mmu_update_pages(struct kbase_context *kctx, u64 vpfn, phys_addr_t *ph
 		vpfn += count;
 		nr -= count;
 
+#if defined(CONFIG_ARM) && LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
+		kbase_mmu_sync_pgd(pgd + (index * sizeof(u64)), pgd_page + index, count * sizeof(u64));
+#else
 		kbase_mmu_sync_pgd(kctx->kbdev,
 				kbase_dma_addr(p) + (index * sizeof(u64)),
 				count * sizeof(u64));
+#endif
 
 		kunmap(pfn_to_page(PFN_DOWN(pgd)));
 	}

@@ -42,4 +42,7 @@ enum kbase_sync_type {
 	KBASE_SYNC_TO_DEVICE
 };
 
+void kbase_sync_to_memory(phys_addr_t paddr, void *vaddr, size_t sz);
+void kbase_sync_to_cpu(phys_addr_t paddr, void *vaddr, size_t sz);
+
 #endif				/* _KBASE_LOWLEVEL_H */
