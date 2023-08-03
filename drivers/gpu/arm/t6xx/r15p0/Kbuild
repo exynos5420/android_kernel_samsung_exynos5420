@@ -94,6 +94,7 @@ SRC := \
 	mali_kbase_10969_workaround.c \
 	mali_kbase_hw.c \
 	mali_kbase_utility.c \
+	mali_kbase_mem_lowlevel.c \
 	mali_kbase_debug.c \
 	mali_kbase_trace_timeline.c \
 	mali_kbase_gpu_memory_debugfs.c \
