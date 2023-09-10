@@ -18,6 +18,7 @@
 
 #ifdef CONFIG_MFD_ARIZONA
 #include <linux/mfd/arizona/control.h>
+#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/regmap.h>
@@ -488,6 +489,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	mutex_unlock(&map->lock);
 	arizona_control_regmap_hook(map, reg, &val);
 	mutex_lock(&map->lock);
+#endif
 
 	if (!map->cache_bypass && map->format.format_write) {
 		ret = regcache_write(map, reg, val);
