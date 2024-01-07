@@ -1538,7 +1538,7 @@ static u8 override_id(struct usb_composite_dev *cdev, u8 *desc)
 	return *desc;
 }
 
-#ifdef CONFIG_V1A
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 static void composite_redriver_work(struct work_struct *data)
 {
 	struct usb_composite_dev	*cdev =  container_of(data, struct usb_composite_dev, redriver_work);
@@ -1658,7 +1658,7 @@ static int composite_bind(struct usb_gadget *gadget)
 		goto fail;
 
 	INFO(cdev, "%s ready\n", composite->name);
-#ifdef CONFIG_V1A
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 	INIT_WORK(&cdev->redriver_work, composite_redriver_work);
 #endif
 	return 0;

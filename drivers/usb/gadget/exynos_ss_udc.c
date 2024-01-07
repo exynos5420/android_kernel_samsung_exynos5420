@@ -2548,7 +2548,7 @@ static void exynos_ss_udc_irq_connectdone(struct exynos_ss_udc *udc)
 	}
 #endif
 #endif
-#ifdef CONFIG_V1A
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 			udc->speed_limit = udc->gadget.speed;
 			printk(KERN_ERR"usb: Update the speed limit value %d \n",udc->speed_limit);
 #endif
