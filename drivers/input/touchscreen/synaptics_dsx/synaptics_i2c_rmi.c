@@ -3001,9 +3001,6 @@ static void	synaptics_init_product_info(struct synaptics_rmi4_data *rmi4_data)
 		(strncmp(rmi4_data->rmi4_mod_info.product_id_string + 6, "bf", 2) == 0)) {
 		rmi4_data->ic_revision_of_ic = SYNAPTICS_IC_REVISION_BF;
 	} else {
-		tsp_debug_err(true, &rmi4_data->i2c_client->dev, "%s, Undefined IC revision: %s\n",
-			__func__, rmi4_data->rmi4_mod_info.product_id_string);
-
 		/* TODO : Below Codes are temporary added for supporting specific boards which didn't lockdown
 		 * Before deliveried to us.
 		 * We do not distinguish panel because there is no production infomation for panel. ex) S5100 A2 F
@@ -3018,6 +3015,16 @@ static void	synaptics_init_product_info(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->ic_revision_of_ic = SYNAPTICS_IC_REVISION_A2;
 			tsp_debug_err(true, &rmi4_data->i2c_client->dev, "%s, There are no production info so we regard that as A2 panel %s\n",
 				__func__, rmi4_data->rmi4_mod_info.product_id_string);
+		} else if (strncmp(rmi4_data->rmi4_mod_info.product_id_string, "s5710", 5) == 0) {
+			tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s s5710 ic_reversion = 0x%x\n",__func__,rmi4_data->ic_revision_of_ic);
+		} else if (strncmp(rmi4_data->rmi4_mod_info.product_id_string, "s5707", 5) == 0) {
+			tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s s5707 ic_reversion = 0x%x\n",__func__,rmi4_data->ic_revision_of_ic);
+		} else {
+
+			tsp_debug_err(true, &rmi4_data->i2c_client->dev, "%s, Undefined IC revision: %s\n",
+				__func__, rmi4_data->rmi4_mod_info.product_id_string);
+
+			rmi4_data->ic_revision_of_ic = 0x0;
 		}
 	}
 }
